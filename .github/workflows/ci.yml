@@ -16,7 +16,7 @@ jobs:
     steps:
       # 检出仓库内容，供后续静态检查使用。
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 业务 Maven 模块尚未创建；当前只检查文档和配置是否保留冲突标记。
       - name: Reject unresolved conflict markers
