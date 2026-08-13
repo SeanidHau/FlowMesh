@@ -1,0 +1,18 @@
+version: 2
+updates:
+  # 后端 Maven 模块创建后，Dependabot 自动检查依赖更新。
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # 前端 package.json 创建后，Dependabot 自动检查依赖更新。
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

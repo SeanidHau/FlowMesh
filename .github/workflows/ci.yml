@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  repository-check:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    steps:
+      # 检出仓库内容，供后续静态检查使用。
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      # 业务 Maven 模块尚未创建；当前只检查文档和配置是否保留冲突标记。
+      - name: Reject unresolved conflict markers
+        run: |
+          if grep -RInE '^(<<<<<<<|=======|>>>>>>>)' \
+            --exclude-dir=.git \
+            --exclude=LICENSE \
+            .; then
+            exit 1
+          fi
+
+      # 防止本地凭据被误提交。示例文件允许保留占位符。
+      - name: Reject committed local environment files
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo 'Committed .env file detected. Commit only .env.example.' >&2
+            exit 1
+          fi
+
+      # 后端模块创建后，在此工作流中加入 Maven Enforcer、格式、测试和依赖安全检查。

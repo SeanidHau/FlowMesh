@@ -1,0 +1,38 @@
+# 安全规范
+
+## 身份与会话
+
+- Access Token 有效期为 15 分钟。
+- Refresh Token 有效期为 7 天。数据库仅存储 Refresh Token 哈希，支持轮换与撤销。
+- 登出、用户禁用和密码重置必须写入审计日志。
+- 高风险运维接口除验证 JWT 外，必须在服务端重新验证 `OPERATIONS` 权限。
+
+## 租户隔离
+
+- `tenant_id` 是所有租户业务表的必填列。
+- 应用层使用 Hibernate Filter 或 MyBatis 拦截器自动注入租户条件。
+- PostgreSQL RLS 是最终防线。业务连接在事务开始时设置当前租户。
+- 迁移账号、系统管理账号和业务服务账号必须分离。业务服务不得使用绕过 RLS 的高权限账号。
+- 任何越权 API、消息或文件访问必须拒绝，并保留审计记录。
+
+## Secret 管理
+
+- 本地开发使用 Git 忽略的 `.env`。
+- Kubernetes 使用 Secret；CI 使用 GitHub Actions Secrets。
+- 仓库只能提交 `.env.example` 和 Secret 模板，不能提交真实密钥、Token、证书或密码。
+- Secret 不得写入镜像、日志、错误响应或测试快照。
+
+## 文件访问
+
+- MinIO Bucket 必须保持私有。
+- 对象键格式为 `tenantId/applicationId/fileId`。
+- 后端只在验证租户、角色、申请状态、类型和大小后签发短时预签名 URL。
+- 首版接受 PDF、PNG、JPG，单文件最大 10 MB。
+- 病毒扫描作为后续异步事件能力；未实现前不得宣称文件已通过病毒扫描。
+
+## Kubernetes 安全基线
+
+- 工作负载使用非 root 用户、只读根文件系统，并禁止特权提升。
+- Secret 通过环境变量或挂载文件注入。
+- 默认 NetworkPolicy 拒绝访问，只放通必要的服务和依赖链路。
+- kind 是否实际执行 NetworkPolicy 取决于 CNI，运行手册必须注明当前环境条件。

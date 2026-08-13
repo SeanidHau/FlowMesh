@@ -1,0 +1,45 @@
+# 运行手册
+
+> 本手册在业务服务、Compose 与 Helm 文件落地后补充具体命令。本文件先定义操作边界，避免未验证命令被当作可执行步骤。
+
+## 前置条件
+
+- 本地运行使用 Docker Compose。
+- Kubernetes 演示使用 kind 和 Helm。
+- 真实凭据存储在 `.env`、Kubernetes Secret 或 GitHub Actions Secrets，不进入仓库。
+
+## 日常检查
+
+1. 检查 Gateway、各业务服务、Camunda、RocketMQ、PostgreSQL、Redis 和 MinIO 的健康状态。
+2. 检查 Outbox 待投递数量、RocketMQ 消费失败数和 DLQ 数量。
+3. 检查状态对账差异、超过 SLA 的审批任务和 `PENDING` 审批命令。
+4. 使用 `traceId`、`tenantId`、`applicationId` 或 `eventId` 在日志和 Trace 中定位问题。
+
+## DLQ 重放
+
+前置条件：操作者拥有 `OPERATIONS` 角色，并已确认消息的业务影响。
+
+1. 在运维页面查看原始事件、失败原因、尝试次数和关联业务状态。
+2. 填写重放原因并二次确认。
+3. 系统生成新的 `eventId`，同时关联 `originalEventId`。
+4. 检查重放后的消费记录、业务状态和审计记录。
+
+不要通过手写 SQL 修改消费记录、Outbox 状态、审批快照或供应商状态。
+
+## 风控故障处置
+
+1. 检查风险事件的三次延迟重试记录。
+2. 确认 `risk-service` 的故障注入开关是否仍处于启用状态。
+3. 如果消息已进入 DLQ，使用 DLQ 重放流程重放，或创建人工风控结论。
+4. 人工通过、人工拒绝和流程终止必须填写原因。
+
+## 对账处置
+
+1. 查看差异类型、发现时间、关联 `applicationId`、`processInstanceKey` 和 `eventId`。
+2. 对于已提交但未投递的 Outbox，允许系统自动重试或由 `OPERATIONS` 确认重放。
+3. 对于审批结论或供应商状态差异，创建人工处置任务。不得自动覆盖业务结论。
+4. 处置完成后记录前后状态、操作者和验证结果。
+
+## 备份与恢复
+
+首版提供 PostgreSQL、MinIO 和关键配置的备份/恢复脚本，并进行一次本地恢复演练。RocketMQ 与 Camunda 为单副本演示环境，不承诺灾备能力。具体脚本与演练记录在实现阶段补充。

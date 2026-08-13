@@ -1,0 +1,38 @@
+# Java and Maven
+target/
+*.class
+*.jar
+*.war
+.mvn/timing.properties
+
+# Node and frontend build output
+node_modules/
+dist/
+.vite/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Logs, reports and generated runtime data
+*.log
+logs/
+coverage/
+reports/
+.gradle/
+
+# Local volumes and generated infrastructure state
+data/
+volumes/
+.kind/
