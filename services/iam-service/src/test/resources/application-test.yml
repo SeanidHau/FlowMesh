@@ -1,0 +1,7 @@
+flowmesh:
+  security:
+    jwt:
+      issuer: flowmesh-test
+      signing-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D

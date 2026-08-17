@@ -2,6 +2,7 @@ package com.flowmesh.iam.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
  * 可匿名访问，其他路径默认要求认证。</p>
  */
 @Configuration
+@EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfiguration {
 
     /**

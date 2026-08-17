@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * 验证 IAM 的首个 Flyway 迁移能够创建身份认证所需的表结构。
@@ -15,6 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * 认证功能开发阶段才暴露问题。</p>
  */
 @SpringBootTest
+@ActiveProfiles("test")
 class IamSchemaMigrationIntegrationTest {
 
     /** 用于查询迁移后数据库元数据的 JDBC 客户端。 */

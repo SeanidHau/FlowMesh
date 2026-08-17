@@ -26,6 +26,14 @@ spring:
 server:
   port: 8081
 
+flowmesh:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:flowmesh-local}
+      signing-key: ${JWT_SIGNING_KEY:}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+
 management:
   endpoints:
     web:
