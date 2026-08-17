@@ -43,6 +43,16 @@ scripts/                     # 初始化、验证、备份和恢复脚本
 - 每个阶段完成后执行验证、创建 Git 提交，并推送到远程仓库。
 - 真实密钥、密码、Token、`.env` 和构建产物不得提交。
 
+## 本地构建
+
+项目统一使用 Maven Wrapper，避免团队成员的 Maven 版本不一致。请在 IDEA 和终端中选择 Java 21，然后在仓库根目录执行：
+
+```bash
+./mvnw test
+```
+
+根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
+
 ## 许可证
 
 本项目使用 [Apache License 2.0](LICENSE)。

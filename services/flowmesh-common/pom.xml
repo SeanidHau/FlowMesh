@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  作用：跨服务共享的技术契约模块。
+  只允许放置安全上下文、事件信封、错误模型等无领域归属类型。
+  不允许放置供应商、审批等领域实体。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.flowmesh</groupId>
+    <artifactId>flowmesh</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>flowmesh-common</artifactId>
+  <packaging>jar</packaging>
+
+  <name>FlowMesh Common</name>
+  <description>Shared technical contracts for FlowMesh services.</description>
+</project>

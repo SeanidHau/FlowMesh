@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  作用：FlowMesh 的 Maven 聚合根。
+  统一 Java、Spring Boot、插件和依赖版本；本身不承载业务代码。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    作用：继承 Spring Boot 的依赖版本管理和 Maven 插件默认配置。
+    后续子模块只继承本项目，不直接继承 Spring Boot。
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.0</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.flowmesh</groupId>
+  <artifactId>flowmesh</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>FlowMesh</name>
+  <description>Cloud-native supplier onboarding and workflow orchestration platform.</description>
+
+  <!--
+    作用：Maven 聚合模块。
+    新服务创建后，在这里追加模块路径。
+  -->
+  <modules>
+    <module>services/flowmesh-common</module>
+    <module>services/iam-service</module>
+  </modules>
+
+  <properties>
+    <!-- 作用：统一后端语言版本。 -->
+    <java.version>21</java.version>
+
+    <!-- 作用：后续 IAM 服务签发和校验 JWT 时使用。 -->
+    <jjwt.version>0.12.6</jjwt.version>
+
+    <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
+    <maven.enforcer.version>3.6.3</maven.enforcer.version>
+
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!--
+        作用：子模块引用公共契约模块时统一版本。
+        防止多个服务使用不同的内部模块版本。
+      -->
+      <dependency>
+        <groupId>com.flowmesh</groupId>
+        <artifactId>flowmesh-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!--
+        作用：JJWT 不由 Spring Boot BOM 管理，因此在根工程统一版本。
+      -->
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-api</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-impl</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!--
+          作用：统一 Java 编译目标。
+          Spring Boot 父 POM 已管理插件版本。
+        -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <release>${java.version}</release>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <!--
+        作用：在构建开始时校验 Java 与 Maven 版本，避免环境差异导致构建结果不一致。
+        Java 21 是本项目约定的 LTS 运行时；Maven Wrapper 固定 Maven 3.9.16。
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven.enforcer.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-build-runtime</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[21,22)</version>
+                  <message>FlowMesh 必须使用 Java 21 LTS 构建。请在 IDEA 或终端中选择 Temurin 21。</message>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9.0,4.0.0)</version>
+                  <message>FlowMesh 需要 Maven 3.9.x。请使用 ./mvnw。</message>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

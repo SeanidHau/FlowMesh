@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  作用：IAM 服务模块。
+  负责本地用户、角色、JWT Access Token 和 Refresh Token 生命周期。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.flowmesh</groupId>
+    <artifactId>flowmesh</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>iam-service</artifactId>
+
+  <name>FlowMesh IAM Service</name>
+  <description>Authentication, authorization and tenant identity service.</description>
+
+  <dependencies>
+    <!-- 作用：提供 REST API。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- 作用：提供请求参数校验，例如用户名和密码不能为空。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- 作用：提供密码哈希、认证与授权基础设施。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <!-- 作用：提供用户、角色和 Refresh Token 的持久化能力。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- 作用：暴露健康检查，供 Docker Compose 和 Kubernetes 探针使用。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- 作用：管理 IAM Schema 的版本化数据库迁移。 -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+
+    <!-- 作用：生产环境 PostgreSQL JDBC 驱动。 -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 作用：本地和测试阶段快速启动 IAM 服务。后续集成 PostgreSQL 后可移除。 -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 作用：引用跨服务共享的安全上下文和技术契约。 -->
+    <dependency>
+      <groupId>com.flowmesh</groupId>
+      <artifactId>flowmesh-common</artifactId>
+    </dependency>
+
+    <!-- 作用：JWT 签发与解析 API。 -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+    </dependency>
+
+    <!-- 作用：JWT 运行时实现。 -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 作用：JWT Payload 的 Jackson JSON 编解码。 -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 作用：JUnit、Mockito、Spring Boot 测试基础设施。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- 作用：测试 Spring Security 认证和授权行为。 -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- 作用：将 IAM 服务打包为可执行 Spring Boot JAR。 -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
