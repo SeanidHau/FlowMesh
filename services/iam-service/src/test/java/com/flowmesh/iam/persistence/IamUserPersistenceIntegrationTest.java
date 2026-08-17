@@ -2,11 +2,15 @@ package com.flowmesh.iam.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.flowmesh.iam.domain.role.IamRole;
+import com.flowmesh.iam.domain.role.UserRole;
 import com.flowmesh.iam.domain.tenant.Tenant;
 import com.flowmesh.iam.domain.tenant.TenantStatus;
 import com.flowmesh.iam.domain.user.IamUser;
+import com.flowmesh.iam.repository.IamRoleRepository;
 import com.flowmesh.iam.repository.IamUserRepository;
 import com.flowmesh.iam.repository.TenantRepository;
+import com.flowmesh.iam.repository.UserRoleRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,14 @@ class IamUserPersistenceIntegrationTest {
     /** 用户持久化访问。 */
     @Autowired
     private IamUserRepository iamUserRepository;
+
+    /** IAM 角色持久化访问。 */
+    @Autowired
+    private IamRoleRepository iamRoleRepository;
+
+    /** 用户角色关系持久化访问。 */
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     /**
      * 验证用户创建时会归一化用户名，并可按租户和用户名查询。
@@ -50,5 +62,34 @@ class IamUserPersistenceIntegrationTest {
                 .isTrue();
         assertThat(iamUserRepository.findByTenant_IdAndUsername(tenantId, "admin.user"))
                 .contains(user);
+    }
+
+    /**
+     * 验证用户角色关联使用复合主键持久化，并可按用户和角色代码查询。
+     */
+    @Test
+    void shouldPersistAndFindUserRoleAssignment() {
+        String tenantId = "tenant-" + UUID.randomUUID();
+        Tenant tenant = tenantRepository.saveAndFlush(
+                new Tenant(tenantId, "测试租户", TenantStatus.ACTIVE)
+        );
+        IamUser user = iamUserRepository.saveAndFlush(
+                new IamUser(tenant, "reviewer", "password-hash", "审批人")
+        );
+        IamRole role = iamRoleRepository.saveAndFlush(
+                new IamRole(" procurement_reviewer ", "采购审批人", "执行采购初审")
+        );
+
+        UserRole userRole = userRoleRepository.saveAndFlush(new UserRole(user, role));
+
+        assertThat(userRole.getAssignedAt()).isNotNull();
+        assertThat(userRole.getId().getUserId()).isEqualTo(user.getId());
+        assertThat(userRole.getId().getRoleId()).isEqualTo(role.getId());
+        assertThat(userRoleRepository.existsByUser_IdAndRole_Code(
+                user.getId(),
+                "PROCUREMENT_REVIEWER"
+        )).isTrue();
+        assertThat(userRoleRepository.findAllByUser_Id(user.getId()))
+                .containsExactly(userRole);
     }
 }
