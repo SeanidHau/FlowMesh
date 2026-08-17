@@ -6,11 +6,14 @@ import com.flowmesh.iam.domain.role.IamRole;
 import com.flowmesh.iam.domain.role.UserRole;
 import com.flowmesh.iam.domain.tenant.Tenant;
 import com.flowmesh.iam.domain.tenant.TenantStatus;
+import com.flowmesh.iam.domain.token.RefreshToken;
 import com.flowmesh.iam.domain.user.IamUser;
 import com.flowmesh.iam.repository.IamRoleRepository;
 import com.flowmesh.iam.repository.IamUserRepository;
+import com.flowmesh.iam.repository.RefreshTokenRepository;
 import com.flowmesh.iam.repository.TenantRepository;
 import com.flowmesh.iam.repository.UserRoleRepository;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +42,10 @@ class IamUserPersistenceIntegrationTest {
     /** 用户角色关系持久化访问。 */
     @Autowired
     private UserRoleRepository userRoleRepository;
+
+    /** 刷新令牌持久化访问。 */
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     /**
      * 验证用户创建时会归一化用户名，并可按租户和用户名查询。
@@ -91,5 +98,35 @@ class IamUserPersistenceIntegrationTest {
         )).isTrue();
         assertThat(userRoleRepository.findAllByUser_Id(user.getId()))
                 .containsExactly(userRole);
+    }
+
+    /**
+     * 验证刷新令牌支持按哈希锁定查询，并在轮换后保持旧令牌不可用。
+     */
+    @Test
+    void shouldRotateRefreshToken() {
+        Tenant tenant = tenantRepository.saveAndFlush(
+                new Tenant("tenant-" + UUID.randomUUID(), "测试租户", TenantStatus.ACTIVE)
+        );
+        IamUser user = iamUserRepository.saveAndFlush(
+                new IamUser(tenant, "operator", "password-hash", "运营人员")
+        );
+        Instant now = Instant.now();
+        RefreshToken oldToken = refreshTokenRepository.saveAndFlush(
+                new RefreshToken(user, "old-token-hash", now.plusSeconds(3600))
+        );
+        RefreshToken replacementToken = refreshTokenRepository.saveAndFlush(
+                new RefreshToken(user, "replacement-token-hash", now.plusSeconds(3600))
+        );
+
+        oldToken.replaceWith(replacementToken, now);
+        refreshTokenRepository.saveAndFlush(oldToken);
+
+        assertThat(oldToken.isActiveAt(now.plusSeconds(1))).isFalse();
+        assertThat(oldToken.getReplacedByToken()).isEqualTo(replacementToken);
+        assertThat(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
+                .contains(oldToken);
+        assertThat(refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(user.getId()))
+                .containsExactly(replacementToken);
     }
 }
