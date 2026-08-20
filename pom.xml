@@ -43,7 +43,7 @@
     <java.version>21</java.version>
 
     <!-- 作用：后续 IAM 服务签发和校验 JWT 时使用。 -->
-    <jjwt.version>0.12.6</jjwt.version>
+    <jjwt.version>0.13.0</jjwt.version>
 
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
