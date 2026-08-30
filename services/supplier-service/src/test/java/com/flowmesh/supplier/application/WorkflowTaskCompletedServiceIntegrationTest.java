@@ -71,8 +71,10 @@ class WorkflowTaskCompletedServiceIntegrationTest extends PostgresIntegrationTes
             {
               "eventId":"%s",
               "eventType":"WorkflowTaskCompleted",
+              "schemaVersion":1,
               "tenantId":"tenant-a",
               "aggregateId":"%s",
+              "occurredAt":"2026-08-31T00:00:00Z",
               "traceId":"trace-test",
               "payload":{"taskKey":"%s"}
             }

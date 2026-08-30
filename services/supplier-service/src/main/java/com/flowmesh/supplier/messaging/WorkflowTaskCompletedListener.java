@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 @RocketMQMessageListener(
     topic = "workflow-events",
     selectorExpression = "WorkflowTaskCompleted",
-    consumerGroup = "flowmesh-supplier"
+    consumerGroup = "flowmesh-supplier",
+    maxReconsumeTimes = 3
 )
 public class WorkflowTaskCompletedListener implements RocketMQListener<String> {
 

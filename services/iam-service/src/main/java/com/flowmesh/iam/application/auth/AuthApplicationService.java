@@ -4,11 +4,13 @@ import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.JwtProperties;
 import com.flowmesh.common.security.JwtService;
 import com.flowmesh.iam.domain.role.UserRole;
+import com.flowmesh.iam.domain.audit.AuditEvent;
 import com.flowmesh.iam.domain.token.RefreshToken;
 import com.flowmesh.iam.domain.tenant.TenantStatus;
 import com.flowmesh.iam.domain.user.IamUser;
 import com.flowmesh.iam.domain.user.UserStatus;
 import com.flowmesh.iam.repository.IamUserRepository;
+import com.flowmesh.iam.repository.AuditEventRepository;
 import com.flowmesh.iam.repository.RefreshTokenRepository;
 import com.flowmesh.iam.repository.UserRoleRepository;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +45,8 @@ public class AuthApplicationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+    private final AuditEventRepository auditEventRepository;
+    private final SecurityAuditWriter securityAuditWriter;
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
@@ -61,7 +65,9 @@ public class AuthApplicationService {
         RefreshTokenRepository refreshTokenRepository,
         PasswordEncoder passwordEncoder,
         JwtService jwtService,
-        JwtProperties jwtProperties
+        JwtProperties jwtProperties,
+        AuditEventRepository auditEventRepository,
+        SecurityAuditWriter securityAuditWriter
     ) {
         this.iamUserRepository = iamUserRepository;
         this.userRoleRepository = userRoleRepository;
@@ -69,6 +75,8 @@ public class AuthApplicationService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.jwtProperties = jwtProperties;
+        this.auditEventRepository = auditEventRepository;
+        this.securityAuditWriter = securityAuditWriter;
     }
 
     /**
@@ -81,15 +89,25 @@ public class AuthApplicationService {
      * @throws InvalidCredentialsException 凭证无效
      */
     @Transactional
-    public TokenResult login(String tenantId, String username, String password) {
+    public TokenResult login(String tenantId, String username, String password, String traceId) {
         String normalized = IamUser.normalizeUsername(username);
         IamUser user = iamUserRepository
             .findByTenant_IdAndUsername(tenantId, normalized)
-            .orElseThrow(InvalidCredentialsException::new);
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            .orElse(null);
+        if (user == null) {
+            securityAuditWriter.recordLoginFailure(tenantId, normalized, traceId);
             throw new InvalidCredentialsException();
         }
-        ensureCanAuthenticate(user);
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            securityAuditWriter.recordLoginFailure(tenantId, normalized, traceId);
+            throw new InvalidCredentialsException();
+        }
+        try {
+            ensureCanAuthenticate(user);
+        } catch (InvalidCredentialsException exception) {
+            securityAuditWriter.recordLoginFailure(tenantId, normalized, traceId);
+            throw exception;
+        }
 
         user.recordSuccessfulLogin(Instant.now());
         iamUserRepository.saveAndFlush(user);
@@ -100,6 +118,9 @@ public class AuthApplicationService {
         );
         String accessToken = jwtService.issueAccessToken(principal, Instant.now());
         String refreshToken = createRefreshToken(user);
+        auditEventRepository.save(new AuditEvent(
+            tenantId, user.getId(), "LOGIN", "USER", user.getUsername(), "SUCCESS", traceId
+        ));
 
         return new TokenResult(accessToken, refreshToken);
     }
@@ -145,12 +166,16 @@ public class AuthApplicationService {
      * @param rawToken 原始刷新令牌
      */
     @Transactional
-    public void logout(String rawToken) {
+    public void logout(String rawToken, String traceId) {
         String tokenHash = sha256Hex(rawToken);
         refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
             if (token.getRevokedAt() == null) {
                 token.revoke(Instant.now());
                 refreshTokenRepository.saveAndFlush(token);
+                auditEventRepository.save(new AuditEvent(
+                    token.getUser().getTenant().getId(), token.getUser().getId(),
+                    "LOGOUT", "USER", token.getUser().getUsername(), "SUCCESS", traceId
+                ));
                 log.info("用户 {} 已登出，刷新令牌已撤销", token.getUser().getUsername());
             }
         });

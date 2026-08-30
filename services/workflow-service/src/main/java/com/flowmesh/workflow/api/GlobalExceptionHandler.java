@@ -4,6 +4,7 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.workflow.application.WorkflowInstanceNotFoundException;
 import com.flowmesh.workflow.application.WorkflowTaskConflictException;
 import com.flowmesh.workflow.application.WorkflowTaskForbiddenException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 /**
  * workflow 服务 API 异常映射。
@@ -79,6 +81,21 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return response(HttpStatus.FORBIDDEN, "WORKFLOW_TASK_FORBIDDEN", "当前角色不能完成该任务。", request);
+    }
+
+    /**
+     * 映射流程并发更新冲突。
+     *
+     * @param exception 乐观锁异常
+     * @param request 当前请求
+     * @return 409 错误响应
+     */
+    @ExceptionHandler({OptimisticLockException.class, ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(
+        RuntimeException exception,
+        HttpServletRequest request
+    ) {
+        return response(HttpStatus.CONFLICT, "WORKFLOW_STATE_CONFLICT", "流程状态已发生变化，请刷新后重试。", request);
     }
 
     private ResponseEntity<ErrorResponse> response(

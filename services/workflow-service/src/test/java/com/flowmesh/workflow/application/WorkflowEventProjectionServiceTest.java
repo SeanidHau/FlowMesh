@@ -38,10 +38,18 @@ class WorkflowEventProjectionServiceTest {
             {
               "eventId":"%s",
               "eventType":"ApplicationSubmitted",
+              "schemaVersion":1,
               "aggregateId":"%s",
-              "tenantId":"tenant-a"
+              "tenantId":"tenant-a",
+              "occurredAt":"2026-08-31T00:00:00Z",
+              "traceId":"trace-test",
+              "payload":{
+                "applicationId":"%s",
+                "supplierName":"测试供应商",
+                "applicantUserId":"00000000-0000-0000-0000-000000000001"
+              }
             }
-            """.formatted(eventId, applicationId);
+            """.formatted(eventId, applicationId, applicationId);
 
         when(repository.existsBySourceEventId(eventId)).thenReturn(false, true);
         WorkflowEventProjectionService service = new WorkflowEventProjectionService(

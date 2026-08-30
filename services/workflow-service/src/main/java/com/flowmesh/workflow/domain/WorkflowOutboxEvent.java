@@ -49,6 +49,18 @@ public class WorkflowOutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    @Column(name = "claimed_until")
+    private Instant claimedUntil;
+
+    @Column(name = "claim_token")
+    private UUID claimToken;
+
+    @Column(name = "dead_lettered_at")
+    private Instant deadLetteredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -149,6 +161,26 @@ public class WorkflowOutboxEvent {
     }
 
     /**
+     * 获取当前发布认领令牌。
+     *
+     * @return 认领令牌
+     */
+    public UUID getClaimToken() {
+        return claimToken;
+    }
+
+    /**
+     * 认领事件，认领事务提交后才允许网络发送。
+     *
+     * @param token 本次发布器实例的认领令牌
+     * @param leaseUntil 认领租约到期时间
+     */
+    public void claim(UUID token, Instant leaseUntil) {
+        this.claimToken = Objects.requireNonNull(token);
+        this.claimedUntil = Objects.requireNonNull(leaseUntil);
+    }
+
+    /**
      * 记录一次发布失败，保留事件等待下一轮重试。
      *
      * @param error 错误信息
@@ -161,5 +193,6 @@ public class WorkflowOutboxEvent {
     @PrePersist
     private void onCreate() {
         createdAt = Instant.now();
+        nextAttemptAt = createdAt;
     }
 }

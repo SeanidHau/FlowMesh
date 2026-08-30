@@ -50,6 +50,18 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    @Column(name = "claimed_until")
+    private Instant claimedUntil;
+
+    @Column(name = "claim_token")
+    private UUID claimToken;
+
+    @Column(name = "dead_lettered_at")
+    private Instant deadLetteredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -167,6 +179,35 @@ public class OutboxEvent {
     }
 
     /**
+     * 获取下一次允许投递的时间。
+     *
+     * @return 下一次投递时间
+     */
+    public Instant getNextAttemptAt() {
+        return nextAttemptAt;
+    }
+
+    /**
+     * 获取当前发布认领令牌。
+     *
+     * @return 认领令牌
+     */
+    public UUID getClaimToken() {
+        return claimToken;
+    }
+
+    /**
+     * 认领事件，认领事务提交后才允许网络发送。
+     *
+     * @param token 本次发布器实例的认领令牌
+     * @param leaseUntil 认领租约到期时间
+     */
+    public void claim(UUID token, Instant leaseUntil) {
+        this.claimToken = Objects.requireNonNull(token);
+        this.claimedUntil = Objects.requireNonNull(leaseUntil);
+    }
+
+    /**
      * 标记事件已被 RocketMQ 接收。
      *
      * @param occurredAt Broker 返回成功的时间
@@ -189,5 +230,6 @@ public class OutboxEvent {
     @PrePersist
     private void onCreate() {
         this.createdAt = Instant.now();
+        this.nextAttemptAt = this.createdAt;
     }
 }

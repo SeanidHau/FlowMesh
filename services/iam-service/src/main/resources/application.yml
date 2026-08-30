@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=iam
     username: ${IAM_DB_USER:flowmesh_iam}
-    password: ${IAM_DB_PASSWORD:change-me-iam}
+    password: ${IAM_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -26,10 +26,12 @@ server:
   port: 8081
 
 flowmesh:
+  demo-data:
+    enabled: ${FLOWMESH_DEMO_DATA_ENABLED:false}
   security:
     jwt:
       issuer: ${JWT_ISSUER:flowmesh-local}
-      signing-key: ${JWT_SIGNING_KEY:}
+      signing-key: ${JWT_SIGNING_KEY}
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
 

@@ -3,6 +3,7 @@ package com.flowmesh.supplier.api;
 import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
 import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.List;
 
@@ -66,6 +68,40 @@ public class GlobalExceptionHandler {
                 "Idempotency-Key 已用于不同的请求体。",
                 traceId(request)
             ));
+    }
+
+    /**
+     * 映射超长幂等键。
+     *
+     * @param exception 幂等键格式异常
+     * @param request 当前请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler(InvalidIdempotencyKeyException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidIdempotencyKey(
+        InvalidIdempotencyKeyException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.of(
+            "INVALID_IDEMPOTENCY_KEY", "Idempotency-Key 不能超过 128 个字符。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射并发状态更新冲突。
+     *
+     * @param exception 乐观锁异常
+     * @param request 当前请求
+     * @return 409 错误响应
+     */
+    @ExceptionHandler({OptimisticLockException.class, ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(
+        RuntimeException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(
+            "STATE_VERSION_CONFLICT", "申请状态已发生变化，请刷新后重试。", traceId(request)
+        ));
     }
 
     /**

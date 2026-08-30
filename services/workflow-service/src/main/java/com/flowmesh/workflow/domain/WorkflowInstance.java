@@ -46,7 +46,7 @@ public class WorkflowInstance {
     private WorkflowInstanceStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "current_task", nullable = false, length = 64)
+    @Column(name = "current_task", length = 64)
     private WorkflowTask currentTask;
 
     @Version

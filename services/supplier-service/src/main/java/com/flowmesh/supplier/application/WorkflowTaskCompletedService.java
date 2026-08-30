@@ -3,6 +3,7 @@ package com.flowmesh.supplier.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flowmesh.common.messaging.EventEnvelopeValidator;
 import com.flowmesh.supplier.domain.OutboxEvent;
 import com.flowmesh.supplier.domain.SupplierApplication;
 import com.flowmesh.supplier.domain.WorkflowEventInbox;
@@ -11,6 +12,7 @@ import com.flowmesh.supplier.repository.SupplierApplicationRepository;
 import com.flowmesh.supplier.repository.WorkflowEventInboxRepository;
 import com.flowmesh.supplier.rls.TenantRlsInitializer;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,10 +62,16 @@ public class WorkflowTaskCompletedService {
     @Transactional
     public void apply(String message) {
         JsonNode event = readEvent(message);
-        UUID eventId = UUID.fromString(event.required("eventId").asText());
-        UUID applicationId = UUID.fromString(event.required("aggregateId").asText());
-        String tenantId = event.required("tenantId").asText();
-        String taskKey = event.required("payload").required("taskKey").asText();
+        UUID eventId = EventEnvelopeValidator.requiredUuid(event, "eventId");
+        UUID applicationId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
+        String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
+        JsonNode payload = EventEnvelopeValidator.validate(event, "WorkflowTaskCompleted");
+        String taskKey = EventEnvelopeValidator.requiredText(payload, "taskKey");
+        if (!Set.of(
+            "PURCHASER_REVIEW", "LEGAL_REVIEW", "FINANCE_REVIEW", "OPERATIONS_ACTIVATION"
+        ).contains(taskKey)) {
+            throw new IllegalArgumentException("事件 taskKey 无效");
+        }
 
         tenantRlsInitializer.initializeTenant(tenantId);
         if (inboxRepository.existsById(eventId)) {
@@ -73,6 +81,7 @@ public class WorkflowTaskCompletedService {
         SupplierApplication application = applicationRepository.findById(applicationId)
             .orElseThrow(SupplierApplicationNotFoundException::new);
         application.applyWorkflowTask(taskKey);
+        applicationRepository.saveAndFlush(application);
         inboxRepository.save(new WorkflowEventInbox(eventId, tenantId, applicationId));
 
         if ("OPERATIONS_ACTIVATION".equals(taskKey)) {
@@ -99,9 +108,7 @@ public class WorkflowTaskCompletedService {
     private JsonNode readEvent(String message) {
         try {
             JsonNode event = objectMapper.readTree(message);
-            if (!"WorkflowTaskCompleted".equals(event.required("eventType").asText())) {
-                throw new IllegalArgumentException("不支持的 workflow 事件类型");
-            }
+            EventEnvelopeValidator.validate(event, "WorkflowTaskCompleted");
             return event;
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("workflow 事件 JSON 无效", exception);

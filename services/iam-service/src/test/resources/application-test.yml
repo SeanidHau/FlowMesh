@@ -1,4 +1,6 @@
 flowmesh:
+  demo-data:
+    enabled: true
   security:
     jwt:
       issuer: flowmesh-test

@@ -8,6 +8,7 @@ Schema 与 NOSUPERUSER 账号。
 
 ```bash
 cp .env.example .env
+./infra/compose/validate-env.sh .env
 docker compose --env-file .env -f infra/compose/docker-compose.yml up -d postgres rocketmq-namesrv rocketmq-broker
 docker compose -f infra/compose/docker-compose.yml ps
 ```

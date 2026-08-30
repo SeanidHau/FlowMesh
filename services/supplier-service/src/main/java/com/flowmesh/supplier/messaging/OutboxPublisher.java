@@ -3,6 +3,8 @@ package com.flowmesh.supplier.messaging;
 import com.flowmesh.supplier.domain.OutboxEvent;
 import com.flowmesh.supplier.repository.OutboxEventRepository;
 import java.time.Instant;
+import java.time.Duration;
+import java.util.List;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.slf4j.Logger;
@@ -12,7 +14,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * 将 supplier Outbox 事件发布到 RocketMQ。
@@ -29,6 +31,9 @@ public class OutboxPublisher {
 
     private final OutboxEventRepository outboxEventRepository;
     private final RocketMQTemplate rocketMQTemplate;
+    private final OutboxClaimService outboxClaimService;
+    private final int maxAttempts;
+    private final long retryBaseDelaySeconds;
 
     /**
      * 创建 Outbox 发布器。
@@ -38,20 +43,25 @@ public class OutboxPublisher {
      */
     public OutboxPublisher(
         OutboxEventRepository outboxEventRepository,
-        RocketMQTemplate rocketMQTemplate
+        RocketMQTemplate rocketMQTemplate,
+        OutboxClaimService outboxClaimService,
+        @Value("${flowmesh.outbox.max-attempts:5}") int maxAttempts,
+        @Value("${flowmesh.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.rocketMQTemplate = rocketMQTemplate;
+        this.outboxClaimService = outboxClaimService;
+        this.maxAttempts = maxAttempts;
+        this.retryBaseDelaySeconds = retryBaseDelaySeconds;
     }
 
     /**
      * 定时投递最早的一批待发布事件。
      */
     @Scheduled(fixedDelayString = "${flowmesh.outbox.publish-interval-ms:1000}")
-    @Transactional
     public void publishPendingEvents() {
-        for (OutboxEvent event : outboxEventRepository
-            .findTop100ByPublishedAtIsNullOrderByCreatedAtAsc()) {
+        List<OutboxEvent> events = outboxClaimService.claimBatch();
+        for (OutboxEvent event : events) {
             publish(event);
         }
     }
@@ -66,13 +76,25 @@ public class OutboxPublisher {
                 message,
                 SEND_TIMEOUT_MILLIS
             );
-            event.markPublished(Instant.now());
+            outboxEventRepository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
         } catch (RuntimeException exception) {
-            event.recordFailure(exception.getMessage());
+            String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
+            int nextAttempt = event.getAttemptCount() + 1;
+            if (nextAttempt >= maxAttempts) {
+                outboxEventRepository.markDeadLetteredIfClaimed(
+                    event.getId(), event.getClaimToken(), error, Instant.now(), maxAttempts
+                );
+            } else {
+                long delay = Math.min(900L, retryBaseDelaySeconds * (1L << Math.min(nextAttempt - 1, 9)));
+                outboxEventRepository.recordRetryIfClaimed(
+                    event.getId(), event.getClaimToken(), error,
+                    Instant.now().plus(Duration.ofSeconds(delay)), maxAttempts
+                );
+            }
             log.warn(
                 "RocketMQ 事件发布失败，eventId={}，attemptCount={}",
                 event.getId(),
-                event.getAttemptCount(),
+                nextAttempt,
                 exception
             );
         }

@@ -42,14 +42,14 @@ spec:
             - name: IAM_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "flowmesh.fullname" . }}-config
+                  name: {{ include "flowmesh.configSecret" . }}
                   key: IAM_DB_PASSWORD
             - name: JWT_ISSUER
               value: {{ .Values.global.jwtIssuer | quote }}
             - name: JWT_SIGNING_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "flowmesh.fullname" . }}-config
+                  name: {{ include "flowmesh.configSecret" . }}
                   key: JWT_SIGNING_KEY
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }

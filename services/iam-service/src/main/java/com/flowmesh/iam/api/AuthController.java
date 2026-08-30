@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -40,9 +41,12 @@ public class AuthController {
      * @return Access Token 和 Refresh Token
      */
     @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
+    public TokenResponse login(
+        @Valid @RequestBody LoginRequest request,
+        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
+    ) {
         var result = authApplicationService.login(
-            request.tenantId(), request.username(), request.password()
+            request.tenantId(), request.username(), request.password(), traceId
         );
         return new TokenResponse(result.accessToken(), result.refreshToken());
     }
@@ -66,8 +70,11 @@ public class AuthController {
      * @return 204 No Content
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
-        authApplicationService.logout(request.refreshToken());
+    public ResponseEntity<Void> logout(
+        @Valid @RequestBody LogoutRequest request,
+        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
+    ) {
+        authApplicationService.logout(request.refreshToken(), traceId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

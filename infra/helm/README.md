@@ -18,6 +18,10 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
 ```
 
+生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`IAM_DB_PASSWORD`、
+`SUPPLIER_DB_PASSWORD` 和 `WORKFLOW_DB_PASSWORD` 的 Secret，然后设置
+`--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
+
 检查部署状态：
 
 ```bash

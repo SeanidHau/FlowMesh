@@ -76,6 +76,7 @@ public class WorkflowInstanceService {
         String taskKey,
         String traceId
     ) {
+        String effectiveTraceId = traceId == null || traceId.isBlank() ? UUID.randomUUID().toString() : traceId;
         tenantRlsInitializer.initialize(principal.tenantId());
         WorkflowInstance instance = repository.findByApplicationId(applicationId)
             .orElseThrow(WorkflowInstanceNotFoundException::new);
@@ -111,7 +112,7 @@ public class WorkflowInstanceService {
                 principal.tenantId(),
                 applicationId,
                 Instant.now(),
-                traceId,
+                effectiveTraceId,
                 new TaskCompletedPayload(task.name())
             ))
         ));

@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isTrustedSender } from './security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEV_SERVER_URL = 'http://127.0.0.1:5173';
+const PACKAGED_ENTRY_PATH = path.join(__dirname, '../dist/index.html');
 
 type ApiService = 'iam' | 'supplier' | 'workflow';
 
@@ -56,12 +58,6 @@ function createWindow(): void {
   }
 }
 
-function isTrustedSender(url: string): boolean {
-  return app.isPackaged
-    ? url.startsWith('file://')
-    : url.startsWith(DEV_SERVER_URL);
-}
-
 function parseRequest(value: unknown): ApiRequest {
   if (!value || typeof value !== 'object') {
     throw new Error('非法 IPC 请求');
@@ -81,7 +77,11 @@ function parseRequest(value: unknown): ApiRequest {
 
 async function requestApi(event: Electron.IpcMainInvokeEvent, value: unknown): Promise<ApiResponse> {
   const senderUrl = event.senderFrame?.url ?? '';
-  if (!isTrustedSender(senderUrl)) {
+  if (!isTrustedSender(senderUrl, {
+    packaged: app.isPackaged,
+    devServerUrl: DEV_SERVER_URL,
+    packagedEntryPath: PACKAGED_ENTRY_PATH,
+  })) {
     throw new Error('未授权的 IPC 调用来源');
   }
 
@@ -123,7 +123,11 @@ app.whenReady().then(() => {
 
 app.on('web-contents-created', (_event, contents) => {
   contents.on('will-navigate', (navigationEvent, url) => {
-    if (!isTrustedSender(url)) navigationEvent.preventDefault();
+    if (!isTrustedSender(url, {
+      packaged: app.isPackaged,
+      devServerUrl: DEV_SERVER_URL,
+      packagedEntryPath: PACKAGED_ENTRY_PATH,
+    })) navigationEvent.preventDefault();
   });
 });
 

@@ -17,3 +17,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}
+
+{{/* 作用：允许部署复用外部 Secret，也兼容由 Chart 创建的本地 Secret。 */}}
+{{- define "flowmesh.configSecret" -}}
+{{- default (printf "%s-config" (include "flowmesh.fullname" .)) .Values.global.existingSecret -}}
+{{- end }}

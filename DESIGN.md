@@ -185,6 +185,10 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ## 9. 部署与工程基线
 
+### 9.0 当前实现边界
+
+本设计蓝图包含后续演进目标。当前可运行 MVP 仅提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、Vue 3 和 Electron；Camunda、Redis、MinIO、风险服务、通知审计服务、Prometheus/Grafana、OpenTelemetry、对账和人工重放入口尚未接入运行链路。部署和面试说明必须以 README 的能力边界表为准。
+
 ### 技术栈
 
 ```text

@@ -1,7 +1,7 @@
 # 运行手册
 
-本手册用于本地 Compose 演示环境。生产部署需要替换默认凭据，并根据实际基础设施补充备份、
-网络和高可用配置。
+本手册用于本地 Compose 演示环境。生产部署必须提供真实凭据，并根据实际基础设施补充备份、
+网络、高可用和 DLQ 运维入口。
 
 ## 前置条件
 
@@ -17,6 +17,7 @@
    cp .env.example .env
    openssl rand -base64 32
    # 将输出写入 .env 的 JWT_SIGNING_KEY
+   ./infra/compose/validate-env.sh .env
    ```
 
 2. 构建并启动基础设施和 Java 服务。
@@ -39,7 +40,7 @@
    ```bash
    cd frontend
    npm install
-   npm run dev
+   VITE_DEMO_MODE=true npm run dev
    ```
 
 Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者。桌面端默认访问宿主机的
@@ -63,10 +64,9 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 
 ## 日常检查
 
-1. 检查 Gateway、各业务服务、Camunda、RocketMQ、PostgreSQL、Redis 和 MinIO 的健康状态。
-2. 检查 Outbox 待投递数量、RocketMQ 消费失败数和 DLQ 数量。
-3. 检查状态对账差异、超过 SLA 的审批任务和 `PENDING` 审批命令。
-4. 使用 `traceId`、`tenantId`、`applicationId` 或 `eventId` 在日志和 Trace 中定位问题。
+1. 检查 IAM、supplier、workflow、RocketMQ 和 PostgreSQL 的健康状态。
+2. 检查 Outbox 待投递数量、失败次数和 `dead_lettered_at` 非空记录。
+3. 使用 `traceId`、`tenantId`、`applicationId` 或 `eventId` 在日志中定位问题。
 
 ## DLQ 重放
 

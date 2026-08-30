@@ -57,6 +57,9 @@ public class SupplierApplicationController {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new MissingIdempotencyKeyException();
         }
+        if (idempotencyKey.length() > 128) {
+            throw new InvalidIdempotencyKeyException();
+        }
 
         var result = applicationService.create(principal, idempotencyKey, request, traceId);
 

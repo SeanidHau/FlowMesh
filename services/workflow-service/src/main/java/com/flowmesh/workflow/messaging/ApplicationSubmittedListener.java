@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 @RocketMQMessageListener(
     topic = "supplier-events",
     selectorExpression = "ApplicationSubmitted",
-    consumerGroup = "flowmesh-workflow"
+    consumerGroup = "flowmesh-workflow",
+    maxReconsumeTimes = 3
 )
 public class ApplicationSubmittedListener implements RocketMQListener<String> {
 

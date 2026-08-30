@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * 供应商准入申请实体。
  *
- * <p>创建即 SUBMITTED，state_version 初始为 0，作为乐观锁版本。</p>
+ * <p>创建即 SUBMITTED，state_version 由 JPA {@link Version} 自动维护。</p>
  */
 @Entity
 @Table(name = "supplier_applications")
@@ -32,6 +32,7 @@ public class SupplierApplication {
     @Column(nullable = false, length = 32)
     private ApplicationStatus status;
 
+    @Version
     @Column(name = "state_version", nullable = false)
     private long stateVersion;
 
@@ -98,7 +99,6 @@ public class SupplierApplication {
         status = "OPERATIONS_ACTIVATION".equals(taskKey)
             ? ApplicationStatus.ENABLED
             : ApplicationStatus.IN_REVIEW;
-        stateVersion++;
     }
 
     public long getStateVersion() {

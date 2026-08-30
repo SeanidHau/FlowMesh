@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=workflow
     username: ${WORKFLOW_DB_USER:flowmesh_workflow}
-    password: ${WORKFLOW_DB_PASSWORD:change-me-workflow}
+    password: ${WORKFLOW_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -26,7 +26,7 @@ flowmesh:
   security:
     jwt:
       issuer: ${JWT_ISSUER:flowmesh-local}
-      signing-key: ${JWT_SIGNING_KEY:}
+      signing-key: ${JWT_SIGNING_KEY}
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
   workflow:
@@ -35,6 +35,8 @@ flowmesh:
     outbox:
       enabled: ${FLOWMESH_WORKFLOW_OUTBOX_ENABLED:false}
       publish-interval-ms: ${FLOWMESH_WORKFLOW_OUTBOX_PUBLISH_INTERVAL_MS:1000}
+      max-attempts: ${FLOWMESH_WORKFLOW_OUTBOX_MAX_ATTEMPTS:5}
+      retry-base-delay-seconds: ${FLOWMESH_WORKFLOW_OUTBOX_RETRY_BASE_DELAY_SECONDS:1}
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}

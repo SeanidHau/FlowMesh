@@ -3,6 +3,7 @@ package com.flowmesh.workflow.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flowmesh.common.messaging.EventEnvelopeValidator;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
@@ -45,9 +46,16 @@ public class WorkflowEventProjectionService {
     @Transactional
     public void project(String message) {
         JsonNode event = readEvent(message);
-        UUID eventId = UUID.fromString(event.required("eventId").asText());
-        UUID applicationId = UUID.fromString(event.required("aggregateId").asText());
-        String tenantId = event.required("tenantId").asText();
+        UUID eventId = EventEnvelopeValidator.requiredUuid(event, "eventId");
+        UUID applicationId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
+        String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
+        JsonNode payload = EventEnvelopeValidator.validate(event, "ApplicationSubmitted");
+        UUID payloadApplicationId = EventEnvelopeValidator.requiredUuid(payload, "applicationId");
+        EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
+        EventEnvelopeValidator.requiredText(payload, "supplierName");
+        if (!applicationId.equals(payloadApplicationId)) {
+            throw new IllegalArgumentException("事件 aggregateId 与 payload.applicationId 不一致");
+        }
         tenantRlsInitializer.initialize(tenantId);
         if (workflowInstanceRepository.existsBySourceEventId(eventId)) {
             return;
@@ -59,9 +67,7 @@ public class WorkflowEventProjectionService {
     private JsonNode readEvent(String message) {
         try {
             JsonNode event = objectMapper.readTree(message);
-            if (!"ApplicationSubmitted".equals(event.required("eventType").asText())) {
-                throw new IllegalArgumentException("不支持的事件类型");
-            }
+            EventEnvelopeValidator.validate(event, "ApplicationSubmitted");
             return event;
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("事件 JSON 无效", exception);

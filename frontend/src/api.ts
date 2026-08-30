@@ -56,12 +56,12 @@ export class FlowMeshApi {
   }
 
   async logout(): Promise<void> {
-    if (this.session) {
-      await this.request('iam', '/api/v1/auth/logout', {
+    if (!this.session) return;
+
+    await this.request('iam', '/api/v1/auth/logout', {
         method: 'POST',
         body: { refreshToken: this.session.refreshToken },
-      }).catch(() => undefined);
-    }
+    });
     this.session = null;
   }
 

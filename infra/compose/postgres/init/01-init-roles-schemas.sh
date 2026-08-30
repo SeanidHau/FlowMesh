@@ -5,9 +5,9 @@
 
 set -e
 
-IAM_DB_PASSWORD="${IAM_DB_PASSWORD:-change-me-iam}"
-SUPPLIER_DB_PASSWORD="${SUPPLIER_DB_PASSWORD:-change-me-supplier}"
-WORKFLOW_DB_PASSWORD="${WORKFLOW_DB_PASSWORD:-change-me-workflow}"
+: "${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be provided}"
+: "${SUPPLIER_DB_PASSWORD:?SUPPLIER_DB_PASSWORD must be provided}"
+: "${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be provided}"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
   -- 创建 IAM 服务业务账号（NOSUPERUSER，仅拥有 iam schema）

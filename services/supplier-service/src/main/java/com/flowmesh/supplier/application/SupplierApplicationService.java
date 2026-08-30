@@ -19,7 +19,9 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -36,6 +38,8 @@ public class SupplierApplicationService {
     private final OutboxEventRepository outboxEventRepository;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
+    private final IdempotencyReplayService idempotencyReplayService;
 
     /**
      * 创建申请服务。
@@ -45,19 +49,25 @@ public class SupplierApplicationService {
      * @param outboxEventRepository Outbox 事件仓储
      * @param tenantRlsInitializer 租户 RLS 初始化器
      * @param objectMapper JSON 序列化器
+     * @param transactionManager 申请事务管理器
+     * @param idempotencyReplayService 并发冲突后的幂等回放服务
      */
     public SupplierApplicationService(
         SupplierApplicationRepository applicationRepository,
         IdempotencyRecordRepository idempotencyRecordRepository,
         OutboxEventRepository outboxEventRepository,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        org.springframework.transaction.PlatformTransactionManager transactionManager,
+        IdempotencyReplayService idempotencyReplayService
     ) {
         this.applicationRepository = applicationRepository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.idempotencyReplayService = idempotencyReplayService;
     }
 
     /**
@@ -70,17 +80,35 @@ public class SupplierApplicationService {
      * @return 创建结果（包含首次响应快照）
      * @throws IdempotencyKeyConflictException 同键不同请求体冲突
      */
-    @Transactional
     public CreateResult create(
         AuthPrincipal principal,
         String idempotencyKey,
         CreateApplicationRequest request,
         String traceId
     ) {
-        tenantRlsInitializer.initializeTenant();
-
         String requestBody = request.supplierName();
         String fingerprint = sha256Hex(requestBody);
+        String effectiveTraceId = traceId == null || traceId.isBlank() ? UUID.randomUUID().toString() : traceId;
+
+        try {
+            return transactionTemplate.execute(status -> createInTransaction(
+                principal, idempotencyKey, request, effectiveTraceId, fingerprint
+            ));
+        } catch (DataIntegrityViolationException exception) {
+            return idempotencyReplayService.replay(
+                principal.tenantId(), principal.userId(), idempotencyKey, fingerprint
+            ).orElseThrow(() -> exception);
+        }
+    }
+
+    private CreateResult createInTransaction(
+        AuthPrincipal principal,
+        String idempotencyKey,
+        CreateApplicationRequest request,
+        String traceId,
+        String fingerprint
+    ) {
+        tenantRlsInitializer.initializeTenant();
 
         var existing = idempotencyRecordRepository
             .findByTenantIdAndUserIdAndIdempotencyKey(principal.tenantId(), principal.userId(), idempotencyKey);

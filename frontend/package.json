@@ -10,6 +10,7 @@
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "dev:web": "vite --host 127.0.0.1",
     "typecheck": "vue-tsc --noEmit",
+    "test:electron": "npm run build:electron && node --test dist-electron/security.test.js",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.node.json",
     "build": "npm run typecheck && npm run build:renderer && npm run build:electron",

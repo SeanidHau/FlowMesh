@@ -1,9 +1,9 @@
-# 作用：提供 kind 或其他 Kubernetes 集群的演示默认值。
-# 部署前必须覆盖 global.jwtSigningKey 和数据库密码。
+# 作用：提供 Chart 的非敏感默认值。生产部署应使用预先创建的 Secret。
 global:
   imagePullPolicy: IfNotPresent
   jwtIssuer: flowmesh-local
-  jwtSigningKey: replace-with-base64-encoded-random-secret
+  jwtSigningKey: ""
+  existingSecret: ""
 
 postgresql:
   host: postgres
@@ -19,7 +19,7 @@ services:
     tag: 0.1.0
     port: 8081
     dbUser: flowmesh_iam
-    dbPassword: change-me-iam
+    dbPassword: ""
     replicas: 1
     resources: {}
   supplier:
@@ -27,7 +27,7 @@ services:
     tag: 0.1.0
     port: 8082
     dbUser: flowmesh_supplier
-    dbPassword: change-me-supplier
+    dbPassword: ""
     replicas: 1
     resources: {}
   workflow:
@@ -35,6 +35,6 @@ services:
     tag: 0.1.0
     port: 8083
     dbUser: flowmesh_workflow
-    dbPassword: change-me-workflow
+    dbPassword: ""
     replicas: 1
     resources: {}

@@ -3,6 +3,8 @@ package com.flowmesh.workflow.messaging;
 import com.flowmesh.workflow.domain.WorkflowOutboxEvent;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import java.time.Instant;
+import java.time.Duration;
+import java.util.List;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.slf4j.Logger;
@@ -12,7 +14,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * 将 workflow Outbox 事件发布到 RocketMQ。
@@ -26,6 +28,9 @@ public class WorkflowOutboxPublisher {
 
     private final WorkflowOutboxEventRepository repository;
     private final RocketMQTemplate rocketMQTemplate;
+    private final WorkflowOutboxClaimService claimService;
+    private final int maxAttempts;
+    private final long retryBaseDelaySeconds;
 
     /**
      * 创建 workflow Outbox 发布器。
@@ -35,19 +40,25 @@ public class WorkflowOutboxPublisher {
      */
     public WorkflowOutboxPublisher(
         WorkflowOutboxEventRepository repository,
-        RocketMQTemplate rocketMQTemplate
+        RocketMQTemplate rocketMQTemplate,
+        WorkflowOutboxClaimService claimService,
+        @Value("${flowmesh.workflow.outbox.max-attempts:5}") int maxAttempts,
+        @Value("${flowmesh.workflow.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
     ) {
         this.repository = repository;
         this.rocketMQTemplate = rocketMQTemplate;
+        this.claimService = claimService;
+        this.maxAttempts = maxAttempts;
+        this.retryBaseDelaySeconds = retryBaseDelaySeconds;
     }
 
     /**
      * 定时投递最早的一批待发布事件。
      */
     @Scheduled(fixedDelayString = "${flowmesh.workflow.outbox.publish-interval-ms:1000}")
-    @Transactional
     public void publishPendingEvents() {
-        for (WorkflowOutboxEvent event : repository.findTop100ByPublishedAtIsNullOrderByCreatedAtAsc()) {
+        List<WorkflowOutboxEvent> events = claimService.claimBatch();
+        for (WorkflowOutboxEvent event : events) {
             try {
                 Message<String> message = MessageBuilder.withPayload(event.getPayload())
                     .setHeader(MessageConst.PROPERTY_KEYS, event.getAggregateId().toString())
@@ -57,13 +68,25 @@ public class WorkflowOutboxPublisher {
                     message,
                     SEND_TIMEOUT_MILLIS
                 );
-                event.markPublished(Instant.now());
+                repository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
             } catch (RuntimeException exception) {
-                event.recordFailure(exception.getMessage());
+                String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
+                int nextAttempt = event.getAttemptCount() + 1;
+                if (nextAttempt >= maxAttempts) {
+                    repository.markDeadLetteredIfClaimed(
+                        event.getId(), event.getClaimToken(), error, Instant.now(), maxAttempts
+                    );
+                } else {
+                    long delay = Math.min(900L, retryBaseDelaySeconds * (1L << Math.min(nextAttempt - 1, 9)));
+                    repository.recordRetryIfClaimed(
+                        event.getId(), event.getClaimToken(), error,
+                        Instant.now().plus(Duration.ofSeconds(delay)), maxAttempts
+                    );
+                }
                 log.warn(
                     "RocketMQ workflow 事件发布失败，eventId={}，attemptCount={}",
                     event.getId(),
-                    event.getAttemptCount(),
+                    nextAttempt,
                     exception
                 );
             }

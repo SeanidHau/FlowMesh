@@ -15,13 +15,13 @@ FlowMesh Desktop 是基于 Electron、Vue 3 和 TypeScript 的供应商准入工
 
 ```bash
 npm install
-npm run dev
+VITE_DEMO_MODE=true npm run dev
 ```
 
 只使用浏览器预览和联调时执行：
 
 ```bash
-npm run dev:web
+VITE_DEMO_MODE=true npm run dev:web
 ```
 
 然后访问 `http://127.0.0.1:5173`。Web 模式通过 Vite 代理访问三个后端服务，

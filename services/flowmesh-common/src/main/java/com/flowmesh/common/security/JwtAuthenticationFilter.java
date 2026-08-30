@@ -2,6 +2,7 @@ package com.flowmesh.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.api.ErrorResponse;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,20 +59,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(BEARER_PREFIX.length());
+        AuthPrincipal principal;
         try {
-            AuthPrincipal principal = jwtService.parseAccessToken(token);
-            var authorities = principal.roles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .map(a -> (org.springframework.security.core.GrantedAuthority) a)
-                .toList();
-            var authentication = new UsernamePasswordAuthenticationToken(
-                principal, null, authorities
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            filterChain.doFilter(request, response);
-        } catch (Exception e) {
+            principal = jwtService.parseAccessToken(token);
+        } catch (JwtException | IllegalArgumentException | NullPointerException exception) {
             writeUnauthorized(response, request);
+            return;
         }
+
+        var authorities = principal.roles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+            .map(a -> (org.springframework.security.core.GrantedAuthority) a)
+            .toList();
+        var authentication = new UsernamePasswordAuthenticationToken(
+            principal, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        filterChain.doFilter(request, response);
     }
 
     private void writeUnauthorized(HttpServletResponse response, HttpServletRequest request) throws IOException {

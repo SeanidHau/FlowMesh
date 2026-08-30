@@ -22,8 +22,9 @@ const isBusy = ref(false);
 const errorMessage = ref('');
 const noticeMessage = ref('');
 
-const loginForm = reactive({ tenantId: 'tenant-a', username: 'applicant-a', password: 'password123' });
+const loginForm = reactive({ tenantId: 'tenant-a', username: '', password: '' });
 const applicationForm = reactive({ supplierName: '' });
+const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
 const isLoggedIn = computed(() => session.value !== null);
 const currentTaskIndex = computed(() => {
@@ -101,12 +102,16 @@ async function login(): Promise<void> {
 }
 
 async function logout(): Promise<void> {
-  await api.logout();
-  session.value = null;
-  application.value = null;
-  workflow.value = null;
-  noticeMessage.value = '';
   errorMessage.value = '';
+  try {
+    await api.logout();
+    session.value = null;
+    application.value = null;
+    workflow.value = null;
+    noticeMessage.value = '';
+  } catch (error) {
+    showError(error);
+  }
 }
 
 async function createApplication(): Promise<void> {
@@ -245,7 +250,7 @@ onMounted(() => {
             <span>{{ isBusy ? '正在验证' : '进入工作台' }}</span><span class="button-arrow">→</span>
           </button>
         </form>
-        <div class="demo-section">
+        <div v-if="demoMode" class="demo-section">
           <div class="demo-heading"><strong>快速体验</strong><span>演示账号密码统一</span></div>
           <div class="demo-grid">
             <button v-for="account in demoAccounts" :key="account.username" class="demo-chip" type="button" @click="useDemoAccount(account.username)">
