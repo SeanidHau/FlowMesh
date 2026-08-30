@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。项目以 Java 21、Spring Boot、Camunda 8 和 Apache RocketMQ 为核心，验证长流程编排、可靠消息、失败恢复、审计追踪和 Kubernetes 部署能力。
 
-当前已完成 MVP-1：IAM 登录/刷新/登出、JWT 跨服务校验、供应商申请创建、持久化幂等和 PostgreSQL RLS 隔离。RocketMQ 事件链和流程编排将在下一阶段接入。总体设计见 [DESIGN.md](DESIGN.md)。
+当前已完成 MVP-2：IAM 登录/刷新/登出、JWT 跨服务校验、供应商申请创建、持久化幂等、PostgreSQL RLS 隔离，以及通过 RocketMQ Outbox 驱动 workflow-service 创建幂等流程投影。Camunda 任务编排和审批状态机将在下一阶段接入。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 项目目标
 
@@ -55,8 +55,12 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml up -d postgre
 ```
 
 IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 导入根目录 `pom.xml`。
-运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `IamServiceApplication`
-或 `SupplierServiceApplication`。IAM 默认端口为 8081，supplier 默认端口为 8082。
+运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `IamServiceApplication`、
+`SupplierServiceApplication` 或 `WorkflowServiceApplication`。IAM 默认端口为 8081，
+supplier 默认端口为 8082，workflow 默认端口为 8083。
+
+要演示消息闭环：启动 PostgreSQL 和 RocketMQ 后，将 `FLOWMESH_OUTBOX_ENABLED` 与
+`FLOWMESH_WORKFLOW_CONSUMER_ENABLED` 设为 `true`，再启动 supplier 和 workflow 服务。
 
 根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
 

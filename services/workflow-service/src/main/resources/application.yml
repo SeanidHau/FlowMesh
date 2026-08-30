@@ -1,0 +1,41 @@
+# 作用：workflow 服务的本地开发配置。
+
+spring:
+  application:
+    name: workflow-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=workflow
+    username: ${WORKFLOW_DB_USER:flowmesh_workflow}
+    password: ${WORKFLOW_DB_PASSWORD:change-me-workflow}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    schemas: workflow
+    create-schemas: true
+
+server:
+  port: 8083
+
+flowmesh:
+  workflow:
+    consumer:
+      enabled: ${FLOWMESH_WORKFLOW_CONSUMER_ENABLED:false}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

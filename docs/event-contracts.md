@@ -49,6 +49,10 @@
 
 ## 投递、重试与重放
 
+当前 MVP 已落地 `ApplicationSubmitted`：supplier-service 在申请事务内写入 Outbox，
+发布器收到 RocketMQ 同步发送成功结果后标记 `published_at`，workflow-service 以
+`sourceEventId` 唯一约束实现重复消费幂等，并创建 `supplier-onboarding` 流程实例投影。
+
 1. 业务事务提交时，同时写入 Outbox 记录。
 2. Publisher 发送事件。只有收到 Broker ACK 后，才能标记 Outbox 已投递。
 3. 消费者使用 `eventId + handlerType` 建立幂等记录。业务更新、审计和新的 Outbox 记录必须在同一事务中提交。

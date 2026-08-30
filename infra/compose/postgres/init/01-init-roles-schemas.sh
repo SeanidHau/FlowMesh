@@ -7,6 +7,7 @@ set -e
 
 IAM_DB_PASSWORD="${IAM_DB_PASSWORD:-change-me-iam}"
 SUPPLIER_DB_PASSWORD="${SUPPLIER_DB_PASSWORD:-change-me-supplier}"
+WORKFLOW_DB_PASSWORD="${WORKFLOW_DB_PASSWORD:-change-me-workflow}"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
   -- 创建 IAM 服务业务账号（NOSUPERUSER，仅拥有 iam schema）
@@ -25,10 +26,20 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     END IF;
   END \$\$;
 
+  -- 创建 workflow 服务业务账号（NOSUPERUSER，仅拥有 workflow schema）
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_workflow') THEN
+      CREATE ROLE flowmesh_workflow LOGIN PASSWORD '${WORKFLOW_DB_PASSWORD}' NOSUPERUSER;
+    END IF;
+  END \$\$;
+
   -- 创建 schema 并授权
   CREATE SCHEMA IF NOT EXISTS iam AUTHORIZATION flowmesh_iam;
   CREATE SCHEMA IF NOT EXISTS supplier AUTHORIZATION flowmesh_supplier;
+  CREATE SCHEMA IF NOT EXISTS workflow AUTHORIZATION flowmesh_workflow;
 
   GRANT ALL ON SCHEMA iam TO flowmesh_iam;
   GRANT ALL ON SCHEMA supplier TO flowmesh_supplier;
+  GRANT ALL ON SCHEMA workflow TO flowmesh_workflow;
 EOSQL

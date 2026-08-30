@@ -37,6 +37,7 @@
     <module>services/flowmesh-common</module>
     <module>services/iam-service</module>
     <module>services/supplier-service</module>
+    <module>services/workflow-service</module>
   </modules>
 
   <properties>
