@@ -9,6 +9,7 @@ target/
 node_modules/
 dist/
 dist-electron/
+release/
 .vite/
 
 # Local configuration and secrets
