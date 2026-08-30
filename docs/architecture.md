@@ -34,7 +34,7 @@ flowchart LR
 | `gateway-service` | 认证入口、路由、限流、受信上下文透传 | 业务状态维护 |
 | `iam-service` | 用户、角色、Token 与会话 | 供应商审批 |
 | `supplier-service` | 申请、供应商状态机、材料元数据、审批快照 | BPMN 节点推进 |
-| `workflow-service` | 消费申请提交事件、保存流程实例投影；后续承载 BPMN 和用户任务 | 供应商主数据 |
+| `workflow-service` | 消费申请提交事件、保存流程实例投影、发布审批完成事件；后续承载 BPMN 和用户任务 | 供应商主数据 |
 | `risk-service` | 模拟风险结果与受控故障 | 审批决策 |
 | `notification-audit-service` | 通知、审计查询、DLQ 重放、对账 | 供应商状态变更 |
 

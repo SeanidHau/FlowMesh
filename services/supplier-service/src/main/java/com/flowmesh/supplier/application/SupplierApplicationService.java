@@ -145,6 +145,31 @@ public class SupplierApplicationService {
         return new CreateResult(responseStatus, responseJson);
     }
 
+    /**
+     * 查询当前租户下的供应商申请。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @return 供应商申请响应
+     * @throws SupplierApplicationNotFoundException 当前租户不可见该申请
+     */
+    @Transactional(readOnly = true)
+    public ApplicationResponse find(AuthPrincipal principal, UUID applicationId) {
+        tenantRlsInitializer.initializeTenant(principal.tenantId());
+        SupplierApplication application = applicationRepository.findById(applicationId)
+            .orElseThrow(SupplierApplicationNotFoundException::new);
+        return toResponse(application);
+    }
+
+    private ApplicationResponse toResponse(SupplierApplication application) {
+        return new ApplicationResponse(
+            application.getId(),
+            application.getSupplierName(),
+            application.getStatus().name(),
+            application.getStateVersion()
+        );
+    }
+
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);

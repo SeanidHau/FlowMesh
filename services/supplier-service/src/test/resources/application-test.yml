@@ -1,6 +1,9 @@
 flowmesh:
   outbox:
     enabled: false
+  supplier:
+    consumer:
+      enabled: false
   security:
     jwt:
       issuer: flowmesh-test

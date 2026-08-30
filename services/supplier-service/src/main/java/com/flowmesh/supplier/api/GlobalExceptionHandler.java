@@ -2,6 +2,7 @@ package com.flowmesh.supplier.api;
 
 import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
+import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,27 @@ public class GlobalExceptionHandler {
             .body(ErrorResponse.of(
                 "IDEMPOTENCY_KEY_CONFLICT",
                 "Idempotency-Key 已用于不同的请求体。",
+                traceId(request)
+            ));
+    }
+
+    /**
+     * 将当前租户不可见的申请映射为 404。
+     *
+     * @param exception 申请不存在异常
+     * @param request 当前请求
+     * @return 404 错误响应
+     */
+    @ExceptionHandler(SupplierApplicationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleApplicationNotFound(
+        SupplierApplicationNotFoundException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(
+                "SUPPLIER_APPLICATION_NOT_FOUND",
+                "供应商申请不存在。",
                 traceId(request)
             ));
     }

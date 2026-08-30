@@ -24,5 +24,5 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
      * @param aggregateId 业务聚合标识
      * @return 对应事件
      */
-    Optional<OutboxEvent> findByAggregateId(UUID aggregateId);
+    Optional<OutboxEvent> findByAggregateIdAndTag(UUID aggregateId, String tag);
 }

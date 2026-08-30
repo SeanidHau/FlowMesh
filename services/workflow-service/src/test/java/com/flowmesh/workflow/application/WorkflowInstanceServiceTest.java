@@ -3,10 +3,13 @@ package com.flowmesh.workflow.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowTask;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
+import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +29,9 @@ class WorkflowInstanceServiceTest {
     private WorkflowInstanceRepository repository;
 
     @Mock
+    private WorkflowOutboxEventRepository outboxRepository;
+
+    @Mock
     private TenantRlsInitializer tenantRlsInitializer;
 
     /**
@@ -41,14 +47,17 @@ class WorkflowInstanceServiceTest {
         when(repository.save(instance)).thenReturn(instance);
 
         WorkflowInstanceService service = new WorkflowInstanceService(
-            repository, tenantRlsInitializer
+            repository,
+            outboxRepository,
+            tenantRlsInitializer,
+            new ObjectMapper().registerModule(new JavaTimeModule())
         );
         AuthPrincipal principal = new AuthPrincipal(
             UUID.randomUUID(), "purchaser-a", "tenant-a", Set.of("PURCHASER")
         );
 
         WorkflowInstance result = service.completeTask(
-            principal, applicationId, WorkflowTask.PURCHASER_REVIEW.name()
+            principal, applicationId, WorkflowTask.PURCHASER_REVIEW.name(), "trace-1"
         );
 
         assertThat(result.getCurrentTask()).isEqualTo(WorkflowTask.LEGAL_REVIEW);

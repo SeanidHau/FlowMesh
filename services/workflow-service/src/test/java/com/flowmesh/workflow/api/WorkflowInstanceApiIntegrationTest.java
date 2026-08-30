@@ -1,5 +1,6 @@
 package com.flowmesh.workflow.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.JwtService;
 import com.flowmesh.workflow.application.WorkflowEventProjectionService;
+import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.support.PostgresIntegrationTest;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +33,9 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private WorkflowEventProjectionService projectionService;
+
+    @Autowired
+    private WorkflowOutboxEventRepository outboxRepository;
 
     /**
      * 验证事件投影后可由正确租户查询和推进，错误租户不可见，错误角色被拒绝。
@@ -63,6 +68,10 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
                 .content("{\"taskKey\":\"PURCHASER_REVIEW\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.currentTask").value("LEGAL_REVIEW"));
+
+        assertThat(outboxRepository
+            .findAllByAggregateIdAndTag(applicationId, "WorkflowTaskCompleted"))
+            .hasSize(1);
 
         mockMvc.perform(get("/api/v1/workflow-instances/{id}", applicationId)
                 .header("Authorization", "Bearer " + token("tenant-b", Set.of("PURCHASER"))))

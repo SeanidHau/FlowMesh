@@ -60,7 +60,12 @@ IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 �
 supplier 默认端口为 8082，workflow 默认端口为 8083。
 
 要演示消息闭环：启动 PostgreSQL 和 RocketMQ 后，将 `FLOWMESH_OUTBOX_ENABLED` 与
-`FLOWMESH_WORKFLOW_CONSUMER_ENABLED` 设为 `true`，再启动 supplier 和 workflow 服务。
+`FLOWMESH_WORKFLOW_CONSUMER_ENABLED`、`FLOWMESH_SUPPLIER_CONSUMER_ENABLED`、
+`FLOWMESH_WORKFLOW_OUTBOX_ENABLED` 设为 `true`，再启动 supplier 和 workflow 服务。
+
+完整链路为：supplier 创建申请并写入 Outbox → workflow 创建流程实例 → 角色完成审批 →
+workflow 写入审批完成 Outbox → supplier 更新申请状态；运营节点完成后状态为 `ENABLED`，
+并生成 `SupplierActivated` 通知事件。
 
 登录后可使用 workflow-service 查询和推进当前租户下的流程实例：
 

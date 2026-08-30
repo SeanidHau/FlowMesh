@@ -2,6 +2,7 @@ package com.flowmesh.workflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * FlowMesh workflow 服务的 Spring Boot 启动入口。
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 后续再将投影推进到 Camunda 流程实例。</p>
  */
 @SpringBootApplication(scanBasePackages = "com.flowmesh")
+@EnableScheduling
 public class WorkflowServiceApplication {
 
     /**

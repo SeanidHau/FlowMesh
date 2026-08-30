@@ -35,8 +35,17 @@ public class TenantRlsInitializer {
         if (principal == null) {
             return;
         }
+        initializeTenant(principal.tenantId());
+    }
+
+    /**
+     * 使用受信事件中的租户标识初始化当前事务。
+     *
+     * @param tenantId 事件信封中的租户标识
+     */
+    public void initializeTenant(String tenantId) {
         entityManager.createNativeQuery("SELECT set_config('app.tenant_id', :tenant, true)")
-            .setParameter("tenant", principal.tenantId())
+            .setParameter("tenant", tenantId)
             .getSingleResult();
     }
 

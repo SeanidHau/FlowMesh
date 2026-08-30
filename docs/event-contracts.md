@@ -12,6 +12,7 @@
 | Topic | Tag | 生产者 | 消费者 | 用途 |
 | --- | --- | --- | --- | --- |
 | `supplier-events` | `ApplicationSubmitted` | `supplier-service` | `workflow-service` | 触发流程启动 |
+| `workflow-events` | `WorkflowTaskCompleted` | `workflow-service` | `supplier-service` | 回写审批结果 |
 | `supplier-events` | `SupplierActivated` | `supplier-service` | `notification-audit-service` | 请求发送启用通知 |
 | `supplier-events` | `SupplementRequested` | `supplier-service` | `workflow-service` | 驱动补件分支 |
 | `risk-events` | `RiskCheckRequested` | `workflow-service` | `risk-service` | 请求风险校验 |
@@ -52,6 +53,10 @@
 当前 MVP 已落地 `ApplicationSubmitted`：supplier-service 在申请事务内写入 Outbox，
 发布器收到 RocketMQ 同步发送成功结果后标记 `published_at`，workflow-service 以
 `sourceEventId` 唯一约束实现重复消费幂等，并创建 `supplier-onboarding` 流程实例投影。
+
+审批完成后，workflow-service 在推进流程实例的同一事务内写入 `WorkflowTaskCompleted`
+Outbox；supplier-service 以事件 Inbox 去重、更新申请状态，完成运营节点后再写入
+`SupplierActivated` Outbox。
 
 1. 业务事务提交时，同时写入 Outbox 记录。
 2. Publisher 发送事件。只有收到 Broker ACK 后，才能标记 Outbox 已投递。

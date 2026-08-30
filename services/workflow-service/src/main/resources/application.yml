@@ -32,6 +32,9 @@ flowmesh:
   workflow:
     consumer:
       enabled: ${FLOWMESH_WORKFLOW_CONSUMER_ENABLED:false}
+    outbox:
+      enabled: ${FLOWMESH_WORKFLOW_OUTBOX_ENABLED:false}
+      publish-interval-ms: ${FLOWMESH_WORKFLOW_OUTBOX_PUBLISH_INTERVAL_MS:1000}
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}

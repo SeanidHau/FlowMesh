@@ -68,7 +68,9 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
         UUID applicationId = UUID.fromString(
             objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText()
         );
-        var event = outboxEventRepository.findByAggregateId(applicationId).orElseThrow();
+        var event = outboxEventRepository
+            .findByAggregateIdAndTag(applicationId, "ApplicationSubmitted")
+            .orElseThrow();
         assertThat(event.getTopic()).isEqualTo("supplier-events");
         assertThat(event.getTag()).isEqualTo("ApplicationSubmitted");
         assertThat(event.getPublishedAt()).isNull();

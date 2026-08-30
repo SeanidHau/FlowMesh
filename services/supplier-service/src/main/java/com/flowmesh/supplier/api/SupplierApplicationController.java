@@ -1,13 +1,16 @@
 package com.flowmesh.supplier.api;
 
 import com.flowmesh.common.security.AuthPrincipal;
+import com.flowmesh.supplier.api.dto.ApplicationResponse;
 import com.flowmesh.supplier.api.dto.CreateApplicationRequest;
 import com.flowmesh.supplier.application.SupplierApplicationService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
+import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -61,5 +64,20 @@ public class SupplierApplicationController {
             .status(result.status())
             .contentType(MediaType.APPLICATION_JSON)
             .body(result.body());
+    }
+
+    /**
+     * 查询当前租户下的供应商申请。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @return 申请当前状态
+     */
+    @GetMapping("/{applicationId}")
+    public ApplicationResponse find(
+        @AuthenticationPrincipal AuthPrincipal principal,
+        @PathVariable UUID applicationId
+    ) {
+        return applicationService.find(principal, applicationId);
     }
 }
