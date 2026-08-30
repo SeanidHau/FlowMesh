@@ -82,6 +82,32 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"taskKey\":\"LEGAL_REVIEW\"}"))
             .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/workflow-instances/{id}/tasks", applicationId)
+                .header("Authorization", "Bearer " + token("tenant-a", Set.of("LEGAL")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"taskKey\":\"LEGAL_REVIEW\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.currentTask").value("FINANCE_REVIEW"));
+
+        mockMvc.perform(post("/api/v1/workflow-instances/{id}/tasks", applicationId)
+                .header("Authorization", "Bearer " + token("tenant-a", Set.of("FINANCE")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"taskKey\":\"FINANCE_REVIEW\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.currentTask").value("OPERATIONS_ACTIVATION"));
+
+        mockMvc.perform(post("/api/v1/workflow-instances/{id}/tasks", applicationId)
+                .header("Authorization", "Bearer " + token("tenant-a", Set.of("OPERATIONS")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"taskKey\":\"OPERATIONS_ACTIVATION\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("COMPLETED"))
+            .andExpect(jsonPath("$.currentTask").doesNotExist());
+
+        assertThat(outboxRepository
+            .findAllByAggregateIdAndTag(applicationId, "WorkflowTaskCompleted"))
+            .hasSize(4);
     }
 
     private String token(String tenantId, Set<String> roles) {

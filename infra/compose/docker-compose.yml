@@ -24,11 +24,24 @@ services:
       - "9876:9876"
     command: sh mqnamesrv
 
+  rocketmq-volume-init:
+    image: apache/rocketmq:5.3.2
+    container_name: flowmesh-rocketmq-volume-init
+    user: "0:0"
+    volumes:
+      - rocketmq-store:/home/rocketmq/store
+      - rocketmq-logs:/home/rocketmq/logs
+    command: ["sh", "-c", "chown -R 3000:3000 /home/rocketmq/store /home/rocketmq/logs"]
+    restart: "no"
+
   rocketmq-broker:
     image: apache/rocketmq:5.3.2
     container_name: flowmesh-rocketmq-broker
     depends_on:
-      - rocketmq-namesrv
+      rocketmq-namesrv:
+        condition: service_started
+      rocketmq-volume-init:
+        condition: service_completed_successfully
     ports:
       - "10909:10909"
       - "10911:10911"
@@ -90,6 +103,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+      - /home/flowmesh/logs:uid=10001,gid=10001,mode=1770
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health || exit 1"]
       interval: 10s
@@ -120,6 +134,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+      - /home/flowmesh/logs:uid=10001,gid=10001,mode=1770
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health || exit 1"]
       interval: 10s

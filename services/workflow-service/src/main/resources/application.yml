@@ -38,6 +38,8 @@ flowmesh:
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:flowmesh-workflow-producer}
 
 management:
   endpoints:
