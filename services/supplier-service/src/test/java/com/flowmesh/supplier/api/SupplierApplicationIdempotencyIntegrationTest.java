@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.JwtService;
+import com.flowmesh.supplier.repository.OutboxEventRepository;
 import com.flowmesh.supplier.support.PostgresIntegrationTest;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +37,9 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
+
     private String applicantToken() {
         AuthPrincipal principal = new AuthPrincipal(
             UUID.randomUUID(), "applicant-a", "tenant-a", Set.of("APPLICANT")
@@ -50,7 +54,7 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
      */
     @Test
     void shouldCreateApplication() throws Exception {
-        mockMvc.perform(post("/api/v1/supplier-applications")
+        MvcResult result = mockMvc.perform(post("/api/v1/supplier-applications")
                 .header("Authorization", "Bearer " + applicantToken())
                 .header("Idempotency-Key", "create-key-1")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -58,7 +62,16 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("SUBMITTED"))
                 .andExpect(jsonPath("$.stateVersion").value(0))
-                .andExpect(jsonPath("$.id").exists());
+                .andExpect(jsonPath("$.id").exists())
+                .andReturn();
+
+        UUID applicationId = UUID.fromString(
+            objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText()
+        );
+        var event = outboxEventRepository.findByAggregateId(applicationId).orElseThrow();
+        assertThat(event.getTopic()).isEqualTo("supplier-events");
+        assertThat(event.getTag()).isEqualTo("ApplicationSubmitted");
+        assertThat(event.getPublishedAt()).isNull();
     }
 
     /**

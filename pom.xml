@@ -46,6 +46,9 @@
     <!-- 作用：后续 IAM 服务签发和校验 JWT 时使用。 -->
     <jjwt.version>0.12.6</jjwt.version>
 
+    <!-- 作用：统一 Apache RocketMQ Spring 集成版本。 -->
+    <rocketmq.spring.version>2.3.6</rocketmq.spring.version>
+
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
 
@@ -82,6 +85,13 @@
         <groupId>io.jsonwebtoken</groupId>
         <artifactId>jjwt-jackson</artifactId>
         <version>${jjwt.version}</version>
+      </dependency>
+
+      <!-- 作用：统一消息服务使用的 RocketMQ Spring Starter 版本。 -->
+      <dependency>
+        <groupId>org.apache.rocketmq</groupId>
+        <artifactId>rocketmq-spring-boot-starter</artifactId>
+        <version>${rocketmq.spring.version}</version>
       </dependency>
 
       <!--

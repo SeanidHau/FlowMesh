@@ -3,7 +3,6 @@ package com.flowmesh.supplier.api;
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.supplier.api.dto.CreateApplicationRequest;
 import com.flowmesh.supplier.application.SupplierApplicationService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -42,7 +41,7 @@ public class SupplierApplicationController {
      * @param principal 已认证主体
      * @param idempotencyKey 幂等键
      * @param request 创建请求
-     * @param request HTTP 请求对象（用于 traceId 透传）
+     * @param traceId 请求追踪标识
      * @return 首次响应或回放快照
      */
     @PostMapping
@@ -50,13 +49,13 @@ public class SupplierApplicationController {
         @AuthenticationPrincipal AuthPrincipal principal,
         @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
         @Valid @RequestBody CreateApplicationRequest request,
-        HttpServletRequest httpRequest
+        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
     ) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new MissingIdempotencyKeyException();
         }
 
-        var result = applicationService.create(principal, idempotencyKey, request);
+        var result = applicationService.create(principal, idempotencyKey, request, traceId);
 
         return ResponseEntity
             .status(result.status())

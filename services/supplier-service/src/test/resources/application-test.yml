@@ -1,4 +1,6 @@
 flowmesh:
+  outbox:
+    enabled: false
   security:
     jwt:
       issuer: flowmesh-test
@@ -7,6 +9,9 @@ flowmesh:
       refresh-token-ttl: P7D
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
   flyway:
     schemas: supplier
     create-schemas: true

@@ -29,6 +29,14 @@ flowmesh:
       signing-key: ${JWT_SIGNING_KEY:}
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
+  outbox:
+    enabled: ${FLOWMESH_OUTBOX_ENABLED:false}
+    publish-interval-ms: ${FLOWMESH_OUTBOX_PUBLISH_INTERVAL_MS:1000}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:flowmesh-supplier-producer}
 
 management:
   endpoints:
