@@ -2,6 +2,7 @@
   "name": "flowmesh-desktop",
   "version": "0.1.0",
   "private": true,
+  "author": "FlowMesh Contributors",
   "description": "FlowMesh supplier onboarding desktop console",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -40,7 +41,8 @@
     ],
     "mac": {
       "category": "public.app-category.business",
-      "target": "dmg"
+      "target": "dmg",
+      "identity": null
     },
     "win": {
       "target": "nsis"
