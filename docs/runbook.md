@@ -1,12 +1,65 @@
 # 运行手册
 
-> 本手册在业务服务、Compose 与 Helm 文件落地后补充具体命令。本文件先定义操作边界，避免未验证命令被当作可执行步骤。
+本手册用于本地 Compose 演示环境。生产部署需要替换默认凭据，并根据实际基础设施补充备份、
+网络和高可用配置。
 
 ## 前置条件
 
 - 本地运行使用 Docker Compose。
 - Kubernetes 演示使用 kind 和 Helm。
 - 真实凭据存储在 `.env`、Kubernetes Secret 或 GitHub Actions Secrets，不进入仓库。
+
+## 启动本地环境
+
+1. 复制环境变量示例并设置 `JWT_SIGNING_KEY`。
+
+   ```bash
+   cp .env.example .env
+   openssl rand -base64 32
+   # 将输出写入 .env 的 JWT_SIGNING_KEY
+   ```
+
+2. 构建并启动基础设施和 Java 服务。
+
+   ```bash
+   docker compose --env-file .env -f infra/compose/docker-compose.yml up -d --build
+   docker compose --env-file .env -f infra/compose/docker-compose.yml ps
+   ```
+
+3. 检查三个服务的健康状态。
+
+   ```bash
+   curl -fsS http://localhost:8081/actuator/health
+   curl -fsS http://localhost:8082/actuator/health
+   curl -fsS http://localhost:8083/actuator/health
+   ```
+
+4. 启动 Electron 工作台。
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者。桌面端默认访问宿主机的
+`8081`、`8082` 和 `8083` 端口。
+
+## 停止与数据卷
+
+停止容器但保留演示数据：
+
+```bash
+docker compose --env-file .env -f infra/compose/docker-compose.yml down
+```
+
+只有在确认不再需要本地数据时，才删除 PostgreSQL 和 RocketMQ 数据卷：
+
+```bash
+docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
+```
+
+删除数据卷不可逆。重新执行 `up` 后，PostgreSQL 才会再次执行初始化脚本。
 
 ## 日常检查
 
@@ -42,4 +95,5 @@
 
 ## 备份与恢复
 
-首版提供 PostgreSQL、MinIO 和关键配置的备份/恢复脚本，并进行一次本地恢复演练。RocketMQ 与 Camunda 为单副本演示环境，不承诺灾备能力。具体脚本与演练记录在实现阶段补充。
+当前 Compose 已提供 PostgreSQL 和 RocketMQ 的持久化卷；备份脚本、MinIO、Camunda 和 Kubernetes
+恢复演练仍属于后续交付项。RocketMQ 为单 Broker 演示环境，不承诺灾备能力。

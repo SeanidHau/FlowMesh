@@ -27,7 +27,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 
 ```text
 services/                    # Maven 后端服务模块
-frontend/                    # Vue 3 + TypeScript 最小任务中心
+frontend/                    # Electron + Vue 3 + TypeScript 桌面工作台
 infra/compose/               # Docker Compose 本地开发环境
 infra/helm/                  # kind 使用的 Helm Chart
 docs/                        # 架构、规范、ADR、运行手册
@@ -79,6 +79,27 @@ POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
 `OPERATIONS_ACTIVATION` 顺序推进，Token 中缺少对应角色时返回 `403`。
 
 根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
+
+## 启动完整本地环境
+
+在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ 和三个 Java 服务：
+
+```bash
+cp .env.example .env
+# 将 .env 中的 JWT_SIGNING_KEY 替换为 openssl rand -base64 32 的输出
+docker compose --env-file .env -f infra/compose/docker-compose.yml up -d --build
+```
+
+确认服务健康后，在另一个终端启动桌面端：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+首次启动 PostgreSQL 时会创建服务 Schema 和业务账号。需要重新执行初始化脚本时，先阅读
+[运行手册](docs/runbook.md)中的数据卷说明；不要在未确认数据用途的情况下删除 `pgdata`。
 
 ## 许可证
 

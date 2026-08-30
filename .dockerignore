@@ -1,0 +1,12 @@
+# 作用：缩小 Docker 构建上下文，避免将凭据、构建产物和本地工具文件复制到镜像。
+.git
+.gitignore
+.env
+.pi
+claude.md
+**/target
+**/node_modules
+**/dist
+**/release
+frontend/.vite
+README.md
