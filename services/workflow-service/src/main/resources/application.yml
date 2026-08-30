@@ -23,6 +23,12 @@ server:
   port: 8083
 
 flowmesh:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:flowmesh-local}
+      signing-key: ${JWT_SIGNING_KEY:}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
   workflow:
     consumer:
       enabled: ${FLOWMESH_WORKFLOW_CONSUMER_ENABLED:false}

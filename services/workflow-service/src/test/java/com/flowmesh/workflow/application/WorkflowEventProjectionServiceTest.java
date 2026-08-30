@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
+import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,9 @@ class WorkflowEventProjectionServiceTest {
 
     @Mock
     private WorkflowInstanceRepository repository;
+
+    @Mock
+    private TenantRlsInitializer tenantRlsInitializer;
 
     /**
      * 验证同一事件第二次到达时不会创建第二个流程实例。
@@ -41,7 +45,7 @@ class WorkflowEventProjectionServiceTest {
 
         when(repository.existsBySourceEventId(eventId)).thenReturn(false, true);
         WorkflowEventProjectionService service = new WorkflowEventProjectionService(
-            repository, new ObjectMapper()
+            repository, new ObjectMapper(), tenantRlsInitializer
         );
 
         service.project(message);

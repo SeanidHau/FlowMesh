@@ -19,6 +19,18 @@ Idempotency-Key: 3a0c3fb8-7d60-4c69-8b2b-8656c4a7d8ee
 
 服务端以 `tenantId + userId + Idempotency-Key` 建立唯一记录并持久化首次响应快照。重复请求返回首次响应，不得创建第二个申请或流程实例。
 
+## 审批流程
+
+workflow-service 提供以下最小审批接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/workflow-instances/{applicationId}` | 查询当前租户可见的流程实例 |
+| `POST` | `/api/v1/workflow-instances/{applicationId}/tasks` | 完成当前角色任务并推进流程 |
+
+任务请求体使用当前任务键，例如 `{"taskKey":"PURCHASER_REVIEW"}`。服务端从 JWT
+读取租户和角色；任务键不匹配当前节点返回 `409`，角色不足返回 `403`。
+
 ## 并发更新
 
 - 审批、状态转换和运维操作必须携带资源版本或命令 ID。

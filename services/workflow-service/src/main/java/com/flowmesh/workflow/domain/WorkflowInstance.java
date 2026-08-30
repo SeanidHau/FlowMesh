@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -44,6 +45,14 @@ public class WorkflowInstance {
     @Column(nullable = false, length = 32)
     private WorkflowInstanceStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "current_task", nullable = false, length = 64)
+    private WorkflowTask currentTask;
+
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -65,7 +74,8 @@ public class WorkflowInstance {
         this.sourceEventId = Objects.requireNonNull(sourceEventId);
         this.tenantId = Objects.requireNonNull(tenantId);
         this.processDefinitionKey = "supplier-onboarding";
-        this.status = WorkflowInstanceStatus.STARTED;
+        this.status = WorkflowInstanceStatus.IN_PROGRESS;
+        this.currentTask = WorkflowTask.PURCHASER_REVIEW;
     }
 
     /**
@@ -120,6 +130,37 @@ public class WorkflowInstance {
      */
     public WorkflowInstanceStatus getStatus() {
         return status;
+    }
+
+    /**
+     * 获取当前待处理节点。
+     *
+     * @return 当前审批节点；流程完成后为 {@code null}
+     */
+    public WorkflowTask getCurrentTask() {
+        return currentTask;
+    }
+
+    /**
+     * 获取乐观锁版本。
+     *
+     * @return 当前版本
+     */
+    public long getVersion() {
+        return version;
+    }
+
+    /**
+     * 完成当前审批节点并推进流程。
+     */
+    public void completeCurrentTask() {
+        WorkflowTask next = Objects.requireNonNull(currentTask).next();
+        if (next == null) {
+            status = WorkflowInstanceStatus.COMPLETED;
+            currentTask = null;
+            return;
+        }
+        currentTask = next;
     }
 
     /**

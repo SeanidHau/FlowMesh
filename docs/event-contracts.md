@@ -55,7 +55,7 @@
 
 1. 业务事务提交时，同时写入 Outbox 记录。
 2. Publisher 发送事件。只有收到 Broker ACK 后，才能标记 Outbox 已投递。
-3. 消费者使用 `eventId + handlerType` 建立幂等记录。业务更新、审计和新的 Outbox 记录必须在同一事务中提交。
+3. 消费者必须使用 `eventId + handlerType` 或等价的持久化唯一约束建立幂等记录。当前 workflow-service 以 `sourceEventId` 唯一约束实现 `ApplicationSubmitted` 投影幂等。业务更新、审计和新的 Outbox 记录必须在同一事务中提交。
 4. 风控技术失败按 1 分钟、5 分钟、15 分钟延迟重试。三次失败后进入 DLQ 并创建 `OPERATIONS` 任务。
 5. 人工重放必须记录 `originalEventId`、重放原因、操作者和结果。
 

@@ -1,6 +1,7 @@
 package com.flowmesh.workflow.repository;
 
 import com.flowmesh.workflow.domain.WorkflowInstance;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -16,4 +17,12 @@ public interface WorkflowInstanceRepository extends JpaRepository<WorkflowInstan
      * @return 已处理时为 {@code true}
      */
     boolean existsBySourceEventId(UUID sourceEventId);
+
+    /**
+     * 按申请标识查询流程实例。
+     *
+     * @param applicationId 申请标识
+     * @return 流程实例
+     */
+    Optional<WorkflowInstance> findByApplicationId(UUID applicationId);
 }

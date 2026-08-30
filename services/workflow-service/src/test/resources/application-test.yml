@@ -1,0 +1,25 @@
+flowmesh:
+  workflow:
+    consumer:
+      enabled: false
+  security:
+    jwt:
+      issuer: flowmesh-test
+      signing-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
+  flyway:
+    schemas: workflow
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: workflow
+  datasource:
+    hikari:
+      connection-init-sql: SET search_path TO workflow

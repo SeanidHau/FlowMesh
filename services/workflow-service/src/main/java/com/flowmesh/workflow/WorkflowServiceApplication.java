@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * <p>当前 MVP 消费 {@code ApplicationSubmitted} 事件并保存流程实例投影，
  * 后续再将投影推进到 Camunda 流程实例。</p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.flowmesh")
 public class WorkflowServiceApplication {
 
     /**
