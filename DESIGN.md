@@ -91,7 +91,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 - `supplier-service` 是申请、供应商状态与审批快照的业务权威。
 - Camunda 是节点、用户任务、定时器及流程推进的编排权威。
 - 两者用 `applicationId + processInstanceKey` 关联，并由每 5 分钟对账任务检测差异。
-- Vue 任务中心经 `workflow-service` 查询和完成 Camunda User Task；Tasklist 仅供运维与演示观察，不维护第二套待办状态。
+- Electron 桌面工作台经 `workflow-service` 查询和完成 Camunda User Task；Tasklist 仅供运维与演示观察，不维护第二套待办状态。
 
 ### 跨系统动作
 
@@ -190,7 +190,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 ```text
 Java 21 LTS · Spring Boot 3.x · Maven Wrapper
 Camunda 8 · Apache RocketMQ · PostgreSQL · Redis · MinIO
-Vue 3 · TypeScript · Vite
+Electron · Vue 3 · TypeScript · Vite
 Docker Compose · kind · Helm · GitHub Actions
 Prometheus · Grafana · OpenTelemetry · Loki
 ```

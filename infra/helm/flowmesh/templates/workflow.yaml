@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-workflow
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: workflow
+spec:
+  replicas: {{ .Values.services.workflow.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: workflow
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: workflow
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: workflow
+          image: "{{ .Values.services.workflow.image }}:{{ .Values.services.workflow.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.workflow.port }}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=workflow"
+            - name: WORKFLOW_DB_USER
+              value: {{ .Values.services.workflow.dbUser | quote }}
+            - name: WORKFLOW_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.fullname" . }}-config
+                  key: WORKFLOW_DB_PASSWORD
+            - name: JWT_ISSUER
+              value: {{ .Values.global.jwtIssuer | quote }}
+            - name: JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.fullname" . }}-config
+                  key: JWT_SIGNING_KEY
+            - name: ROCKETMQ_NAMESRV_ADDR
+              value: {{ .Values.rocketmq.namesrvAddr | quote }}
+            - name: FLOWMESH_WORKFLOW_CONSUMER_ENABLED
+              value: "true"
+            - name: FLOWMESH_WORKFLOW_OUTBOX_ENABLED
+              value: "true"
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.services.workflow.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-workflow
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: workflow
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: workflow
+  ports:
+    - name: http
+      port: {{ .Values.services.workflow.port }}
+      targetPort: http

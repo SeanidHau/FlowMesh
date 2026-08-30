@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-iam
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: iam
+spec:
+  replicas: {{ .Values.services.iam.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: iam
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: iam
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: iam
+          image: "{{ .Values.services.iam.image }}:{{ .Values.services.iam.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.iam.port }}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=iam"
+            - name: IAM_DB_USER
+              value: {{ .Values.services.iam.dbUser | quote }}
+            - name: IAM_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.fullname" . }}-config
+                  key: IAM_DB_PASSWORD
+            - name: JWT_ISSUER
+              value: {{ .Values.global.jwtIssuer | quote }}
+            - name: JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.fullname" . }}-config
+                  key: JWT_SIGNING_KEY
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.services.iam.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-iam
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: iam
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: iam
+  ports:
+    - name: http
+      port: {{ .Values.services.iam.port }}
+      targetPort: http

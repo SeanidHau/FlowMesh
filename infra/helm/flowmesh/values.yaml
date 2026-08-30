@@ -1,0 +1,40 @@
+# 作用：提供 kind 或其他 Kubernetes 集群的演示默认值。
+# 部署前必须覆盖 global.jwtSigningKey 和数据库密码。
+global:
+  imagePullPolicy: IfNotPresent
+  jwtIssuer: flowmesh-local
+  jwtSigningKey: replace-with-base64-encoded-random-secret
+
+postgresql:
+  host: postgres
+  port: 5432
+  database: flowmesh
+
+rocketmq:
+  namesrvAddr: rocketmq-namesrv:9876
+
+services:
+  iam:
+    image: flowmesh/iam-service
+    tag: 0.1.0
+    port: 8081
+    dbUser: flowmesh_iam
+    dbPassword: change-me-iam
+    replicas: 1
+    resources: {}
+  supplier:
+    image: flowmesh/supplier-service
+    tag: 0.1.0
+    port: 8082
+    dbUser: flowmesh_supplier
+    dbPassword: change-me-supplier
+    replicas: 1
+    resources: {}
+  workflow:
+    image: flowmesh/workflow-service
+    tag: 0.1.0
+    port: 8083
+    dbUser: flowmesh_workflow
+    dbPassword: change-me-workflow
+    replicas: 1
+    resources: {}
