@@ -38,7 +38,16 @@ const requiredRole = computed(() =>
   workflow.value?.currentTask ? taskRoles[workflow.value.currentTask] : '',
 );
 const canComplete = computed(() => Boolean(requiredRole.value && session.value?.roles.includes(requiredRole.value)));
-const hasApplication = computed(() => Boolean(applicationId.value));
+const pageTitle = computed(() => {
+  if (view.value === 'submit') return '新建申请';
+  if (view.value === 'approval') return '审批工作台';
+  return '概览';
+});
+const pageDescription = computed(() => {
+  if (view.value === 'submit') return '录入供应商基础信息，发起一条可追踪的准入流程。';
+  if (view.value === 'approval') return '按角色处理当前节点，系统会自动推进后续审批。';
+  return '查看当前申请、流程进度和最近的系统活动。';
+});
 
 const demoAccounts = [
   { username: 'applicant-a', role: 'APPLICANT', label: '申请人' },
@@ -89,7 +98,7 @@ async function createApplication(): Promise<void> {
     workflow.value = null;
     applicationForm.supplierName = '';
     view.value = 'overview';
-    noticeMessage.value = '申请已写入 Outbox，等待 workflow 投影';
+    noticeMessage.value = '申请已提交，正在等待审批流程创建';
   } catch (error) {
     showError(error);
   } finally {
@@ -120,6 +129,7 @@ async function loadState(): Promise<void> {
 
 async function completeCurrentTask(): Promise<void> {
   if (!workflow.value?.currentTask || !applicationId.value || !canComplete.value) return;
+  const completedTaskLabel = currentTaskLabel.value;
   errorMessage.value = '';
   isBusy.value = true;
   try {
@@ -127,7 +137,7 @@ async function completeCurrentTask(): Promise<void> {
     await refreshApplication();
     noticeMessage.value = workflow.value.status === 'COMPLETED'
       ? '审批链已完成，供应商已进入启用状态'
-      : `${currentTaskLabel.value} 已完成，流程继续推进`;
+      : `${completedTaskLabel} 已完成，流程继续推进`;
   } catch (error) {
     showError(error);
   } finally {
@@ -158,7 +168,7 @@ function showError(error: unknown): void {
 }
 
 function formatTime(value?: string): string {
-  if (!value) return '—';
+  if (!value) return '未记录';
   return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
@@ -170,27 +180,28 @@ onMounted(() => {
 <template>
   <main class="app-shell" :class="{ 'is-login': !isLoggedIn }">
     <section v-if="!isLoggedIn" class="login-layout">
-      <div class="login-hero">
-        <div class="brand-lockup">
+      <div class="login-brand-column">
+        <header class="brand-lockup">
           <span class="brand-mark">FM</span>
-          <span>FLOWMESH</span>
+          <span class="brand-copy"><strong>FlowMesh</strong><small>供应商准入工作台</small></span>
+        </header>
+        <div class="login-intro">
+          <span class="product-tag">供应商准入控制台</span>
+          <h1>把申请交给流程，<br /><em>把结果交给团队。</em></h1>
+          <p>统一管理供应商申请、角色审批与状态追踪，让每一次准入都能回溯。</p>
+          <div class="login-capabilities">
+            <div><strong>01</strong><span>统一身份</span><small>按租户和角色进入工作区</small></div>
+            <div><strong>02</strong><span>事件驱动</span><small>申请状态沿消息链路推进</small></div>
+            <div><strong>03</strong><span>全程留痕</span><small>每次审批都保留状态版本</small></div>
+          </div>
         </div>
-        <div class="hero-copy">
-          <p class="eyebrow">SUPPLIER ONBOARDING / CONTROL ROOM</p>
-          <h1>让每一次<br /><em>准入</em>都有迹可循。</h1>
-          <p class="hero-note">面向多租户采购团队的供应商准入与审批控制台。事件、权限和状态，保持在同一条线上。</p>
-        </div>
-        <div class="hero-footer">
-          <span class="signal-dot"></span>
-          <span>LOCAL CONTROL PLANE</span>
-          <span class="hero-version">v0.1 / DESKTOP</span>
-        </div>
+        <footer class="login-footer"><span class="status-indicator"></span><span>本地开发环境</span><span class="footer-divider"></span><span>IAM / Supplier / Workflow</span></footer>
       </div>
 
       <div class="login-panel">
-        <div class="panel-kicker">IDENTITY GATEWAY <span>01</span></div>
+        <div class="login-card-header"><span class="section-overline">登录</span><span class="environment-badge">LOCAL</span></div>
         <h2>进入工作台</h2>
-        <p class="muted">使用 IAM 服务签发的 Access Token 开始本地演示。</p>
+        <p class="muted">使用 IAM 服务签发的身份进入对应工作区。</p>
         <form class="login-form" @submit.prevent="login">
           <label>
             <span>租户</span>
@@ -208,14 +219,14 @@ onMounted(() => {
             <input v-model="loginForm.password" type="password" autocomplete="current-password" />
           </label>
           <button class="primary-button full-width" type="submit" :disabled="isBusy">
-            {{ isBusy ? '正在验证…' : '进入控制室' }} <span>↗</span>
+            <span>{{ isBusy ? '正在验证' : '进入工作台' }}</span><span class="button-arrow">→</span>
           </button>
         </form>
         <div class="demo-section">
-          <div class="section-label">演示身份 · 密码统一为 password123</div>
+          <div class="demo-heading"><strong>快速体验</strong><span>密码统一为 password123</span></div>
           <div class="demo-grid">
             <button v-for="account in demoAccounts" :key="account.username" class="demo-chip" type="button" @click="useDemoAccount(account.username)">
-              <span>{{ account.label }}</span><strong>{{ account.username }}</strong>
+              <span><strong>{{ account.label }}</strong><small>{{ account.role }}</small></span><span class="demo-arrow">→</span>
             </button>
           </div>
         </div>
@@ -225,79 +236,79 @@ onMounted(() => {
 
     <section v-else class="console-layout">
       <aside class="sidebar">
-        <div class="brand-lockup sidebar-brand"><span class="brand-mark">FM</span><span>FLOWMESH</span></div>
-        <div class="sidebar-rule"></div>
-        <div class="workspace-label">WORKSPACE <span>LOCAL</span></div>
+        <header class="brand-lockup sidebar-brand">
+          <span class="brand-mark">FM</span>
+          <span class="brand-copy"><strong>FlowMesh</strong><small>运营工作台</small></span>
+        </header>
+        <div class="tenant-card"><span>当前租户</span><strong>{{ session?.tenantId }}</strong><small>本地演示空间</small></div>
         <nav class="nav-list" aria-label="主导航">
           <button :class="{ active: view === 'overview' }" type="button" @click="view = 'overview'">
-            <span class="nav-index">01</span><span>控制台</span><span class="nav-arrow">↗</span>
+            <span class="nav-icon">01</span><span><strong>概览</strong><small>申请与服务状态</small></span><span class="nav-chevron">›</span>
           </button>
           <button :class="{ active: view === 'submit' }" type="button" @click="view = 'submit'">
-            <span class="nav-index">02</span><span>新建申请</span><span class="nav-arrow">↗</span>
+            <span class="nav-icon">02</span><span><strong>新建申请</strong><small>发起供应商准入</small></span><span class="nav-chevron">›</span>
           </button>
           <button :class="{ active: view === 'approval' }" type="button" @click="view = 'approval'">
-            <span class="nav-index">03</span><span>审批轨道</span><span class="nav-arrow">↗</span>
+            <span class="nav-icon">03</span><span><strong>审批工作台</strong><small>处理当前待办节点</small></span><span class="nav-chevron">›</span>
           </button>
         </nav>
         <div class="sidebar-bottom">
-          <div class="service-status"><span class="signal-dot"></span><span>API SERVICES</span><strong>READY</strong></div>
+          <div class="service-status"><span class="status-indicator"></span><div><strong>服务运行正常</strong><small>IAM / Supplier / Workflow</small></div><span class="service-ready">READY</span></div>
           <button class="user-card" type="button" @click="logout">
             <span class="avatar">{{ session?.username.slice(0, 2).toUpperCase() }}</span>
-            <span class="user-meta"><strong>{{ session?.username }}</strong><small>{{ session?.tenantId }}</small></span>
-            <span class="logout-icon">⇥</span>
+            <span class="user-meta"><strong>{{ session?.username }}</strong><small>{{ session?.roles.join(' / ') }}</small></span>
+            <span class="logout-label">退出</span>
           </button>
         </div>
       </aside>
 
       <div class="content-area">
         <header class="topbar">
-          <div><span class="live-badge"><i></i> LIVE SESSION</span><span class="topbar-separator">/</span><span class="topbar-context">{{ session?.roles.join(' · ') }}</span></div>
-          <div class="topbar-meta"><span>30 AUG 2026</span><span class="topbar-separator">·</span><span>SHANGHAI / CN</span></div>
+          <div class="breadcrumb"><span>FlowMesh</span><span>/</span><strong>{{ pageTitle }}</strong></div>
+          <div class="topbar-actions"><span class="connection-state"><span class="status-indicator"></span>服务已连接</span><span class="topbar-divider"></span><span class="session-label">{{ session?.username }}</span><button class="refresh-button" type="button" :disabled="isBusy" @click="loadState"><span class="refresh-icon">↻</span>刷新</button></div>
         </header>
 
         <div class="content-scroll">
           <div class="page-heading">
-            <div>
-              <p class="eyebrow">{{ view === 'approval' ? 'WORKFLOW / APPROVAL LANE' : view === 'submit' ? 'SUPPLIER / NEW INTAKE' : 'OPERATIONS / OVERVIEW' }}</p>
-              <h1>{{ view === 'approval' ? '审批轨道' : view === 'submit' ? '发起一份申请' : '早上好，' + session?.username }}</h1>
-            </div>
-            <button class="refresh-button" type="button" :disabled="isBusy" @click="loadState">↻ <span>刷新状态</span></button>
+            <div><span class="page-kicker">{{ view === 'approval' ? '审批流程' : view === 'submit' ? '供应商管理' : '工作区总览' }}</span><h1>{{ pageTitle }}</h1><p>{{ pageDescription }}</p></div>
+            <button v-if="view === 'overview'" class="primary-button heading-action" type="button" @click="view = 'submit'"><span>新建申请</span><span class="button-arrow">→</span></button>
           </div>
 
-          <p v-if="noticeMessage" class="notice-banner"><span>✦</span>{{ noticeMessage }}</p>
+          <p v-if="noticeMessage" class="notice-banner"><span class="notice-icon">✓</span>{{ noticeMessage }}</p>
           <p v-if="errorMessage" class="error-banner workspace-error">{{ errorMessage }}</p>
 
           <template v-if="view === 'overview'">
-            <div class="metric-row">
-              <article class="metric-card accent-card"><span class="metric-label">CURRENT APPLICATION</span><strong>{{ application ? application.status : '—' }}</strong><small>{{ application ? '申请状态' : '尚未选择申请' }}</small></article>
-              <article class="metric-card"><span class="metric-label">WORKFLOW PROGRESS</span><strong>{{ progress }}<sup>%</sup></strong><small>{{ workflow ? currentTaskLabel : '等待事件投影' }}</small></article>
-              <article class="metric-card"><span class="metric-label">STATE VERSION</span><strong>{{ application?.stateVersion ?? '—' }}</strong><small>持久化乐观锁</small></article>
-            </div>
+            <section class="metric-row" aria-label="申请摘要">
+              <article class="metric-card metric-primary"><span class="metric-label">当前申请</span><strong>{{ application ? application.status : '未选择' }}</strong><small>{{ application ? application.supplierName : '创建申请后在此查看' }}</small></article>
+              <article class="metric-card"><span class="metric-label">流程进度</span><strong>{{ progress }}<sup>%</sup></strong><small>{{ workflow ? currentTaskLabel : '等待事件投影' }}</small></article>
+              <article class="metric-card"><span class="metric-label">状态版本</span><strong>{{ application?.stateVersion ?? '未记录' }}</strong><small>用于并发更新控制</small></article>
+            </section>
+
             <div class="workspace-grid">
               <article class="surface application-surface">
-                <div class="surface-heading"><div><span class="panel-kicker">SELECTED CASE <span>↘</span></span><h2>申请详情</h2></div><span v-if="application" class="status-pill">{{ application.status }}</span></div>
-                <div class="application-empty" v-if="!application">
-                  <div class="empty-mark">＋</div><h3>还没有正在处理的申请</h3><p>创建一份供应商申请，观察它如何穿过 Outbox 和审批轨道。</p><button class="primary-button" type="button" @click="view = 'submit'">创建第一份申请 <span>↗</span></button>
+                <div class="surface-heading"><div><span class="section-overline">当前申请</span><h2>申请详情</h2></div><span v-if="application" class="status-pill" :class="`status-${application.status.toLowerCase()}`">{{ application.status }}</span></div>
+                <div v-if="!application" class="application-empty">
+                  <div class="empty-icon">＋</div><h3>还没有正在处理的申请</h3><p>创建一份供应商申请，系统会自动生成流程实例并进入审批队列。</p><button class="secondary-button" type="button" @click="view = 'submit'">创建第一份申请 <span>→</span></button>
                 </div>
                 <div v-else class="application-detail">
-                  <div class="id-line"><span>APPLICATION ID</span><code>{{ application.id }}</code></div>
+                  <div class="id-line"><span>申请编号</span><code>{{ application.id }}</code></div>
                   <div class="detail-title"><span class="supplier-avatar">{{ application.supplierName.slice(0, 1) }}</span><div><h3>{{ application.supplierName }}</h3><p>供应商准入申请</p></div></div>
-                  <div class="detail-grid"><div><span>当前状态</span><strong>{{ application.status }}</strong></div><div><span>流程实例</span><strong>{{ workflow ? '已投影' : '等待投影' }}</strong></div><div><span>状态版本</span><strong>v{{ application.stateVersion }}</strong></div></div>
-                  <button class="text-button" type="button" @click="view = 'approval'">打开审批轨道 <span>→</span></button>
+                  <div class="detail-grid"><div><span>当前状态</span><strong>{{ application.status }}</strong></div><div><span>流程实例</span><strong>{{ workflow ? '已创建' : '等待创建' }}</strong></div><div><span>状态版本</span><strong>v{{ application.stateVersion }}</strong></div></div>
+                  <button class="text-button" type="button" @click="view = 'approval'">查看审批进度 <span>→</span></button>
                 </div>
               </article>
-              <article class="surface event-surface"><div class="surface-heading"><div><span class="panel-kicker">EVENT STREAM <span>03</span></span><h2>最近动作</h2></div><span class="stream-live"><i></i> CONNECTED</span></div><div class="event-list"><div class="event-item"><span class="event-dot lime"></span><div><strong>桌面会话已建立</strong><small>Access Token · {{ session?.tenantId }}</small></div><time>NOW</time></div><div class="event-item"><span class="event-dot cyan"></span><div><strong>跨服务 API 已就绪</strong><small>IAM / SUPPLIER / WORKFLOW</small></div><time>READY</time></div><div class="event-item muted-event"><span class="event-dot"></span><div><strong>等待下一条业务事件</strong><small>RocketMQ consumer 状态由服务端决定</small></div><time>—</time></div></div></article>
+              <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">系统状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已连接</span></div><div class="event-list"><div class="event-item"><span class="event-state success"></span><div><strong>会话已建立</strong><small>已通过 IAM 完成身份验证</small></div><time>刚刚</time></div><div class="event-item"><span class="event-state info"></span><div><strong>服务已就绪</strong><small>IAM / Supplier / Workflow</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待业务事件</strong><small>新申请提交后将显示在这里</small></div><time>等待</time></div></div></article>
             </div>
-            <div class="application-selector"><label><span>已有申请 ID</span><input v-model="applicationId" placeholder="粘贴 UUID 后回车载入" @keyup.enter="selectApplication" /></label><button class="secondary-button" type="button" @click="selectApplication">载入申请</button></div>
+            <div class="application-selector"><label><span>载入已有申请</span><input v-model="applicationId" placeholder="粘贴申请 UUID 后回车" @keyup.enter="selectApplication" /></label><button class="secondary-button" type="button" @click="selectApplication">载入申请</button></div>
           </template>
 
           <template v-else-if="view === 'submit'">
-            <div class="form-layout"><article class="surface form-surface"><div class="surface-heading"><div><span class="panel-kicker">INTAKE FORM <span>02</span></span><h2>供应商基本信息</h2></div><span class="form-step">01 / 01</span></div><form @submit.prevent="createApplication"><label class="large-label"><span>供应商名称</span><input v-model="applicationForm.supplierName" autofocus placeholder="例如：北岸精密制造有限公司" required /><small>此字段会作为 ApplicationSubmitted 事件的聚合数据写入 Outbox。</small></label><div class="form-actions"><button class="secondary-button" type="button" @click="view = 'overview'">取消</button><button class="primary-button" type="submit" :disabled="isBusy || !applicationForm.supplierName.trim()">{{ isBusy ? '正在提交…' : '提交准入申请' }} <span>↗</span></button></div></form></article><aside class="form-aside"><span class="aside-number">01</span><h3>一次提交，<br /><em>全程可见。</em></h3><p>申请在 supplier-service 中落库，同时生成持久化幂等记录和 RocketMQ Outbox 事件。</p><div class="aside-line"></div><span class="aside-caption">IDEMPOTENCY / OUTBOX / RLS</span></aside></div>
+            <div class="form-layout"><article class="surface form-surface"><div class="surface-heading"><div><span class="section-overline">申请信息</span><h2>供应商基本信息</h2></div><span class="step-badge">开始</span></div><form @submit.prevent="createApplication"><label class="large-label"><span>供应商名称</span><input v-model="applicationForm.supplierName" autofocus placeholder="例如：北岸精密制造有限公司" required /><small>提交后会创建申请记录，并发送 ApplicationSubmitted 事件。</small></label><div class="form-actions"><button class="secondary-button" type="button" @click="view = 'overview'">取消</button><button class="primary-button" type="submit" :disabled="isBusy || !applicationForm.supplierName.trim()"><span>{{ isBusy ? '正在提交' : '提交准入申请' }}</span><span class="button-arrow">→</span></button></div></form></article><aside class="journey-panel"><span class="journey-kicker">提交后</span><h3>从申请到启用，<br /><em>每一步都有记录。</em></h3><ul class="journey-list"><li><span>01</span><div><strong>保存申请</strong><small>写入 supplier-service</small></div></li><li><span>02</span><div><strong>创建流程</strong><small>由 RocketMQ 触发投影</small></div></li><li><span>03</span><div><strong>角色审批</strong><small>按节点权限顺序推进</small></div></li></ul></aside></div>
           </template>
 
           <template v-else>
-            <div class="approval-header"><div class="case-chip"><span class="supplier-avatar">{{ application?.supplierName?.slice(0, 1) ?? '?' }}</span><div><span>SELECTED CASE</span><strong>{{ application?.supplierName ?? '未选择申请' }}</strong></div></div><div class="progress-block"><div><span>链路完成度</span><strong>{{ progress }}%</strong></div><div class="progress-track"><span :style="{ width: `${progress}%` }"></span></div></div></div>
-            <div class="approval-layout"><article class="surface lane-surface"><div class="surface-heading"><div><span class="panel-kicker">APPROVAL LANE <span>LIVE</span></span><h2>供应商准入轨道</h2></div><span class="workflow-id">{{ workflow?.id ? workflow.id.slice(0, 8) : 'NO INSTANCE' }}</span></div><div v-if="!workflow" class="workflow-empty"><div class="empty-mark">⌁</div><h3>流程实例尚未到达</h3><p>提交事件后，workflow-service 会通过 RocketMQ 创建流程投影。稍等片刻再刷新。</p><button class="secondary-button" type="button" @click="loadState">重新检查</button></div><div v-else class="lane"><div v-for="(task, index) in taskOrder" :key="task" class="lane-step" :class="{ current: workflow.currentTask === task, done: index < currentTaskIndex, last: index === taskOrder.length - 1 }"><div class="lane-rail"><span class="lane-node">{{ index < currentTaskIndex ? '✓' : String(index + 1).padStart(2, '0') }}</span></div><div class="lane-copy"><div class="lane-topline"><span>{{ taskLabels[task] }}</span><small>{{ taskRoles[task] }}</small></div><strong>{{ index < currentTaskIndex ? '已完成' : workflow.currentTask === task ? '等待当前角色处理' : '排队中' }}</strong><p v-if="workflow.currentTask === task">需要 {{ taskRoles[task] }} 角色完成该节点</p></div><span v-if="workflow.currentTask === task" class="current-tag">CURRENT</span></div></div></article><aside class="surface action-surface"><span class="panel-kicker">TASK ACTION <span>↗</span></span><h2>{{ currentTaskLabel }}</h2><p v-if="workflow?.currentTask">当前会话角色为 <strong>{{ session?.roles.join(' / ') }}</strong>，此节点要求 <strong>{{ requiredRole }}</strong>。</p><p v-else>流程完成后，供应商申请会进入最终启用状态。</p><button v-if="workflow?.currentTask" class="primary-button full-width" type="button" :disabled="isBusy || !canComplete" @click="completeCurrentTask">{{ canComplete ? `完成${currentTaskLabel}` : '当前角色不可操作' }} <span>↗</span></button><div v-if="workflow?.status === 'COMPLETED'" class="completed-stamp">✓ ENABLED<span>审批链已完成</span></div><div class="action-meta"><div><span>流程状态</span><strong>{{ workflow?.status ?? 'NOT_STARTED' }}</strong></div><div><span>版本</span><strong>v{{ workflow?.version ?? '—' }}</strong></div><div><span>创建时间</span><strong>{{ formatTime(workflow?.createdAt) }}</strong></div></div></aside></div>
+            <section class="approval-summary"><div class="case-summary"><span class="supplier-avatar">{{ application?.supplierName?.slice(0, 1) ?? '?' }}</span><div><span>当前申请</span><strong>{{ application?.supplierName ?? '未选择申请' }}</strong><small>{{ application?.id ?? '请先从概览载入申请' }}</small></div></div><div class="summary-status"><span>申请状态</span><strong>{{ application?.status ?? '未开始' }}</strong></div><div class="progress-block"><div><span>流程完成度</span><strong>{{ progress }}%</strong></div><div class="progress-track"><span :style="{ width: `${progress}%` }"></span></div></div></section>
+            <div class="approval-layout"><article class="surface lane-surface"><div class="surface-heading"><div><span class="section-overline">审批流程</span><h2>供应商准入轨道</h2></div><span class="workflow-id">{{ workflow?.id ? workflow.id.slice(0, 8) : '未创建' }}</span></div><div v-if="!workflow" class="workflow-empty"><div class="empty-icon">⌁</div><h3>流程实例尚未创建</h3><p>提交事件后，workflow-service 会通过 RocketMQ 创建流程投影。稍等片刻再刷新。</p><button class="secondary-button" type="button" @click="loadState">重新检查</button></div><div v-else class="lane"><div v-for="(task, index) in taskOrder" :key="task" class="lane-step" :class="{ current: workflow.currentTask === task, done: index < currentTaskIndex, last: index === taskOrder.length - 1 }"><div class="lane-rail"><span class="lane-node">{{ index < currentTaskIndex ? '✓' : String(index + 1).padStart(2, '0') }}</span></div><div class="lane-copy"><div class="lane-topline"><strong>{{ taskLabels[task] }}</strong><span>{{ taskRoles[task] }}</span></div><p>{{ index < currentTaskIndex ? '节点已完成' : workflow.currentTask === task ? '等待当前角色处理' : '等待前置节点完成' }}</p></div><span v-if="workflow.currentTask === task" class="current-tag">当前待办</span></div></div></article><aside class="surface action-surface"><span class="section-overline">下一步操作</span><h2>{{ currentTaskLabel }}</h2><p v-if="workflow?.currentTask">当前会话角色为 <strong>{{ session?.roles.join(' / ') }}</strong>，此节点需要 <strong>{{ requiredRole }}</strong> 角色。</p><p v-else>流程完成后，供应商申请会进入最终启用状态。</p><div v-if="workflow?.currentTask" class="action-decision" :class="{ allowed: canComplete }"><span class="decision-icon">{{ canComplete ? '✓' : '!' }}</span><div><strong>{{ canComplete ? '你可以处理此节点' : '等待对应角色' }}</strong><small>{{ canComplete ? '确认信息后提交审批结果' : `需要 ${requiredRole} 角色登录` }}</small></div></div><button v-if="workflow?.currentTask" class="primary-button full-width" type="button" :disabled="isBusy || !canComplete" @click="completeCurrentTask"><span>{{ canComplete ? `完成${currentTaskLabel}` : '当前角色不可操作' }}</span><span class="button-arrow">→</span></button><div v-if="workflow?.status === 'COMPLETED'" class="completed-stamp"><span>✓</span><strong>供应商已启用</strong><small>审批链已完成</small></div><div class="action-meta"><div><span>流程状态</span><strong>{{ workflow?.status ?? '未开始' }}</strong></div><div><span>流程版本</span><strong>v{{ workflow?.version ?? '未记录' }}</strong></div><div><span>创建时间</span><strong>{{ formatTime(workflow?.createdAt) }}</strong></div></div></aside></div>
           </template>
         </div>
       </div>
