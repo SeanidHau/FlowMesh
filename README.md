@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。项目以 Java 21、Spring Boot、Camunda 8 和 Apache RocketMQ 为核心，验证长流程编排、可靠消息、失败恢复、审计追踪和 Kubernetes 部署能力。
 
-项目当前处于开发准备阶段。总体设计见 [DESIGN.md](DESIGN.md)。
+当前已完成 MVP-1：IAM 登录/刷新/登出、JWT 跨服务校验、供应商申请创建、持久化幂等和 PostgreSQL RLS 隔离。RocketMQ 事件链和流程编排将在下一阶段接入。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 项目目标
 
@@ -23,7 +23,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | [测试策略](docs/testing-strategy.md) | 单元、集成、契约、E2E 和压测范围 |
 | [运行手册](docs/runbook.md) | 启停、排障、DLQ 重放、对账和恢复步骤 |
 
-## 计划中的目录
+## 目录
 
 ```text
 services/                    # Maven 后端服务模块
@@ -38,8 +38,7 @@ scripts/                     # 初始化、验证、备份和恢复脚本
 
 ## 开发约定
 
-- 业务代码由开发者手动写入；除非明确授权，否则协作者只提供代码建议，不直接编辑业务代码。
-- 测试代码、说明文档和工程配置可以由协作者直接维护。
+- 业务代码按阶段实现、审查和验证；测试代码、说明文档和工程配置与业务代码一起维护。
 - 每个阶段完成后执行验证、创建 Git 提交，并推送到远程仓库。
 - 真实密钥、密码、Token、`.env` 和构建产物不得提交。
 
@@ -48,8 +47,16 @@ scripts/                     # 初始化、验证、备份和恢复脚本
 项目统一使用 Maven Wrapper，避免团队成员的 Maven 版本不一致。请在 IDEA 和终端中选择 Java 21，然后在仓库根目录执行：
 
 ```bash
+cp .env.example .env
+openssl rand -base64 32
+# 将生成的值写入 .env 的 JWT_SIGNING_KEY
+docker compose --env-file .env -f infra/compose/docker-compose.yml up -d postgres
 ./mvnw test
 ```
+
+IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 导入根目录 `pom.xml`。
+运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `IamServiceApplication`
+或 `SupplierServiceApplication`。IAM 默认端口为 8081，supplier 默认端口为 8082。
 
 根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
 

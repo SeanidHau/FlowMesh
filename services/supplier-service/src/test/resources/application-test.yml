@@ -1,0 +1,19 @@
+flowmesh:
+  security:
+    jwt:
+      issuer: flowmesh-test
+      signing-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+
+spring:
+  flyway:
+    schemas: supplier
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: supplier
+  datasource:
+    hikari:
+      connection-init-sql: SET search_path TO supplier

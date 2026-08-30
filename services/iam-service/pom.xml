@@ -59,6 +59,12 @@
       <artifactId>flyway-core</artifactId>
     </dependency>
 
+    <!-- 作用：Flyway 10+ 将 PostgreSQL 支持拆为独立工件，需显式引入。 -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
     <!-- 作用：生产环境 PostgreSQL JDBC 驱动。 -->
     <dependency>
       <groupId>org.postgresql</groupId>
@@ -66,37 +72,10 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- 作用：本地和测试阶段快速启动 IAM 服务。后续集成 PostgreSQL 后可移除。 -->
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <!-- 作用：引用跨服务共享的安全上下文和技术契约。 -->
+    <!-- 作用：引用跨服务共享的安全上下文、JWT 基础设施和错误模型。 -->
     <dependency>
       <groupId>com.flowmesh</groupId>
       <artifactId>flowmesh-common</artifactId>
-    </dependency>
-
-    <!-- 作用：JWT 签发与解析 API。 -->
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-api</artifactId>
-    </dependency>
-
-    <!-- 作用：JWT 运行时实现。 -->
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-impl</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <!-- 作用：JWT Payload 的 Jackson JSON 编解码。 -->
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-jackson</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <!-- 作用：JUnit、Mockito、Spring Boot 测试基础设施。 -->
@@ -110,6 +89,25 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- 作用：集成测试使用 Testcontainers 真实 PostgreSQL，验证 Flyway 迁移、RLS 和种子数据。 -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

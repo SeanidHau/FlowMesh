@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: flowmesh-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-flowmesh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-flowmesh}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowmesh} -d ${POSTGRES_DB:-flowmesh}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

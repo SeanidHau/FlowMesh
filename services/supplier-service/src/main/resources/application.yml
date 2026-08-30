@@ -1,0 +1,41 @@
+# 作用：supplier 服务的本地开发配置。
+# 数据源指向 Docker Compose PostgreSQL，使用 flowmesh_supplier 业务账号。
+
+spring:
+  application:
+    name: supplier-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier
+    username: ${SUPPLIER_DB_USER:flowmesh_supplier}
+    password: ${SUPPLIER_DB_PASSWORD:change-me-supplier}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    fail-on-missing-locations: false
+
+server:
+  port: 8082
+
+flowmesh:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:flowmesh-local}
+      signing-key: ${JWT_SIGNING_KEY:}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

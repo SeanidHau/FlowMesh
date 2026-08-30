@@ -1,4 +1,4 @@
-package com.flowmesh.iam.config;
+package com.flowmesh.common.security;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,9 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 承载 IAM 服务签发和校验 JWT 所需的安全配置。
+ * 承载 JWT 签发和校验所需的安全配置。
  *
- * <p>签名密钥通过环境变量注入，且必须是至少 32 字节随机数据的 Base64 编码值。</p>
+ * <p>该配置由 iam-service 和 supplier-service 共用。签名密钥通过环境变量注入，
+ * 且必须是至少 32 字节随机数据的 Base64 编码值。</p>
  */
 @Validated
 @ConfigurationProperties(prefix = "flowmesh.security.jwt")

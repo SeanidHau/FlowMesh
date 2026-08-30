@@ -36,6 +36,7 @@
   <modules>
     <module>services/flowmesh-common</module>
     <module>services/iam-service</module>
+    <module>services/supplier-service</module>
   </modules>
 
   <properties>
@@ -82,6 +83,11 @@
         <artifactId>jjwt-jackson</artifactId>
         <version>${jjwt.version}</version>
       </dependency>
+
+      <!--
+        作用：Testcontainers 版本由 Spring Boot BOM 统一管理，
+        各服务直接声明 testcontainers 依赖即可，无需在此导入 BOM。
+      -->
     </dependencies>
   </dependencyManagement>
 

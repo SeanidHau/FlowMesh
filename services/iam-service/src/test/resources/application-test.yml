@@ -5,3 +5,15 @@ flowmesh:
       signing-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
+
+spring:
+  flyway:
+    schemas: iam
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: iam
+  datasource:
+    hikari:
+      connection-init-sql: SET search_path TO iam

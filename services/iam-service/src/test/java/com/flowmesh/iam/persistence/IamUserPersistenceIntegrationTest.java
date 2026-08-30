@@ -13,21 +13,18 @@ import com.flowmesh.iam.repository.IamUserRepository;
 import com.flowmesh.iam.repository.RefreshTokenRepository;
 import com.flowmesh.iam.repository.TenantRepository;
 import com.flowmesh.iam.repository.UserRoleRepository;
+import com.flowmesh.iam.support.PostgresIntegrationTest;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 验证租户、用户实体和派生查询与 IAM 数据库结构能够协同工作。
  */
-@SpringBootTest
 @Transactional
-@ActiveProfiles("test")
-class IamUserPersistenceIntegrationTest {
+class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
 
     /** 租户持久化访问。 */
     @Autowired

@@ -1,10 +1,8 @@
-package com.flowmesh.iam.application.token;
+package com.flowmesh.common.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.flowmesh.common.security.AuthPrincipal;
-import com.flowmesh.iam.config.JwtProperties;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import java.time.Duration;

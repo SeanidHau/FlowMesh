@@ -1,0 +1,89 @@
+package com.flowmesh.supplier.api;
+
+import com.flowmesh.common.api.ErrorResponse;
+import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
+
+/**
+ * supplier 服务全局异常处理，统一映射为 {@link ErrorResponse}。
+ */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+        MethodArgumentNotValidException exception,
+        HttpServletRequest request
+    ) {
+        List<String> details = exception.getBindingResult().getFieldErrors().stream()
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
+            .toList();
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(
+                "VALIDATION_ERROR",
+                "请求参数校验失败。",
+                traceId(request),
+                details
+            ));
+    }
+
+    @ExceptionHandler(MissingIdempotencyKeyException.class)
+    public ResponseEntity<ErrorResponse> handleMissingIdempotencyKey(
+        MissingIdempotencyKeyException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.of(
+                "MISSING_IDEMPOTENCY_KEY",
+                "Idempotency-Key 请求头缺失。",
+                traceId(request)
+            ));
+    }
+
+    @ExceptionHandler(IdempotencyKeyConflictException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyConflict(
+        IdempotencyKeyConflictException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(ErrorResponse.of(
+                "IDEMPOTENCY_KEY_CONFLICT",
+                "Idempotency-Key 已用于不同的请求体。",
+                traceId(request)
+            ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        log.error("未预期异常", exception);
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ErrorResponse.of(
+                "INTERNAL_ERROR",
+                "服务内部错误。",
+                traceId(request)
+            ));
+    }
+
+    private static String traceId(HttpServletRequest request) {
+        String traceId = request.getHeader("X-Trace-Id");
+        return traceId != null ? traceId : "";
+    }
+}

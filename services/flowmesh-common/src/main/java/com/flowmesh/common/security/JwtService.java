@@ -1,7 +1,5 @@
-package com.flowmesh.iam.application.token;
+package com.flowmesh.common.security;
 
-import com.flowmesh.common.security.AuthPrincipal;
-import com.flowmesh.iam.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -14,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 签发并校验 IAM Access Token。
+ * 签发并校验 Access Token。
  *
  * <p>JWT 仅携带已认证用户的标识、用户名、可信租户和角色声明。Refresh Token 不使用该类签发，
  * 而是作为随机值以哈希形式持久化。</p>
@@ -69,6 +67,9 @@ public class JwtService {
 
     /**
      * 校验 Access Token 签名、签发方和有效期，并还原可信请求主体。
+     *
+     * <p>解析失败（签名错误、过期、缺 claim 等）时抛出异常，
+     * 由 {@link JwtAuthenticationFilter} 捕获并统一转为 401。</p>
      *
      * @param token 客户端提交的紧凑序列化 JWT
      * @return 经签名验证后的请求主体

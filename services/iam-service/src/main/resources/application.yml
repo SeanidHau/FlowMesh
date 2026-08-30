@@ -1,15 +1,15 @@
 # 作用：IAM 服务的本地开发配置。
-# 当前使用内存 H2；接入 Docker Compose PostgreSQL 后再替换为对应 Profile。
+# 数据源指向 Docker Compose PostgreSQL，使用 flowmesh_iam 业务账号。
 
 spring:
   application:
     name: iam-service
 
   datasource:
-    url: jdbc:h2:mem:flowmesh_iam;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=iam
+    username: ${IAM_DB_USER:flowmesh_iam}
+    password: ${IAM_DB_PASSWORD:change-me-iam}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -19,8 +19,7 @@ spring:
     open-in-view: false
 
   flyway:
-    # 作用：允许服务骨架在尚未创建 Migration 文件时启动。
-    # 新增首个 V1 Migration 后，Flyway 会自动执行它。
+    # 作用：Flyway 使用 flowmesh_iam 账号在 iam schema 上执行迁移。
     fail-on-missing-locations: false
 
 server:

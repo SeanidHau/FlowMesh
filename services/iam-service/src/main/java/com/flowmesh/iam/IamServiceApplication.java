@@ -7,9 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * FlowMesh IAM 服务的 Spring Boot 启动入口。
  *
  * <p>IAM 服务负责用户身份、角色、租户归属，以及 Access Token 和 Refresh Token
- * 的生命周期。当前阶段只建立可启动的服务骨架，不包含登录业务实现。</p>
+ * 的生命周期。</p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.flowmesh")
 public class IamServiceApplication {
 
     /**
