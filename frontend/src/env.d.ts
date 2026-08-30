@@ -13,7 +13,7 @@ interface FlowMeshApiResponse {
 }
 
 interface Window {
-  flowmesh: {
+  flowmesh?: {
     request(request: FlowMeshApiRequest): Promise<FlowMeshApiResponse>;
   };
 }

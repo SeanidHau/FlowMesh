@@ -113,7 +113,23 @@ export class FlowMeshApi {
       body: options.body,
       headers: options.headers,
     };
-    const response = await window.flowmesh.request(request);
+    const response = window.flowmesh
+      ? await window.flowmesh.request(request)
+      : await fetch(`/api/${service}${path}`, {
+        method: options.method ?? 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(options.authenticated && this.session?.accessToken
+            ? { Authorization: `Bearer ${this.session.accessToken}` }
+            : {}),
+          ...(options.headers ?? {}),
+          ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      }).then(async (browserResponse) => ({
+        status: browserResponse.status,
+        body: await browserResponse.text(),
+      }));
     let body: Record<string, unknown> = {};
     if (response.body) {
       try {

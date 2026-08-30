@@ -18,6 +18,24 @@ npm install
 npm run dev
 ```
 
+只使用浏览器预览和联调时执行：
+
+```bash
+npm run dev:web
+```
+
+然后访问 `http://127.0.0.1:5173`。Web 模式通过 Vite 代理访问三个后端服务，
+因此不需要启动 Electron，也不会产生跨域请求。先按根目录文档启动后端服务即可。
+
+生产构建后的浏览器预览：
+
+```bash
+npm run build:renderer
+npm run preview
+```
+
+然后访问 `http://127.0.0.1:4173`。
+
 开发模式默认访问以下后端地址：
 
 | 服务 | 地址 |
