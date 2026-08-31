@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.iam.repository.IamUserRepository">
+  <resultMap id="iamUserResult" type="com.flowmesh.iam.domain.user.IamUser">
+    <id property="id" column="user_id" />
+    <result property="username" column="username" />
+    <result property="passwordHash" column="password_hash" />
+    <result property="displayName" column="display_name" />
+    <result property="status" column="user_status" />
+    <result property="lastLoginAt" column="last_login_at" />
+    <result property="version" column="user_version" />
+    <result property="createdAt" column="user_created_at" />
+    <result property="updatedAt" column="user_updated_at" />
+    <association property="tenant" javaType="com.flowmesh.iam.domain.tenant.Tenant">
+      <id property="id" column="tenant_id" />
+      <result property="name" column="tenant_name" />
+      <result property="status" column="tenant_status" />
+      <result property="createdAt" column="tenant_created_at" />
+      <result property="updatedAt" column="tenant_updated_at" />
+    </association>
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.iam.domain.user.IamUser">
+    INSERT INTO iam_users
+      (id, tenant_id, username, password_hash, display_name, status, last_login_at,
+       version, created_at, updated_at)
+    VALUES (#{id}, #{tenant.id}, #{username}, #{passwordHash}, #{displayName}, #{status},
+            #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt})
+  </insert>
+
+  <select id="findByTenant_IdAndUsername" resultMap="iamUserResult">
+    SELECT u.id AS user_id, u.username, u.password_hash, u.display_name,
+           u.status AS user_status, u.last_login_at, u.version AS user_version,
+           u.created_at AS user_created_at, u.updated_at AS user_updated_at,
+           t.id AS tenant_id, t.name AS tenant_name, t.status AS tenant_status,
+           t.created_at AS tenant_created_at, t.updated_at AS tenant_updated_at
+    FROM iam_users u
+    JOIN tenants t ON t.id = u.tenant_id
+    WHERE u.tenant_id = #{tenantId} AND u.username = #{username}
+  </select>
+
+  <select id="findById" resultMap="iamUserResult">
+    SELECT u.id AS user_id, u.username, u.password_hash, u.display_name,
+           u.status AS user_status, u.last_login_at, u.version AS user_version,
+           u.created_at AS user_created_at, u.updated_at AS user_updated_at,
+           t.id AS tenant_id, t.name AS tenant_name, t.status AS tenant_status,
+           t.created_at AS tenant_created_at, t.updated_at AS tenant_updated_at
+    FROM iam_users u
+    JOIN tenants t ON t.id = u.tenant_id
+    WHERE u.id = #{id}
+  </select>
+
+  <select id="existsByTenant_IdAndUsername" resultType="boolean">
+    SELECT EXISTS (
+      SELECT 1 FROM iam_users
+      WHERE tenant_id = #{tenantId} AND username = #{username}
+    )
+  </select>
+
+  <update id="updateLastLogin" parameterType="com.flowmesh.iam.domain.user.IamUser">
+    UPDATE iam_users
+    SET last_login_at = #{lastLoginAt}, updated_at = #{updatedAt}, version = version + 1
+    WHERE id = #{id} AND version = #{version}
+  </update>
+</mapper>

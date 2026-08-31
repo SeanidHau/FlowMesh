@@ -1,11 +1,8 @@
 package com.flowmesh.supplier.domain;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 /**
  * 请求幂等记录，持久化首次响应快照。
@@ -13,39 +10,26 @@ import org.hibernate.type.SqlTypes;
  * <p>同一 (tenant_id, user_id, idempotency_key) 的重复请求回放首次响应。
  * request_fingerprint 用于判断键用途冲突。</p>
  */
-@Entity
-@Table(name = "supplier_idempotency_keys")
 public class IdempotencyRecord {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
-    @Column(name = "idempotency_key", nullable = false, updatable = false, length = 128)
     private String idempotencyKey;
 
-    @Column(name = "request_fingerprint", nullable = false, updatable = false, length = 64)
     private String requestFingerprint;
 
-    @Column(name = "response_status", nullable = false, updatable = false)
     private int responseStatus;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "response_body", nullable = false, updatable = false, columnDefinition = "jsonb")
     private String responseBody;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected IdempotencyRecord() {
     }
@@ -68,12 +52,14 @@ public class IdempotencyRecord {
         int responseStatus,
         String responseBody
     ) {
+        this.id = UUID.randomUUID();
         this.tenantId = Objects.requireNonNull(tenantId);
         this.userId = Objects.requireNonNull(userId);
         this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
         this.requestFingerprint = Objects.requireNonNull(requestFingerprint);
         this.responseStatus = responseStatus;
         this.responseBody = Objects.requireNonNull(responseBody);
+        this.createdAt = Instant.now();
     }
 
     public UUID getId() {
@@ -108,8 +94,4 @@ public class IdempotencyRecord {
         return createdAt;
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.createdAt = Instant.now();
-    }
 }

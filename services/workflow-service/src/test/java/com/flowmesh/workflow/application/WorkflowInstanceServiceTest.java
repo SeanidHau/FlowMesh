@@ -44,7 +44,7 @@ class WorkflowInstanceServiceTest {
             applicationId, UUID.randomUUID(), "tenant-a"
         );
         when(repository.findByApplicationId(applicationId)).thenReturn(Optional.of(instance));
-        when(repository.save(instance)).thenReturn(instance);
+        when(repository.updateState(instance)).thenReturn(1);
 
         WorkflowInstanceService service = new WorkflowInstanceService(
             repository,

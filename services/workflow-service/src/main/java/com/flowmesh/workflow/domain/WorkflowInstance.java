@@ -1,15 +1,5 @@
 package com.flowmesh.workflow.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -20,44 +10,28 @@ import java.util.UUID;
  * <p>{@code sourceEventId} 唯一约束是消费者幂等边界：同一提交事件重复到达时，
  * 只保留一个流程实例。</p>
  */
-@Entity
-@Table(name = "workflow_instances")
 public class WorkflowInstance {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "application_id", nullable = false, updatable = false, unique = true)
     private UUID applicationId;
 
-    @Column(name = "source_event_id", nullable = false, updatable = false, unique = true)
     private UUID sourceEventId;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "process_definition_key", nullable = false, updatable = false, length = 128)
     private String processDefinitionKey;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
     private WorkflowInstanceStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "current_task", length = 64)
     private WorkflowTask currentTask;
 
-    @Version
-    @Column(nullable = false)
     private long version;
 
-    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected WorkflowInstance() {
     }
@@ -70,12 +44,15 @@ public class WorkflowInstance {
      * @param tenantId 租户标识
      */
     public WorkflowInstance(UUID applicationId, UUID sourceEventId, String tenantId) {
+        this.id = UUID.randomUUID();
         this.applicationId = Objects.requireNonNull(applicationId);
         this.sourceEventId = Objects.requireNonNull(sourceEventId);
         this.tenantId = Objects.requireNonNull(tenantId);
         this.processDefinitionKey = "supplier-onboarding";
         this.status = WorkflowInstanceStatus.IN_PROGRESS;
         this.currentTask = WorkflowTask.PURCHASER_REVIEW;
+        this.version = 0;
+        this.createdAt = Instant.now();
     }
 
     /**
@@ -151,6 +128,13 @@ public class WorkflowInstance {
     }
 
     /**
+     * 在 MyBatis 条件更新成功后同步内存中的版本号。
+     */
+    public void incrementVersion() {
+        version++;
+    }
+
+    /**
      * 完成当前审批节点并推进流程。
      */
     public void completeCurrentTask() {
@@ -172,8 +156,4 @@ public class WorkflowInstance {
         return createdAt;
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.createdAt = Instant.now();
-    }
 }

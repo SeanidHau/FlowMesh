@@ -4,15 +4,14 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.workflow.application.WorkflowInstanceNotFoundException;
 import com.flowmesh.workflow.application.WorkflowTaskConflictException;
 import com.flowmesh.workflow.application.WorkflowTaskForbiddenException;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 /**
  * workflow 服务 API 异常映射。
@@ -90,7 +89,7 @@ public class GlobalExceptionHandler {
      * @param request 当前请求
      * @return 409 错误响应
      */
-    @ExceptionHandler({OptimisticLockException.class, ObjectOptimisticLockingFailureException.class})
+    @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLock(
         RuntimeException exception,
         HttpServletRequest request

@@ -1,6 +1,6 @@
 # FlowMesh（流织）
 
-FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前 MVP 使用 Java 21、Spring Boot、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
+FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前 MVP 使用 Java 21、Spring Boot、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
 当前已完成 MVP-3：IAM 登录/刷新/登出与认证审计、JWT 跨服务校验、供应商申请创建、持久化幂等、PostgreSQL RLS 隔离，以及通过 RocketMQ Outbox 驱动 workflow-service 创建幂等流程投影，并支持采购、法务、财务、运营四个角色按顺序推进审批。Camunda、Redis、MinIO、风险服务和通知审计服务仍属于后续阶段。总体设计见 [DESIGN.md](DESIGN.md)。
 

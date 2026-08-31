@@ -1,8 +1,5 @@
 package com.flowmesh.iam.domain.role;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,17 +7,14 @@ import java.util.UUID;
 /**
  * 表示用户与角色关联的复合主键。
  */
-@Embeddable
 public class UserRoleId implements Serializable {
 
-    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "role_id", nullable = false)
     private UUID roleId;
 
     /**
-     * 供 JPA 重建嵌入式主键使用。
+     * 供 MyBatis 重建复合主键使用。
      */
     protected UserRoleId() {
     }

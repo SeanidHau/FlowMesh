@@ -1,8 +1,6 @@
 package com.flowmesh.iam.domain.role;
 
 import com.flowmesh.iam.domain.user.IamUser;
-import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.Objects;
 
@@ -11,28 +9,18 @@ import java.util.Objects;
  *
  * <p>关联表保留授予时间，因此不使用无法承载额外字段的 {@code ManyToMany} 映射。</p>
  */
-@Entity
-@Table(name = "iam_user_roles")
 public class UserRole {
 
-    @EmbeddedId
     private UserRoleId id;
 
-    @MapsId("userId")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private IamUser user;
 
-    @MapsId("roleId")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "role_id", nullable = false, updatable = false)
     private IamRole role;
 
-    @Column(name = "assigned_at", nullable = false, updatable = false)
     private Instant assignedAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected UserRole() {
     }
@@ -47,6 +35,7 @@ public class UserRole {
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.id = new UserRoleId(user.getId(), role.getId());
+        this.assignedAt = Instant.now();
     }
 
     /**
@@ -85,8 +74,20 @@ public class UserRole {
         return assignedAt;
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.assignedAt = Instant.now();
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof UserRole other)) {
+            return false;
+        }
+        return id != null && id.equals(other.id);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
 }

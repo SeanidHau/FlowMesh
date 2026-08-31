@@ -153,7 +153,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ### 数据隔离
 
-- Hibernate Filter/MyBatis 拦截器自动注入 `tenant_id`。
+- 业务事务入口设置当前租户上下文，MyBatis Mapper 执行带租户边界的明确 SQL。
 - PostgreSQL RLS 是最终防线；业务事务设置当前租户。迁移与受限管理账号不得用于业务连接。
 - 任何 API 或消息消费者越权均拒绝执行并记录审计。
 

@@ -1,8 +1,6 @@
 package com.flowmesh.iam.domain.user;
 
 import com.flowmesh.iam.domain.tenant.Tenant;
-import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
@@ -13,47 +11,30 @@ import java.util.UUID;
  *
  * <p>用户名在租户内唯一，并在写入前归一化为小写。密码字段仅保存经过密码编码器处理的哈希值。</p>
  */
-@Entity
-@Table(name = "iam_users")
 public class IamUser {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tenant_id", nullable = false, updatable = false)
     private Tenant tenant;
 
-    @Column(nullable = false, length = 64)
     private String username;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "display_name", nullable = false, length = 128)
     private String displayName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
     private UserStatus status;
 
-    @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
-    @Version
-    @Column(nullable = false)
     private Long version;
 
-    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
     private Instant updatedAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected IamUser() {
     }
@@ -72,11 +53,16 @@ public class IamUser {
         String passwordHash,
         String displayName
     ) {
+        Instant now = Instant.now();
+        this.id = UUID.randomUUID();
         this.tenant = Objects.requireNonNull(tenant);
         this.username = normalizeUsername(username);
         this.passwordHash = Objects.requireNonNull(passwordHash);
         this.displayName = Objects.requireNonNull(displayName);
         this.status = UserStatus.ACTIVE;
+        this.version = 0L;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     /**
@@ -143,7 +129,7 @@ public class IamUser {
     }
 
     /**
-     * 获取 JPA 乐观锁版本。
+     * 获取 MyBatis 条件更新使用的版本号。
      *
      * @return 实体版本号
      */
@@ -176,6 +162,7 @@ public class IamUser {
      */
     public void changePasswordHash(String passwordHash) {
         this.passwordHash = Objects.requireNonNull(passwordHash);
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -185,6 +172,7 @@ public class IamUser {
      */
     public void recordSuccessfulLogin(Instant occurredAt) {
         this.lastLoginAt = Objects.requireNonNull(occurredAt);
+        this.updatedAt = occurredAt;
     }
 
     /**
@@ -192,6 +180,7 @@ public class IamUser {
      */
     public void disable() {
         this.status = UserStatus.DISABLED;
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -199,6 +188,7 @@ public class IamUser {
      */
     public void lock() {
         this.status = UserStatus.LOCKED;
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -206,6 +196,7 @@ public class IamUser {
      */
     public void activate() {
         this.status = UserStatus.ACTIVE;
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -218,15 +209,20 @@ public class IamUser {
         return Objects.requireNonNull(username).trim().toLowerCase(Locale.ROOT);
     }
 
-    @PrePersist
-    private void onCreate() {
-        Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof IamUser other)) {
+            return false;
+        }
+        return id != null && id.equals(other.id);
     }
 
-    @PreUpdate
-    private void onUpdate() {
-        this.updatedAt = Instant.now();
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
+
 }

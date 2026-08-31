@@ -1,44 +1,32 @@
 package com.flowmesh.iam.repository;
 
 import com.flowmesh.iam.domain.token.RefreshToken;
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
- * 管理刷新令牌的持久化访问。
+ * 使用 MyBatis 访问 Refresh Token 表。
  */
-public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
+@Mapper
+public interface RefreshTokenRepository {
 
     /**
      * 按令牌哈希查询刷新令牌。
      *
      * @param tokenHash 原始令牌的单向哈希
-     * @return 匹配的刷新令牌；不存在时为空
+     * @return 刷新令牌；不存在时为空
      */
-    Optional<RefreshToken> findByTokenHash(String tokenHash);
+    Optional<RefreshToken> findByTokenHash(@Param("tokenHash") String tokenHash);
 
     /**
-     * 锁定指定哈希对应的刷新令牌，并同时加载其所属用户。
-     *
-     * <p>调用方必须处于事务中，以保证并发刷新请求不能同时轮换同一令牌。</p>
+     * 在当前事务中锁定指定刷新令牌，并加载所属用户和租户。
      *
      * @param tokenHash 原始令牌的单向哈希
-     * @return 被锁定的刷新令牌；不存在时为空
+     * @return 被锁定刷新令牌；不存在时为空
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            SELECT token
-            FROM RefreshToken token
-            JOIN FETCH token.user
-            WHERE token.tokenHash = :tokenHash
-            """)
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
 
     /**
@@ -47,5 +35,40 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
      * @param userId 用户标识
      * @return 未撤销令牌列表
      */
-    List<RefreshToken> findAllByUser_IdAndRevokedAtIsNull(UUID userId);
+    List<RefreshToken> findAllByUser_IdAndRevokedAtIsNull(@Param("userId") UUID userId);
+
+    /**
+     * 插入刷新令牌。
+     *
+     * @param token 待保存令牌
+     * @return 保存后的令牌对象
+     */
+    default RefreshToken saveAndFlush(RefreshToken token) {
+        insert(token);
+        return token;
+    }
+
+    /**
+     * 更新刷新令牌轮换状态。
+     *
+     * @param token 已撤销并指向替代令牌的旧令牌
+     * @return 受影响行数
+     */
+    int updateRotation(RefreshToken token);
+
+    /**
+     * 撤销刷新令牌。
+     *
+     * @param token 已撤销的刷新令牌
+     * @return 受影响行数
+     */
+    int updateRevocation(RefreshToken token);
+
+    /**
+     * 插入刷新令牌记录。
+     *
+     * @param token 待保存令牌
+     * @return 受影响行数
+     */
+    int insert(RefreshToken token);
 }

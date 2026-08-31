@@ -1,7 +1,5 @@
 package com.flowmesh.iam.domain.role;
 
-import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
@@ -12,29 +10,20 @@ import java.util.UUID;
  *
  * <p>角色代码在写入前统一转换为大写，作为认证令牌中角色声明的稳定标识。</p>
  */
-@Entity
-@Table(name = "iam_roles")
 public class IamRole {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 64)
     private String code;
 
-    @Column(nullable = false, length = 128)
     private String name;
 
-    @Column(length = 255)
     private String description;
 
-    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected IamRole() {
     }
@@ -47,9 +36,11 @@ public class IamRole {
      * @param description 角色职责说明；可以为空
      */
     public IamRole(String code, String name, String description) {
+        this.id = UUID.randomUUID();
         this.code = normalizeCode(code);
         this.name = Objects.requireNonNull(name);
         this.description = description;
+        this.createdAt = Instant.now();
     }
 
     /**
@@ -107,8 +98,4 @@ public class IamRole {
         return Objects.requireNonNull(code).trim().toUpperCase(Locale.ROOT);
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.createdAt = Instant.now();
-    }
 }

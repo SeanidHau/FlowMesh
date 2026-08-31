@@ -1,5 +1,7 @@
 # FlowMesh 全项目代码审查（2026-08-31）
 
+> 历史说明：本报告形成于 MyBatis 迁移前，报告中的 JPA 映射、Outbox 认领和供应商乐观锁问题是当时的快照。迁移后以当前代码、`DESIGN.md` 和面试问答为准；本文件保留原始审查证据，不回写历史结论。
+
 ## 结论
 
 当前 MVP 的分层、Javadoc、Flyway 迁移、RLS 测试和 Transactional Outbox 基础是扎实的；后端

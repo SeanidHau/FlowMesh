@@ -3,16 +3,15 @@ package com.flowmesh.supplier.api;
 import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
 import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.List;
 
@@ -94,7 +93,7 @@ public class GlobalExceptionHandler {
      * @param request 当前请求
      * @return 409 错误响应
      */
-    @ExceptionHandler({OptimisticLockException.class, ObjectOptimisticLockingFailureException.class})
+    @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLock(
         RuntimeException exception,
         HttpServletRequest request

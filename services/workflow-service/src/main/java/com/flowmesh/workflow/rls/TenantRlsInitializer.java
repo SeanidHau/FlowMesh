@@ -1,6 +1,5 @@
 package com.flowmesh.workflow.rls;
 
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,15 +8,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantRlsInitializer {
 
-    private final EntityManager entityManager;
+    private final TenantRlsMapper mapper;
 
     /**
      * 创建租户上下文初始化器。
      *
-     * @param entityManager 当前 JPA 实体管理器
+     * @param mapper MyBatis 租户上下文 Mapper
      */
-    public TenantRlsInitializer(EntityManager entityManager) {
-        this.entityManager = entityManager;
+    public TenantRlsInitializer(TenantRlsMapper mapper) {
+        this.mapper = mapper;
     }
 
     /**
@@ -26,10 +25,6 @@ public class TenantRlsInitializer {
      * @param tenantId 可信租户标识
      */
     public void initialize(String tenantId) {
-        entityManager.createNativeQuery(
-                "SELECT set_config('app.tenant_id', :tenantId, true)"
-            )
-            .setParameter("tenantId", tenantId)
-            .getSingleResult();
+        mapper.setTenant(tenantId);
     }
 }

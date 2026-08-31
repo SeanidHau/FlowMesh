@@ -1,8 +1,6 @@
 package com.flowmesh.iam.domain.token;
 
 import com.flowmesh.iam.domain.user.IamUser;
-import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,41 +11,26 @@ import java.util.UUID;
  * <p>令牌支持一次性轮换：旧令牌被撤销并关联其替代令牌。持久层的唯一约束确保一个
  * 新令牌不能作为多个旧令牌的替代对象。</p>
  */
-@Entity
-@Table(name = "iam_refresh_tokens")
 public class RefreshToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private IamUser user;
 
-    @Column(name = "token_hash", nullable = false, unique = true, length = 255)
     private String tokenHash;
 
-    @Column(name = "expires_at", nullable = false, updatable = false)
     private Instant expiresAt;
 
-    @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "replaced_by_token_id")
     private RefreshToken replacedByToken;
 
-    @Version
-    @Column(nullable = false)
     private Long version;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected RefreshToken() {
     }
@@ -60,9 +43,12 @@ public class RefreshToken {
      * @param expiresAt 令牌失效时间
      */
     public RefreshToken(IamUser user, String tokenHash, Instant expiresAt) {
+        this.id = UUID.randomUUID();
         this.user = Objects.requireNonNull(user);
         this.tokenHash = Objects.requireNonNull(tokenHash);
         this.expiresAt = Objects.requireNonNull(expiresAt);
+        this.version = 0L;
+        this.createdAt = Instant.now();
     }
 
     /**
@@ -120,7 +106,7 @@ public class RefreshToken {
     }
 
     /**
-     * 获取 JPA 乐观锁版本。
+     * 获取 MyBatis 条件更新使用的版本号。
      *
      * @return 实体版本号
      */
@@ -170,8 +156,20 @@ public class RefreshToken {
         revoke(occurredAt);
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.createdAt = Instant.now();
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof RefreshToken other)) {
+            return false;
+        }
+        return id != null && id.equals(other.id);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
 }

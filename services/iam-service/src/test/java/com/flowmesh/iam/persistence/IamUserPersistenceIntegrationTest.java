@@ -119,7 +119,7 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         );
 
         oldToken.replaceWith(replacementToken, now);
-        refreshTokenRepository.saveAndFlush(oldToken);
+        refreshTokenRepository.updateRotation(oldToken);
 
         assertThat(oldToken.isActiveAt(now.plusSeconds(1))).isFalse();
         assertThat(oldToken.getReplacedByToken()).isEqualTo(replacementToken);

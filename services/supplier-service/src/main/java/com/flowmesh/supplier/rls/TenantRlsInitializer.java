@@ -1,7 +1,6 @@
 package com.flowmesh.supplier.rls;
 
 import com.flowmesh.common.security.AuthPrincipal;
-import jakarta.persistence.EntityManager;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,15 +15,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantRlsInitializer {
 
-    private final EntityManager entityManager;
+    private final TenantRlsMapper mapper;
 
     /**
      * 创建租户 RLS 初始化器。
      *
-     * @param entityManager JPA 实体管理器
+     * @param mapper MyBatis 租户上下文 Mapper
      */
-    public TenantRlsInitializer(EntityManager entityManager) {
-        this.entityManager = entityManager;
+    public TenantRlsInitializer(TenantRlsMapper mapper) {
+        this.mapper = mapper;
     }
 
     /**
@@ -44,9 +43,7 @@ public class TenantRlsInitializer {
      * @param tenantId 事件信封中的租户标识
      */
     public void initializeTenant(String tenantId) {
-        entityManager.createNativeQuery("SELECT set_config('app.tenant_id', :tenant, true)")
-            .setParameter("tenant", tenantId)
-            .getSingleResult();
+        mapper.setTenant(tenantId);
     }
 
     private AuthPrincipal currentPrincipal() {

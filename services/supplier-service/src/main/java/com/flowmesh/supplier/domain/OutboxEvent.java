@@ -1,15 +1,8 @@
 package com.flowmesh.supplier.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 /**
  * 记录待投递的领域事件。
@@ -17,56 +10,38 @@ import org.hibernate.type.SqlTypes;
  * <p>该记录与业务状态在同一数据库事务中写入，RocketMQ 发布成功后再标记
  * {@code publishedAt}，从而允许发布器在服务重启后继续投递。</p>
  */
-@Entity
-@Table(name = "supplier_outbox_events")
 public class OutboxEvent {
 
-    @Id
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "aggregate_id", nullable = false, updatable = false)
     private UUID aggregateId;
 
-    @Column(nullable = false, updatable = false, length = 128)
     private String topic;
 
-    @Column(nullable = false, updatable = false, length = 128)
     private String tag;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, updatable = false, columnDefinition = "jsonb")
     private String payload;
 
-    @Column(name = "attempt_count", nullable = false)
     private int attemptCount;
 
-    @Column(name = "last_error", length = 1000)
     private String lastError;
 
-    @Column(name = "published_at")
     private Instant publishedAt;
 
-    @Column(name = "next_attempt_at")
     private Instant nextAttemptAt;
 
-    @Column(name = "claimed_until")
     private Instant claimedUntil;
 
-    @Column(name = "claim_token")
     private UUID claimToken;
 
-    @Column(name = "dead_lettered_at")
     private Instant deadLetteredAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected OutboxEvent() {
     }
@@ -95,6 +70,8 @@ public class OutboxEvent {
         this.topic = Objects.requireNonNull(topic);
         this.tag = Objects.requireNonNull(tag);
         this.payload = Objects.requireNonNull(payload);
+        this.createdAt = Instant.now();
+        this.nextAttemptAt = this.createdAt;
     }
 
     /**
@@ -227,9 +204,4 @@ public class OutboxEvent {
         this.lastError = error == null ? "unknown" : error.substring(0, Math.min(error.length(), 1000));
     }
 
-    @PrePersist
-    private void onCreate() {
-        this.createdAt = Instant.now();
-        this.nextAttemptAt = this.createdAt;
-    }
 }

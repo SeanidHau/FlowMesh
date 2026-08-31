@@ -1,23 +1,23 @@
 package com.flowmesh.iam.repository;
 
 import com.flowmesh.iam.domain.role.IamRole;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
-import java.util.UUID;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
- * 管理 IAM 角色聚合的持久化访问。
+ * 使用 MyBatis 访问 IAM 角色表。
  */
-public interface IamRoleRepository extends JpaRepository<IamRole, UUID> {
+@Mapper
+public interface IamRoleRepository {
 
     /**
-     * 按已归一化角色代码查询角色。
+     * 按角色代码查询角色。
      *
      * @param code 大写角色代码
-     * @return 匹配的角色；不存在时为空
+     * @return 角色；不存在时为空
      */
-    Optional<IamRole> findByCode(String code);
+    Optional<IamRole> findByCode(@Param("code") String code);
 
     /**
      * 判断角色代码是否已存在。
@@ -25,5 +25,24 @@ public interface IamRoleRepository extends JpaRepository<IamRole, UUID> {
      * @param code 大写角色代码
      * @return 存在时为 {@code true}
      */
-    boolean existsByCode(String code);
+    boolean existsByCode(@Param("code") String code);
+
+    /**
+     * 插入角色。
+     *
+     * @param role 待保存角色
+     * @return 保存后的角色对象
+     */
+    default IamRole saveAndFlush(IamRole role) {
+        insert(role);
+        return role;
+    }
+
+    /**
+     * 插入角色记录。
+     *
+     * @param role 待保存角色
+     * @return 受影响行数
+     */
+    int insert(IamRole role);
 }

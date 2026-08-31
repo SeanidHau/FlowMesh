@@ -37,9 +37,6 @@ public class WorkflowOutboxClaimService {
     public List<WorkflowOutboxEvent> claimBatch() {
         Instant now = Instant.now();
         UUID claimToken = UUID.randomUUID();
-        List<WorkflowOutboxEvent> events = repository.findAvailableForUpdate(now, BATCH_SIZE);
-        events.forEach(event -> event.claim(claimToken, now.plusSeconds(LEASE_SECONDS)));
-        repository.flush();
-        return events;
+        return repository.claimBatch(now, claimToken, now.plusSeconds(LEASE_SECONDS), BATCH_SIZE);
     }
 }

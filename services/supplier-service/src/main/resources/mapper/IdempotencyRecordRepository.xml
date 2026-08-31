@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.supplier.repository.IdempotencyRecordRepository">
+  <resultMap id="idempotencyResult" type="com.flowmesh.supplier.domain.IdempotencyRecord">
+    <id property="id" column="id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="userId" column="user_id" />
+    <result property="idempotencyKey" column="idempotency_key" />
+    <result property="requestFingerprint" column="request_fingerprint" />
+    <result property="responseStatus" column="response_status" />
+    <result property="responseBody" column="response_body" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.supplier.domain.IdempotencyRecord">
+    INSERT INTO supplier_idempotency_keys
+      (id, tenant_id, user_id, idempotency_key, request_fingerprint, response_status, response_body, created_at)
+    VALUES (#{id}, #{tenantId}, #{userId}, #{idempotencyKey}, #{requestFingerprint},
+            #{responseStatus}, CAST(#{responseBody} AS jsonb), #{createdAt})
+  </insert>
+
+  <select id="findByTenantIdAndUserIdAndIdempotencyKey" resultMap="idempotencyResult">
+    SELECT id, tenant_id, user_id, idempotency_key, request_fingerprint,
+           response_status, response_body::text AS response_body, created_at
+    FROM supplier_idempotency_keys
+    WHERE tenant_id = #{tenantId}
+      AND user_id = #{userId}
+      AND idempotency_key = #{idempotencyKey}
+  </select>
+</mapper>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.iam.repository.RefreshTokenRepository">
+  <resultMap id="refreshTokenResult" type="com.flowmesh.iam.domain.token.RefreshToken">
+    <id property="id" column="token_id" />
+    <result property="tokenHash" column="token_hash" />
+    <result property="expiresAt" column="expires_at" />
+    <result property="revokedAt" column="revoked_at" />
+    <result property="version" column="token_version" />
+    <result property="createdAt" column="token_created_at" />
+    <association property="user" javaType="com.flowmesh.iam.domain.user.IamUser">
+      <id property="id" column="user_id" />
+      <result property="username" column="username" />
+      <result property="passwordHash" column="password_hash" />
+      <result property="displayName" column="display_name" />
+      <result property="status" column="user_status" />
+      <result property="lastLoginAt" column="last_login_at" />
+      <result property="version" column="user_version" />
+      <result property="createdAt" column="user_created_at" />
+      <result property="updatedAt" column="user_updated_at" />
+      <association property="tenant" javaType="com.flowmesh.iam.domain.tenant.Tenant">
+        <id property="id" column="tenant_id" />
+        <result property="name" column="tenant_name" />
+        <result property="status" column="tenant_status" />
+        <result property="createdAt" column="tenant_created_at" />
+        <result property="updatedAt" column="tenant_updated_at" />
+      </association>
+    </association>
+    <association property="replacedByToken" javaType="com.flowmesh.iam.domain.token.RefreshToken"
+                 column="replaced_by_token_id" select="findByIdOrNull" />
+  </resultMap>
+
+  <sql id="refreshTokenSelect">
+    SELECT r.id AS token_id, r.user_id, r.token_hash, r.expires_at, r.revoked_at,
+           r.replaced_by_token_id, r.version AS token_version, r.created_at AS token_created_at,
+           u.username, u.password_hash, u.display_name, u.status AS user_status,
+           u.last_login_at, u.version AS user_version,
+           u.created_at AS user_created_at, u.updated_at AS user_updated_at,
+           t.id AS tenant_id, t.name AS tenant_name, t.status AS tenant_status,
+           t.created_at AS tenant_created_at, t.updated_at AS tenant_updated_at
+    FROM iam_refresh_tokens r
+    JOIN iam_users u ON u.id = r.user_id
+    JOIN tenants t ON t.id = u.tenant_id
+  </sql>
+
+  <insert id="insert" parameterType="com.flowmesh.iam.domain.token.RefreshToken">
+    INSERT INTO iam_refresh_tokens
+      (id, user_id, token_hash, expires_at, revoked_at, replaced_by_token_id, version, created_at)
+    VALUES (#{id}, #{user.id}, #{tokenHash}, #{expiresAt}, #{revokedAt},
+            #{replacedByToken.id}, #{version}, #{createdAt})
+  </insert>
+
+  <select id="findByTokenHash" resultMap="refreshTokenResult">
+    <include refid="refreshTokenSelect" />
+    WHERE r.token_hash = #{tokenHash}
+  </select>
+
+  <select id="findByTokenHashForUpdate" resultMap="refreshTokenResult">
+    <include refid="refreshTokenSelect" />
+    WHERE r.token_hash = #{tokenHash}
+    FOR UPDATE
+  </select>
+
+  <select id="findAllByUser_IdAndRevokedAtIsNull" resultMap="refreshTokenResult">
+    <include refid="refreshTokenSelect" />
+    WHERE r.user_id = #{userId} AND r.revoked_at IS NULL
+    ORDER BY r.created_at, r.id
+  </select>
+
+  <select id="findByIdOrNull" resultMap="refreshTokenResult">
+    <include refid="refreshTokenSelect" />
+    WHERE r.id = #{id}
+  </select>
+
+  <update id="updateRotation" parameterType="com.flowmesh.iam.domain.token.RefreshToken">
+    UPDATE iam_refresh_tokens
+    SET revoked_at = #{revokedAt}, replaced_by_token_id = #{replacedByToken.id}, version = version + 1
+    WHERE id = #{id} AND version = #{version}
+  </update>
+
+  <update id="updateRevocation" parameterType="com.flowmesh.iam.domain.token.RefreshToken">
+    UPDATE iam_refresh_tokens
+    SET revoked_at = #{revokedAt}, version = version + 1
+    WHERE id = #{id} AND version = #{version} AND revoked_at IS NULL
+  </update>
+</mapper>

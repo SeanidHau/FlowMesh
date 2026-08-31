@@ -18,10 +18,6 @@ spring:
   flyway:
     schemas: supplier
     create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: supplier
   datasource:
     hikari:
       connection-init-sql: SET search_path TO supplier

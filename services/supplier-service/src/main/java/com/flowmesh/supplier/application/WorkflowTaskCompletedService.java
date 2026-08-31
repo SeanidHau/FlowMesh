@@ -14,6 +14,7 @@ import com.flowmesh.supplier.rls.TenantRlsInitializer;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,7 +82,9 @@ public class WorkflowTaskCompletedService {
         SupplierApplication application = applicationRepository.findById(applicationId)
             .orElseThrow(SupplierApplicationNotFoundException::new);
         application.applyWorkflowTask(taskKey);
-        applicationRepository.saveAndFlush(application);
+        if (applicationRepository.updateState(application) != 1) {
+            throw new OptimisticLockingFailureException("申请状态已被其他事务更新");
+        }
         inboxRepository.save(new WorkflowEventInbox(eventId, tenantId, applicationId));
 
         if ("OPERATIONS_ACTIVATION".equals(taskKey)) {

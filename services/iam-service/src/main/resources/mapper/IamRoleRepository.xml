@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.iam.repository.IamRoleRepository">
+  <resultMap id="roleResult" type="com.flowmesh.iam.domain.role.IamRole">
+    <id property="id" column="id" />
+    <result property="code" column="code" />
+    <result property="name" column="name" />
+    <result property="description" column="description" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.iam.domain.role.IamRole">
+    INSERT INTO iam_roles (id, code, name, description, created_at)
+    VALUES (#{id}, #{code}, #{name}, #{description}, #{createdAt})
+  </insert>
+
+  <select id="findByCode" resultMap="roleResult">
+    SELECT id, code, name, description, created_at
+    FROM iam_roles
+    WHERE code = #{code}
+  </select>
+
+  <select id="existsByCode" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM iam_roles WHERE code = #{code})
+  </select>
+</mapper>

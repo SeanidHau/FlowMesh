@@ -1,71 +1,46 @@
 package com.flowmesh.workflow.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 /**
  * workflow-service 待投递的跨服务事件。
  *
  * <p>审批状态和 Outbox 在同一事务写入，确保状态推进后事件最终可投递。</p>
  */
-@Entity
-@Table(name = "workflow_outbox_events")
 public class WorkflowOutboxEvent {
 
-    @Id
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "aggregate_id", nullable = false, updatable = false)
     private UUID aggregateId;
 
-    @Column(nullable = false, updatable = false, length = 128)
     private String topic;
 
-    @Column(nullable = false, updatable = false, length = 128)
     private String tag;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, updatable = false, columnDefinition = "jsonb")
     private String payload;
 
-    @Column(name = "attempt_count", nullable = false)
     private int attemptCount;
 
-    @Column(name = "last_error", length = 1000)
     private String lastError;
 
-    @Column(name = "published_at")
     private Instant publishedAt;
 
-    @Column(name = "next_attempt_at")
     private Instant nextAttemptAt;
 
-    @Column(name = "claimed_until")
     private Instant claimedUntil;
 
-    @Column(name = "claim_token")
     private UUID claimToken;
 
-    @Column(name = "dead_lettered_at")
     private Instant deadLetteredAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected WorkflowOutboxEvent() {
     }
@@ -94,6 +69,8 @@ public class WorkflowOutboxEvent {
         this.topic = Objects.requireNonNull(topic);
         this.tag = Objects.requireNonNull(tag);
         this.payload = Objects.requireNonNull(payload);
+        this.createdAt = Instant.now();
+        this.nextAttemptAt = this.createdAt;
     }
 
     /**
@@ -190,9 +167,4 @@ public class WorkflowOutboxEvent {
         lastError = error == null ? "unknown" : error.substring(0, Math.min(error.length(), 1000));
     }
 
-    @PrePersist
-    private void onCreate() {
-        createdAt = Instant.now();
-        nextAttemptAt = createdAt;
-    }
 }

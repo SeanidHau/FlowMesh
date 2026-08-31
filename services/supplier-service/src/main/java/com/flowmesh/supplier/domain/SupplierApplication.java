@@ -1,6 +1,5 @@
 package com.flowmesh.supplier.domain;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -8,42 +7,28 @@ import java.util.UUID;
 /**
  * 供应商准入申请实体。
  *
- * <p>创建即 SUBMITTED，state_version 由 JPA {@link Version} 自动维护。</p>
+ * <p>创建即 SUBMITTED，state_version 由 MyBatis 条件更新语句维护。</p>
  */
-@Entity
-@Table(name = "supplier_applications")
 public class SupplierApplication {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "applicant_user_id", nullable = false, updatable = false)
     private UUID applicantUserId;
 
-    @Column(name = "supplier_name", nullable = false, length = 255)
     private String supplierName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
     private ApplicationStatus status;
 
-    @Version
-    @Column(name = "state_version", nullable = false)
     private long stateVersion;
 
-    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
     private Instant updatedAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected SupplierApplication() {
     }
@@ -56,11 +41,15 @@ public class SupplierApplication {
      * @param supplierName 供应商名称
      */
     public SupplierApplication(String tenantId, UUID applicantUserId, String supplierName) {
+        Instant now = Instant.now();
+        this.id = UUID.randomUUID();
         this.tenantId = Objects.requireNonNull(tenantId);
         this.applicantUserId = Objects.requireNonNull(applicantUserId);
         this.supplierName = Objects.requireNonNull(supplierName);
         this.status = ApplicationStatus.SUBMITTED;
         this.stateVersion = 0;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     public UUID getId() {
@@ -113,15 +102,4 @@ public class SupplierApplication {
         return updatedAt;
     }
 
-    @PrePersist
-    private void onCreate() {
-        Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    private void onUpdate() {
-        this.updatedAt = Instant.now();
-    }
 }

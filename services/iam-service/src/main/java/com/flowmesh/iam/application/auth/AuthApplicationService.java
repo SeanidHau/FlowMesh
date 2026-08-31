@@ -110,7 +110,7 @@ public class AuthApplicationService {
         }
 
         user.recordSuccessfulLogin(Instant.now());
-        iamUserRepository.saveAndFlush(user);
+        iamUserRepository.updateLastLogin(user);
 
         Set<String> roles = loadRoles(user.getId());
         AuthPrincipal principal = new AuthPrincipal(
@@ -155,7 +155,7 @@ public class AuthApplicationService {
             new RefreshToken(user, sha256Hex(newRefreshToken), Instant.now().plus(jwtProperties.getRefreshTokenTtl()))
         );
         oldToken.replaceWith(replacement, Instant.now());
-        refreshTokenRepository.saveAndFlush(oldToken);
+        refreshTokenRepository.updateRotation(oldToken);
 
         return new TokenResult(accessToken, newRefreshToken);
     }
@@ -171,7 +171,7 @@ public class AuthApplicationService {
         refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
             if (token.getRevokedAt() == null) {
                 token.revoke(Instant.now());
-                refreshTokenRepository.saveAndFlush(token);
+                refreshTokenRepository.updateRevocation(token);
                 auditEventRepository.save(new AuditEvent(
                     token.getUser().getTenant().getId(), token.getUser().getId(),
                     "LOGOUT", "USER", token.getUser().getUsername(), "SUCCESS", traceId

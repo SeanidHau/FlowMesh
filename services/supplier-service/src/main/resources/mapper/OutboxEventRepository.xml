@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.supplier.repository.OutboxEventRepository">
+  <resultMap id="outboxResult" type="com.flowmesh.supplier.domain.OutboxEvent">
+    <id property="id" column="id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="aggregateId" column="aggregate_id" />
+    <result property="topic" column="topic" />
+    <result property="tag" column="tag" />
+    <result property="payload" column="payload" />
+    <result property="attemptCount" column="attempt_count" />
+    <result property="lastError" column="last_error" />
+    <result property="publishedAt" column="published_at" />
+    <result property="nextAttemptAt" column="next_attempt_at" />
+    <result property="claimedUntil" column="claimed_until" />
+    <result property="claimToken" column="claim_token" />
+    <result property="deadLetteredAt" column="dead_lettered_at" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.supplier.domain.OutboxEvent">
+    INSERT INTO supplier_outbox_events
+      (id, tenant_id, aggregate_id, topic, tag, payload, attempt_count, last_error,
+       published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at)
+    VALUES (#{id}, #{tenantId}, #{aggregateId}, #{topic}, #{tag}, CAST(#{payload} AS jsonb),
+            #{attemptCount}, #{lastError}, #{publishedAt}, #{nextAttemptAt}, #{claimedUntil},
+            #{claimToken}, #{deadLetteredAt}, #{createdAt})
+  </insert>
+
+  <select id="claimBatch" resultMap="outboxResult">
+    WITH candidates AS (
+      SELECT id
+      FROM supplier_outbox_events
+      WHERE published_at IS NULL
+        AND dead_lettered_at IS NULL
+        AND (next_attempt_at IS NULL OR next_attempt_at &lt;= #{now})
+        AND (claimed_until IS NULL OR claimed_until &lt; #{now})
+      ORDER BY created_at ASC
+      LIMIT #{limit}
+      FOR UPDATE SKIP LOCKED
+    )
+    UPDATE supplier_outbox_events event
+    SET claim_token = #{claimToken}, claimed_until = #{claimedUntil}
+    FROM candidates
+    WHERE event.id = candidates.id
+    RETURNING event.*
+  </select>
+
+  <update id="markPublishedIfClaimed">
+    UPDATE supplier_outbox_events
+    SET published_at = #{publishedAt}, last_error = NULL, claimed_until = NULL, claim_token = NULL
+    WHERE id = #{id} AND claim_token = #{claimToken} AND published_at IS NULL
+  </update>
+
+  <update id="recordRetryIfClaimed">
+    UPDATE supplier_outbox_events
+    SET attempt_count = attempt_count + 1, last_error = #{error}, next_attempt_at = #{nextAttemptAt},
+        claimed_until = NULL, claim_token = NULL
+    WHERE id = #{id} AND claim_token = #{claimToken}
+      AND published_at IS NULL AND attempt_count + 1 &lt; #{maxAttempts}
+  </update>
+
+  <update id="markDeadLetteredIfClaimed">
+    UPDATE supplier_outbox_events
+    SET attempt_count = attempt_count + 1, last_error = #{error}, dead_lettered_at = #{deadLetteredAt},
+        next_attempt_at = NULL, claimed_until = NULL, claim_token = NULL
+    WHERE id = #{id} AND claim_token = #{claimToken}
+      AND published_at IS NULL AND attempt_count + 1 &gt;= #{maxAttempts}
+  </update>
+
+  <select id="findByAggregateIdAndTag" resultMap="outboxResult">
+    SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
+           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at
+    FROM supplier_outbox_events
+    WHERE aggregate_id = #{aggregateId} AND tag = #{tag}
+    ORDER BY created_at
+    LIMIT 1
+  </select>
+</mapper>

@@ -11,13 +11,13 @@ spring:
     password: ${SUPPLIER_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-
   flyway:
     fail-on-missing-locations: false
+
+mybatis:
+  mapper-locations: classpath:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 
 server:
   port: 8082

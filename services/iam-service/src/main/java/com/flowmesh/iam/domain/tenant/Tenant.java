@@ -1,8 +1,6 @@
 package com.flowmesh.iam.domain.tenant;
 
 
-import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.Objects;
 
@@ -11,29 +9,20 @@ import java.util.Objects;
  *
  * <p>租户标识在创建后不可改变。用户与后续业务数据均通过该标识建立隔离关系。</p>
  */
-@Entity
-@Table(name = "tenants")
 public class Tenant {
 
-    @Id
-    @Column(nullable = false, updatable = false, length = 64)
     private String id;
 
-    @Column(nullable = false, length = 128)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
     private TenantStatus status;
 
-    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
     private Instant updatedAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected Tenant() {
     }
@@ -49,6 +38,8 @@ public class Tenant {
         this.id = Objects.requireNonNull(id);
         this.name = Objects.requireNonNull(name);
         this.status = Objects.requireNonNull(status);
+        this.createdAt = Instant.now();
+        this.updatedAt = this.createdAt;
     }
 
     /**
@@ -103,6 +94,7 @@ public class Tenant {
      */
     public void rename(String name) {
         this.name = Objects.requireNonNull(name);
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -110,6 +102,7 @@ public class Tenant {
      */
     public void enable() {
         this.status = TenantStatus.ACTIVE;
+        this.updatedAt = Instant.now();
     }
 
     /**
@@ -117,17 +110,6 @@ public class Tenant {
      */
     public void disable() {
         this.status = TenantStatus.DISABLED;
-    }
-
-    @PrePersist
-    private void onCreate() {
-        Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    private void onUpdate() {
         this.updatedAt = Instant.now();
     }
 }

@@ -12,6 +12,7 @@ import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,7 +98,11 @@ public class WorkflowInstanceService {
         }
 
         instance.completeCurrentTask();
-        WorkflowInstance saved = repository.save(instance);
+        if (repository.updateState(instance) != 1) {
+            throw new OptimisticLockingFailureException("流程状态已被其他事务更新");
+        }
+        instance.incrementVersion();
+        WorkflowInstance saved = instance;
         UUID eventId = UUID.randomUUID();
         outboxRepository.save(new WorkflowOutboxEvent(
             eventId,

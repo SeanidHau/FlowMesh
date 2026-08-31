@@ -46,10 +46,10 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
-    <!-- 作用：持久化 RocketMQ 消费结果。 -->
+    <!-- 作用：使用 MyBatis 持久化 RocketMQ 消费结果和流程状态。 -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
+      <groupId>org.mybatis.spring.boot</groupId>
+      <artifactId>mybatis-spring-boot-starter</artifactId>
     </dependency>
 
     <!-- 作用：管理 workflow Schema 的版本化数据库迁移。 -->

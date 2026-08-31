@@ -3,12 +3,14 @@ package com.flowmesh.supplier.repository;
 import com.flowmesh.supplier.domain.IdempotencyRecord;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
- * 管理幂等记录的持久化访问。
+ * 使用 MyBatis 访问供应商接口幂等记录。
  */
-public interface IdempotencyRecordRepository extends JpaRepository<IdempotencyRecord, UUID> {
+@Mapper
+public interface IdempotencyRecordRepository {
 
     /**
      * 按租户、用户和幂等键查询记录。
@@ -16,11 +18,30 @@ public interface IdempotencyRecordRepository extends JpaRepository<IdempotencyRe
      * @param tenantId 租户标识
      * @param userId 用户标识
      * @param idempotencyKey 幂等键
-     * @return 匹配的幂等记录；不存在时为空
+     * @return 幂等记录；不存在时为空
      */
     Optional<IdempotencyRecord> findByTenantIdAndUserIdAndIdempotencyKey(
-        String tenantId,
-        UUID userId,
-        String idempotencyKey
+        @Param("tenantId") String tenantId,
+        @Param("userId") UUID userId,
+        @Param("idempotencyKey") String idempotencyKey
     );
+
+    /**
+     * 插入幂等记录。
+     *
+     * @param record 待保存记录
+     * @return 保存后的记录对象
+     */
+    default IdempotencyRecord saveAndFlush(IdempotencyRecord record) {
+        insert(record);
+        return record;
+    }
+
+    /**
+     * 插入幂等记录。
+     *
+     * @param record 待保存记录
+     * @return 受影响行数
+     */
+    int insert(IdempotencyRecord record);
 }

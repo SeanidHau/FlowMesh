@@ -41,10 +41,10 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
-    <!-- 作用：提供用户、角色和 Refresh Token 的持久化能力。 -->
+    <!-- 作用：提供用户、角色和 Refresh Token 的 MyBatis 持久化能力。 -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
+      <groupId>org.mybatis.spring.boot</groupId>
+      <artifactId>mybatis-spring-boot-starter</artifactId>
     </dependency>
 
     <!-- 作用：暴露健康检查，供 Docker Compose 和 Kubernetes 探针使用。 -->

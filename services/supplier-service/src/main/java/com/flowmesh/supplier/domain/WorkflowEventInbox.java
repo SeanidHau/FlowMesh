@@ -1,10 +1,5 @@
 package com.flowmesh.supplier.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -14,25 +9,18 @@ import java.util.UUID;
  *
  * <p>事件 ID 作为主键，使重复投递不会重复推进申请状态。</p>
  */
-@Entity
-@Table(name = "supplier_workflow_event_inbox")
 public class WorkflowEventInbox {
 
-    @Id
-    @Column(name = "event_id", nullable = false, updatable = false)
     private UUID eventId;
 
-    @Column(name = "tenant_id", nullable = false, updatable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "aggregate_id", nullable = false, updatable = false)
     private UUID aggregateId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * 供 JPA 重建实体状态使用。
+     * 供 MyBatis 重建持久化对象状态使用。
      */
     protected WorkflowEventInbox() {
     }
@@ -48,6 +36,7 @@ public class WorkflowEventInbox {
         this.eventId = Objects.requireNonNull(eventId);
         this.tenantId = Objects.requireNonNull(tenantId);
         this.aggregateId = Objects.requireNonNull(aggregateId);
+        this.createdAt = Instant.now();
     }
 
     /**
@@ -59,8 +48,4 @@ public class WorkflowEventInbox {
         return eventId;
     }
 
-    @PrePersist
-    private void onCreate() {
-        createdAt = Instant.now();
-    }
 }

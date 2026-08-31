@@ -11,7 +11,7 @@
 
 - 服务使用同一 PostgreSQL 实例，但每个服务拥有独立 Schema、账号和 Flyway 迁移。
 - 业务表使用 `tenant_id`。
-- 应用层通过 Hibernate Filter 或 MyBatis 拦截器注入租户条件。
+- 应用层在事务入口设置当前租户上下文，MyBatis Mapper 执行带租户边界的明确 SQL。
 - PostgreSQL RLS 作为最终防线；业务事务设置当前租户。
 
 ## 后果

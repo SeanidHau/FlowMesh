@@ -16,10 +16,6 @@ spring:
   flyway:
     schemas: workflow
     create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: workflow
   datasource:
     hikari:
       connection-init-sql: SET search_path TO workflow
