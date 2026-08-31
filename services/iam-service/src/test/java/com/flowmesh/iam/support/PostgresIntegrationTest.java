@@ -2,9 +2,11 @@ package com.flowmesh.iam.support;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * 集成测试基类，提供 Testcontainers 真实 PostgreSQL 连接。
@@ -14,6 +16,8 @@ import org.testcontainers.junit.jupiter.Container;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@Testcontainers
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class PostgresIntegrationTest {
 
     /**

@@ -10,7 +10,11 @@
 在仓库根目录执行：
 
 ```bash
-helm lint infra/helm/flowmesh
+helm lint infra/helm/flowmesh \
+  --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
+  --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
+  --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
+  --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
 helm upgrade --install flowmesh infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \

@@ -214,3 +214,9 @@ README 与 DESIGN 中列出 Redis、MinIO、Camunda、Prometheus/Grafana、OpenT
 4. 用真实乐观锁与并发幂等仲裁完善申请状态链路。
 5. 落地认证审计、事件契约校验与 IAM RLS 决策。
 6. 最后清理未使用配置/Bean，并让 README 的能力声明与 MVP 保持一致。
+
+## 复核记录（2026-08-31）
+
+- 已安装 Helm v3.18.6；使用临时校验凭据执行 `helm lint infra/helm/flowmesh` 和合法配置渲染，均通过；缺少运行时凭据时渲染会按预期失败。GitHub Actions 已加入同等校验。
+- 已统一 IAM、supplier、workflow 集成测试基类的 Testcontainers 生命周期，并使用 `@DirtiesContext(AFTER_CLASS)` 防止 Spring 上下文复用已关闭容器的连接池。
+- `./mvnw -q -DskipTests test-compile` 已通过。完整 `./mvnw -q test` 本轮因本机 Docker socket 无响应而停在 Testcontainers 初始化，不能将既有 surefire 报告的 0 failures 记作本轮完整测试成功；Docker Desktop 恢复后需重新执行并确认 Maven 正常退出。
