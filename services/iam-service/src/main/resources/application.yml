@@ -42,7 +42,8 @@ flowmesh:
       refresh-token-ttl: P7D
     login-rate-limit:
       enabled: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:false}
-      max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS:5}
+      account-max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_ACCOUNT_MAX_ATTEMPTS:5}
+      client-max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_CLIENT_MAX_ATTEMPTS:30}
       window: ${FLOWMESH_LOGIN_RATE_LIMIT_WINDOW:PT1M}
 
 management:
