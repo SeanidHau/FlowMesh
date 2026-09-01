@@ -40,6 +40,8 @@ trap cleanup EXIT
 JWT_KEY="$(openssl rand -base64 32 | tr -d '\n')"
 sed 's/brokerIP1 = rocketmq-broker/brokerIP1 = 127.0.0.1/' \
   "${ROOT_DIR}/infra/compose/rocketmq/broker.conf" > "${BROKER_CONFIG}"
+# mktemp 默认创建 600 权限；RocketMQ 容器以非 root 用户运行，需要确保挂载配置可读。
+chmod 644 "${BROKER_CONFIG}"
 cat > "${ENV_FILE}" <<EOF
 POSTGRES_USER=flowmesh
 POSTGRES_PASSWORD=flowmesh-e2e-postgres
