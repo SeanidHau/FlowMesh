@@ -17,20 +17,20 @@
   <insert id="insert" parameterType="com.flowmesh.supplier.domain.SupplierApplication">
     INSERT INTO supplier_applications
       (id, tenant_id, applicant_user_id, supplier_name, status, state_version, created_at, updated_at)
-    VALUES (#{id}, #{tenantId}, #{applicantUserId}, #{supplierName}, #{status},
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{applicantUserId, jdbcType=OTHER}, #{supplierName}, #{status},
             #{stateVersion}, #{createdAt}, #{updatedAt})
   </insert>
 
   <select id="findById" resultMap="applicationResult">
     SELECT id, tenant_id, applicant_user_id, supplier_name, status, state_version, created_at, updated_at
     FROM supplier_applications
-    WHERE id = #{id}
+    WHERE id = #{id, jdbcType=OTHER}
   </select>
 
   <update id="updateState" parameterType="com.flowmesh.supplier.domain.SupplierApplication">
     UPDATE supplier_applications
     SET status = #{status}, state_version = state_version + 1, updated_at = CURRENT_TIMESTAMP
-    WHERE id = #{id}
+    WHERE id = #{id, jdbcType=OTHER}
       AND tenant_id = #{tenantId}
       AND state_version = #{stateVersion}
   </update>

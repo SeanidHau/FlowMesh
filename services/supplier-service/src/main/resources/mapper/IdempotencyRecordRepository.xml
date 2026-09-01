@@ -17,7 +17,7 @@
   <insert id="insert" parameterType="com.flowmesh.supplier.domain.IdempotencyRecord">
     INSERT INTO supplier_idempotency_keys
       (id, tenant_id, user_id, idempotency_key, request_fingerprint, response_status, response_body, created_at)
-    VALUES (#{id}, #{tenantId}, #{userId}, #{idempotencyKey}, #{requestFingerprint},
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{userId, jdbcType=OTHER}, #{idempotencyKey}, #{requestFingerprint},
             #{responseStatus}, CAST(#{responseBody} AS jsonb), #{createdAt})
   </insert>
 
@@ -26,7 +26,7 @@
            response_status, response_body::text AS response_body, created_at
     FROM supplier_idempotency_keys
     WHERE tenant_id = #{tenantId}
-      AND user_id = #{userId}
+      AND user_id = #{userId, jdbcType=OTHER}
       AND idempotency_key = #{idempotencyKey}
   </select>
 </mapper>

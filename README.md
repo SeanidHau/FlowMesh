@@ -10,11 +10,12 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | --- | --- | --- |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出和认证安全审计。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
-| RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避和失败终态；真实 Broker E2E 仍需补充。 |
+| RocketMQ | 基础能力已实现 | 主链使用 Outbox、认领租约、指数退避和失败终态，并暴露基础发布指标；真实 Broker E2E 仍需补充。 |
 | PostgreSQL | 已实现 | 三个服务使用独立 Schema 和业务账号。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Camunda、Redis、MinIO | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
-| Prometheus、Grafana、OpenTelemetry、DLQ 重放、对账 | 计划中 | 当前仅保留设计和部分数据结构，运行组件及运维入口待补齐。 |
+| Prometheus 指标端点 | 基础能力已实现 | 三个服务暴露 Actuator Prometheus 端点和 Outbox 发布成功/失败指标；完整监控平台仍待建设。 |
+| Grafana、OpenTelemetry、DLQ 重放、对账 | 计划中 | 当前仅保留设计和部分数据结构，运行组件及运维入口待补齐。 |
 
 ## 项目目标
 
@@ -34,6 +35,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | [安全规范](docs/security.md) | JWT、RBAC、RLS、Secret 和对象存储规则 |
 | [测试策略](docs/testing-strategy.md) | 单元、集成、契约、E2E 和压测范围 |
 | [运行手册](docs/runbook.md) | 启停、排障、DLQ 重放、对账和恢复步骤 |
+| [补齐需求与验收](docs/completion-requirements.md) | 当前阶段范围、验收标准和实施状态 |
 
 ## 目录
 
@@ -66,6 +68,10 @@ openssl rand -base64 32
 docker compose --env-file .env -f infra/compose/docker-compose.yml up -d postgres
 ./mvnw test
 ```
+
+本地测试若使用 Testcontainers，需要临时启动 Docker Desktop。测试完成后，如果启动过 Compose，
+执行 `docker compose --env-file .env -f infra/compose/docker-compose.yml down`，再退出 Docker
+Desktop；平时不要让 Docker 常驻后台，后续需要集成测试或本地环境时再启动。
 
 IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 导入根目录 `pom.xml`。
 运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `IamServiceApplication`、

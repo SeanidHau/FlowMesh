@@ -26,7 +26,7 @@
     INSERT INTO iam_users
       (id, tenant_id, username, password_hash, display_name, status, last_login_at,
        version, created_at, updated_at)
-    VALUES (#{id}, #{tenant.id}, #{username}, #{passwordHash}, #{displayName}, #{status},
+    VALUES (#{id, jdbcType=OTHER}, #{tenant.id, jdbcType=OTHER}, #{username}, #{passwordHash}, #{displayName}, #{status},
             #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt})
   </insert>
 
@@ -49,7 +49,7 @@
            t.created_at AS tenant_created_at, t.updated_at AS tenant_updated_at
     FROM iam_users u
     JOIN tenants t ON t.id = u.tenant_id
-    WHERE u.id = #{id}
+    WHERE u.id = #{id, jdbcType=OTHER}
   </select>
 
   <select id="existsByTenant_IdAndUsername" resultType="boolean">
@@ -62,6 +62,6 @@
   <update id="updateLastLogin" parameterType="com.flowmesh.iam.domain.user.IamUser">
     UPDATE iam_users
     SET last_login_at = #{lastLoginAt}, updated_at = #{updatedAt}, version = version + 1
-    WHERE id = #{id} AND version = #{version}
+    WHERE id = #{id, jdbcType=OTHER} AND version = #{version}
   </update>
 </mapper>

@@ -5,12 +5,12 @@
 <mapper namespace="com.flowmesh.supplier.repository.WorkflowEventInboxRepository">
   <insert id="save" parameterType="com.flowmesh.supplier.domain.WorkflowEventInbox">
     INSERT INTO supplier_workflow_event_inbox (event_id, tenant_id, aggregate_id, created_at)
-    VALUES (#{eventId}, #{tenantId}, #{aggregateId}, #{createdAt})
+    VALUES (#{eventId, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER}, #{createdAt})
   </insert>
 
   <select id="existsById" resultType="boolean">
     SELECT EXISTS (
-      SELECT 1 FROM supplier_workflow_event_inbox WHERE event_id = #{eventId}
+      SELECT 1 FROM supplier_workflow_event_inbox WHERE event_id = #{eventId, jdbcType=OTHER}
     )
   </select>
 

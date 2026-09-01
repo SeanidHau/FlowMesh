@@ -6,7 +6,7 @@
   <insert id="save" parameterType="com.flowmesh.iam.domain.audit.AuditEvent">
     INSERT INTO iam_audit_events
       (id, tenant_id, actor_user_id, action, target_type, target_id, result, trace_id, occurred_at)
-    VALUES (#{id}, #{tenantId}, #{actorUserId}, #{action}, #{targetType}, #{targetId},
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{actorUserId, jdbcType=OTHER}, #{action}, #{targetType}, #{targetId},
             #{result}, #{traceId}, #{occurredAt})
   </insert>
 </mapper>

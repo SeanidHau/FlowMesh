@@ -13,7 +13,7 @@
 
   <insert id="insert" parameterType="com.flowmesh.iam.domain.role.IamRole">
     INSERT INTO iam_roles (id, code, name, description, created_at)
-    VALUES (#{id}, #{code}, #{name}, #{description}, #{createdAt})
+    VALUES (#{id, jdbcType=OTHER}, #{code}, #{name}, #{description}, #{createdAt})
   </insert>
 
   <select id="findByCode" resultMap="roleResult">

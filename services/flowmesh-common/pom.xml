@@ -31,6 +31,12 @@
       <artifactId>spring-boot</artifactId>
     </dependency>
 
+    <!-- 作用：提供共享 PostgreSQL UUID TypeHandler 所需的 MyBatis API。 -->
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+    </dependency>
+
     <!-- 作用：提供 @NotBlank / @NotNull 校验注解。 -->
     <dependency>
       <groupId>jakarta.validation</groupId>

@@ -46,6 +46,12 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
+    <!-- 作用：为 Actuator 暴露 Prometheus 指标格式。 -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
     <!-- 作用：使用 MyBatis 持久化 RocketMQ 消费结果和流程状态。 -->
     <dependency>
       <groupId>org.mybatis.spring.boot</groupId>

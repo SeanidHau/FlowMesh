@@ -24,9 +24,9 @@
     INSERT INTO supplier_outbox_events
       (id, tenant_id, aggregate_id, topic, tag, payload, attempt_count, last_error,
        published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at)
-    VALUES (#{id}, #{tenantId}, #{aggregateId}, #{topic}, #{tag}, CAST(#{payload} AS jsonb),
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER}, #{topic}, #{tag}, CAST(#{payload} AS jsonb),
             #{attemptCount}, #{lastError}, #{publishedAt}, #{nextAttemptAt}, #{claimedUntil},
-            #{claimToken}, #{deadLetteredAt}, #{createdAt})
+            #{claimToken, jdbcType=OTHER}, #{deadLetteredAt}, #{createdAt})
   </insert>
 
   <select id="claimBatch" resultMap="outboxResult">
@@ -42,7 +42,7 @@
       FOR UPDATE SKIP LOCKED
     )
     UPDATE supplier_outbox_events event
-    SET claim_token = #{claimToken}, claimed_until = #{claimedUntil}
+    SET claim_token = #{claimToken, jdbcType=OTHER}, claimed_until = #{claimedUntil}
     FROM candidates
     WHERE event.id = candidates.id
     RETURNING event.*
@@ -51,14 +51,14 @@
   <update id="markPublishedIfClaimed">
     UPDATE supplier_outbox_events
     SET published_at = #{publishedAt}, last_error = NULL, claimed_until = NULL, claim_token = NULL
-    WHERE id = #{id} AND claim_token = #{claimToken} AND published_at IS NULL
+    WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER} AND published_at IS NULL
   </update>
 
   <update id="recordRetryIfClaimed">
     UPDATE supplier_outbox_events
     SET attempt_count = attempt_count + 1, last_error = #{error}, next_attempt_at = #{nextAttemptAt},
         claimed_until = NULL, claim_token = NULL
-    WHERE id = #{id} AND claim_token = #{claimToken}
+    WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
       AND published_at IS NULL AND attempt_count + 1 &lt; #{maxAttempts}
   </update>
 
@@ -66,7 +66,7 @@
     UPDATE supplier_outbox_events
     SET attempt_count = attempt_count + 1, last_error = #{error}, dead_lettered_at = #{deadLetteredAt},
         next_attempt_at = NULL, claimed_until = NULL, claim_token = NULL
-    WHERE id = #{id} AND claim_token = #{claimToken}
+    WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
       AND published_at IS NULL AND attempt_count + 1 &gt;= #{maxAttempts}
   </update>
 
@@ -74,7 +74,7 @@
     SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
            published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at
     FROM supplier_outbox_events
-    WHERE aggregate_id = #{aggregateId} AND tag = #{tag}
+    WHERE aggregate_id = #{aggregateId, jdbcType=OTHER} AND tag = #{tag}
     ORDER BY created_at
     LIMIT 1
   </select>

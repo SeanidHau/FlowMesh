@@ -53,6 +53,12 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
+    <!-- 作用：为 Actuator 暴露 Prometheus 指标格式。 -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
     <!-- 作用：管理 supplier Schema 的版本化数据库迁移。 -->
     <dependency>
       <groupId>org.flywaydb</groupId>

@@ -11,7 +11,7 @@
 | 层级 | 目标 | 最低覆盖 |
 | --- | --- | --- |
 | 单元测试 | 状态机、权限、幂等、重试决策 | 所有受控状态转换和异常分支 |
-| 集成测试 | PostgreSQL、Redis、RocketMQ、RLS、Outbox | 使用 Testcontainers |
+| 集成测试 | PostgreSQL、RLS、MyBatis、Outbox | 使用 Testcontainers；RocketMQ 真实 Broker E2E 单独排期 |
 | 契约测试 | REST 和事件兼容性 | 至少验证一次新增可选事件字段 |
 | E2E | 完整流程和故障恢复 | 四个 README 演示剧本 |
 | 压测 | 创建申请和风控消费 | 记录环境、场景、吞吐和延迟 |
@@ -27,6 +27,19 @@
 7. 审批部分成功：审批快照与 Camunda 任务发生部分成功时，对账可恢复 `PENDING` 命令。
 
 ## 质量门禁
+
+当前已执行的后端验证为：
+
+```bash
+./mvnw -q test
+```
+
+该命令会启动 PostgreSQL Testcontainers，验证 Flyway、MyBatis、RLS、认证和核心业务集成测试。
+测试 profile 会关闭 RocketMQ 自动配置，因此不能用它替代真实 Broker 的消息 E2E 验证。
+Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，不提交任何真实密钥。
+
+- Docker 只在 Testcontainers 或 Compose 验证期间启动。
+- 验证结束后停止本任务启动的 Compose 容器，并退出 Docker Desktop，避免后台持续占用资源。
 
 - Maven Enforcer 检查 Java 与依赖版本。
 - Spotless 或 Checkstyle 检查格式。

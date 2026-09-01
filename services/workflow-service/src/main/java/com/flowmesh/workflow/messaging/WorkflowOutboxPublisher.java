@@ -15,6 +15,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 将 workflow Outbox 事件发布到 RocketMQ。
@@ -31,6 +33,8 @@ public class WorkflowOutboxPublisher {
     private final WorkflowOutboxClaimService claimService;
     private final int maxAttempts;
     private final long retryBaseDelaySeconds;
+    private final Counter publishedCounter;
+    private final Counter failedCounter;
 
     /**
      * 创建 workflow Outbox 发布器。
@@ -42,6 +46,7 @@ public class WorkflowOutboxPublisher {
         WorkflowOutboxEventRepository repository,
         RocketMQTemplate rocketMQTemplate,
         WorkflowOutboxClaimService claimService,
+        MeterRegistry meterRegistry,
         @Value("${flowmesh.workflow.outbox.max-attempts:5}") int maxAttempts,
         @Value("${flowmesh.workflow.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
     ) {
@@ -50,6 +55,12 @@ public class WorkflowOutboxPublisher {
         this.claimService = claimService;
         this.maxAttempts = maxAttempts;
         this.retryBaseDelaySeconds = retryBaseDelaySeconds;
+        this.publishedCounter = Counter.builder("flowmesh.outbox.published")
+            .description("已成功发送到 RocketMQ 的 workflow Outbox 事件数")
+            .register(meterRegistry);
+        this.failedCounter = Counter.builder("flowmesh.outbox.failed")
+            .description("workflow Outbox 发送失败次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -68,8 +79,10 @@ public class WorkflowOutboxPublisher {
                     message,
                     SEND_TIMEOUT_MILLIS
                 );
+                publishedCounter.increment();
                 repository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
             } catch (RuntimeException exception) {
+                failedCounter.increment();
                 String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
                 int nextAttempt = event.getAttemptCount() + 1;
                 if (nextAttempt >= maxAttempts) {

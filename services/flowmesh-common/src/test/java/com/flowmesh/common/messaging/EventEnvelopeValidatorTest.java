@@ -50,4 +50,23 @@ class EventEnvelopeValidatorTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("不支持的事件结构版本");
     }
+
+    @Test
+    void shouldRejectMissingTraceId() throws Exception {
+        var event = objectMapper.readTree("""
+            {
+              "eventId":"00000000-0000-0000-0000-000000000001",
+              "eventType":"ApplicationSubmitted",
+              "schemaVersion":1,
+              "tenantId":"tenant-a",
+              "aggregateId":"00000000-0000-0000-0000-000000000002",
+              "occurredAt":"2026-08-31T00:00:00Z",
+              "payload":{}
+            }
+            """);
+
+        assertThatThrownBy(() -> EventEnvelopeValidator.validate(event, "ApplicationSubmitted"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("事件缺少字段 traceId");
+    }
 }

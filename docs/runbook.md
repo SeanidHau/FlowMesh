@@ -54,6 +54,14 @@ Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者。桌面端
 docker compose --env-file .env -f infra/compose/docker-compose.yml down
 ```
 
+如果本次只为测试临时启动了 Docker Desktop，容器停止后退出 Docker Desktop：
+
+```bash
+osascript -e 'quit app "Docker"'
+```
+
+后续需要 Testcontainers 或 Compose 时再启动 Docker Desktop。不要为了停止服务删除数据卷。
+
 只有在确认不再需要本地数据时，才删除 PostgreSQL 和 RocketMQ 数据卷：
 
 ```bash

@@ -17,6 +17,7 @@ spring:
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml
+  type-handlers-package: com.flowmesh.common.persistence
   configuration:
     map-underscore-to-camel-case: true
 
@@ -37,7 +38,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:

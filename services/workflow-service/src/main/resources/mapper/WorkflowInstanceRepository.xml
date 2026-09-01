@@ -19,7 +19,7 @@
     INSERT INTO workflow_instances
       (id, application_id, source_event_id, tenant_id, process_definition_key,
        status, current_task, version, created_at)
-    VALUES (#{id}, #{applicationId}, #{sourceEventId}, #{tenantId}, #{processDefinitionKey},
+    VALUES (#{id, jdbcType=OTHER}, #{applicationId, jdbcType=OTHER}, #{sourceEventId, jdbcType=OTHER}, #{tenantId}, #{processDefinitionKey},
             #{status}, #{currentTask}, #{version}, #{createdAt})
   </insert>
 
@@ -27,19 +27,19 @@
     SELECT id, application_id, source_event_id, tenant_id, process_definition_key,
            status, current_task, version, created_at
     FROM workflow_instances
-    WHERE application_id = #{applicationId}
+    WHERE application_id = #{applicationId, jdbcType=OTHER}
   </select>
 
   <select id="existsBySourceEventId" resultType="boolean">
     SELECT EXISTS (
-      SELECT 1 FROM workflow_instances WHERE source_event_id = #{sourceEventId}
+      SELECT 1 FROM workflow_instances WHERE source_event_id = #{sourceEventId, jdbcType=OTHER}
     )
   </select>
 
   <update id="updateState" parameterType="com.flowmesh.workflow.domain.WorkflowInstance">
     UPDATE workflow_instances
     SET status = #{status}, current_task = #{currentTask}, version = version + 1
-    WHERE id = #{id}
+    WHERE id = #{id, jdbcType=OTHER}
       AND tenant_id = #{tenantId}
       AND version = #{version}
   </update>

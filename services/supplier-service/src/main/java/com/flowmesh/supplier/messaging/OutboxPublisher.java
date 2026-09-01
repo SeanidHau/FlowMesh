@@ -15,6 +15,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 将 supplier Outbox 事件发布到 RocketMQ。
@@ -34,6 +36,8 @@ public class OutboxPublisher {
     private final OutboxClaimService outboxClaimService;
     private final int maxAttempts;
     private final long retryBaseDelaySeconds;
+    private final Counter publishedCounter;
+    private final Counter failedCounter;
 
     /**
      * 创建 Outbox 发布器。
@@ -45,6 +49,7 @@ public class OutboxPublisher {
         OutboxEventRepository outboxEventRepository,
         RocketMQTemplate rocketMQTemplate,
         OutboxClaimService outboxClaimService,
+        MeterRegistry meterRegistry,
         @Value("${flowmesh.outbox.max-attempts:5}") int maxAttempts,
         @Value("${flowmesh.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
     ) {
@@ -53,6 +58,12 @@ public class OutboxPublisher {
         this.outboxClaimService = outboxClaimService;
         this.maxAttempts = maxAttempts;
         this.retryBaseDelaySeconds = retryBaseDelaySeconds;
+        this.publishedCounter = Counter.builder("flowmesh.outbox.published")
+            .description("已成功发送到 RocketMQ 的 supplier Outbox 事件数")
+            .register(meterRegistry);
+        this.failedCounter = Counter.builder("flowmesh.outbox.failed")
+            .description("supplier Outbox 发送失败次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -76,8 +87,10 @@ public class OutboxPublisher {
                 message,
                 SEND_TIMEOUT_MILLIS
             );
+            publishedCounter.increment();
             outboxEventRepository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
         } catch (RuntimeException exception) {
+            failedCounter.increment();
             String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
             int nextAttempt = event.getAttemptCount() + 1;
             if (nextAttempt >= maxAttempts) {
