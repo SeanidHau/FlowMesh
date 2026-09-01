@@ -12,17 +12,19 @@
 ```bash
 helm lint infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
+  --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
 helm upgrade --install flowmesh infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
+  --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
 ```
 
-生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`IAM_DB_PASSWORD`、
+生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD` 和 `WORKFLOW_DB_PASSWORD` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
 

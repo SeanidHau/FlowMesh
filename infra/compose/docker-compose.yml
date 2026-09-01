@@ -19,6 +19,21 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   rocketmq-namesrv:
     image: apache/rocketmq:5.3.2
     ports:
@@ -60,13 +75,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=iam
       IAM_DB_USER: flowmesh_iam
       IAM_DB_PASSWORD: ${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be set in .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
       JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
       FLOWMESH_DEMO_DATA_ENABLED: ${FLOWMESH_DEMO_DATA_ENABLED:-true}
+      FLOWMESH_LOGIN_RATE_LIMIT_ENABLED: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:-true}
     ports:
       - "8081:8081"
     read_only: true
@@ -141,5 +162,6 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
   rocketmq-store:
   rocketmq-logs:

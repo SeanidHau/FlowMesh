@@ -51,6 +51,17 @@ spec:
                 secretKeyRef:
                   name: {{ include "flowmesh.configSecret" . }}
                   key: JWT_SIGNING_KEY
+            - name: REDIS_HOST
+              value: {{ .Values.redis.host | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: REDIS_PASSWORD
+            - name: FLOWMESH_LOGIN_RATE_LIMIT_ENABLED
+              value: {{ .Values.services.iam.loginRateLimitEnabled | quote }}
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

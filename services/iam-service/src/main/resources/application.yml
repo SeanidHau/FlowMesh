@@ -11,6 +11,13 @@ spring:
     password: ${IAM_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
+
   flyway:
     # 作用：Flyway 使用 flowmesh_iam 账号在 iam schema 上执行迁移。
     fail-on-missing-locations: false
@@ -33,8 +40,15 @@ flowmesh:
       signing-key: ${JWT_SIGNING_KEY}
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
+    login-rate-limit:
+      enabled: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:false}
+      max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS:5}
+      window: ${FLOWMESH_LOGIN_RATE_LIMIT_WINDOW:PT1M}
 
 management:
+  health:
+    redis:
+      enabled: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:false}
   endpoints:
     web:
       exposure:

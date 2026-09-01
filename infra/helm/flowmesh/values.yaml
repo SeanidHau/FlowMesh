@@ -3,6 +3,7 @@ global:
   imagePullPolicy: IfNotPresent
   jwtIssuer: flowmesh-local
   jwtSigningKey: ""
+  redisPassword: ""
   existingSecret: ""
 
 postgresql:
@@ -13,6 +14,10 @@ postgresql:
 rocketmq:
   namesrvAddr: rocketmq-namesrv:9876
 
+redis:
+  host: redis
+  port: 6379
+
 services:
   iam:
     image: flowmesh/iam-service
@@ -20,6 +25,7 @@ services:
     port: 8081
     dbUser: flowmesh_iam
     dbPassword: ""
+    loginRateLimitEnabled: true
     replicas: 1
     resources: {}
   supplier:

@@ -44,17 +44,20 @@ jobs:
       - name: Validate Helm chart
         env:
           HELM_TEST_JWT: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          HELM_TEST_REDIS_PASSWORD: ci-only-redis-password
           HELM_TEST_IAM_PASSWORD: ci-only-iam-password
           HELM_TEST_SUPPLIER_PASSWORD: ci-only-supplier-password
           HELM_TEST_WORKFLOW_PASSWORD: ci-only-workflow-password
         run: |
           helm lint infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
+            --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD"
           helm template flowmesh infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
+            --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" >/dev/null

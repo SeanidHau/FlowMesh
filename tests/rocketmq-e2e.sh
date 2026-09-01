@@ -49,6 +49,7 @@ POSTGRES_DB=flowmesh
 IAM_DB_PASSWORD=flowmesh-e2e-iam
 SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier
 WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow
+REDIS_PASSWORD=flowmesh-e2e-redis
 JWT_SIGNING_KEY=${JWT_KEY}
 JWT_ISSUER=flowmesh-e2e
 FLOWMESH_OUTBOX_ENABLED=true
@@ -108,16 +109,19 @@ login() {
 
 echo "打包三个 Java 服务并启动 PostgreSQL、RocketMQ..."
 ./mvnw -q -DskipTests package
-docker compose "${COMPOSE_ARGS[@]}" up -d postgres rocketmq-namesrv rocketmq-volume-init rocketmq-broker
+docker compose "${COMPOSE_ARGS[@]}" up -d postgres redis rocketmq-namesrv rocketmq-volume-init rocketmq-broker
 wait_for_tcp 127.0.0.1 9876
 wait_for_tcp 127.0.0.1 10911
+wait_for_tcp 127.0.0.1 6379
 # Broker 端口打开后还需要少量时间向 NameServer 注册自身，避免首批事件过早失败。
 sleep 10
 
 start_service "iam" "services/iam-service/target/iam-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=iam" \
   IAM_DB_USER=flowmesh_iam IAM_DB_PASSWORD=flowmesh-e2e-iam \
-  JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" FLOWMESH_DEMO_DATA_ENABLED=true
+  REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=flowmesh-e2e-redis \
+  JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" FLOWMESH_DEMO_DATA_ENABLED=true \
+  FLOWMESH_LOGIN_RATE_LIMIT_ENABLED=true
 start_service "supplier" "services/supplier-service/target/supplier-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier" \
   SUPPLIER_DB_USER=flowmesh_supplier SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier \

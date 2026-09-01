@@ -14,7 +14,7 @@ set -a
 source "$env_file"
 set +a
 
-required_vars=(POSTGRES_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD JWT_SIGNING_KEY)
+required_vars=(POSTGRES_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD REDIS_PASSWORD JWT_SIGNING_KEY)
 for variable in "${required_vars[@]}"; do
   value="${!variable:-}"
   if [[ -z "$value" || "$value" == change-me* || "$value" == replace-with-* ]]; then
