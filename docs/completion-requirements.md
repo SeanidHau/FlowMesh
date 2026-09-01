@@ -15,7 +15,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 状态 | 内容 |
 | --- | --- |
 | 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
-| 当前迭代 | Redis 登录失败限流；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
+| 当前迭代 | Redis 登录失败限流（Java 业务链路待补齐）；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、MinIO、独立风险/通知服务、完整监控平台和生产级高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围

@@ -25,7 +25,8 @@ services:
     port: 8081
     dbUser: flowmesh_iam
     dbPassword: ""
-    loginRateLimitEnabled: true
+    # Java 限流链路完成后再显式开启。
+    loginRateLimitEnabled: false
     replicas: 1
     resources: {}
   supplier:
