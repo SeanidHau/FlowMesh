@@ -15,6 +15,15 @@ APP_PIDS=()
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-e2e-logs.XXXXXX")"
 
 cleanup() {
+  local status=$?
+  if [ "${status}" -ne 0 ]; then
+    echo "E2E 失败，输出 Java 服务日志：" >&2
+    for log_file in "${LOG_DIR}"/*.log; do
+      echo "--- ${log_file} ---" >&2
+      tail -80 "${log_file}" >&2 || true
+    done
+    docker compose "${COMPOSE_ARGS[@]}" logs --tail=80 rocketmq-namesrv rocketmq-broker >&2 || true
+  fi
   for pid in "${APP_PIDS[@]}"; do
     kill "${pid}" >/dev/null 2>&1 || true
   done
@@ -65,6 +74,20 @@ wait_for_url() {
   done
 }
 
+wait_for_tcp() {
+  local host="$1"
+  local port="$2"
+  local attempts=0
+  until nc -z "${host}" "${port}" >/dev/null 2>&1; do
+    attempts=$((attempts + 1))
+    if [ "${attempts}" -ge 90 ]; then
+      echo "等待 TCP 服务超时：${host}:${port}" >&2
+      return 1
+    fi
+    sleep 1
+  done
+}
+
 start_service() {
   local service="$1"
   local jar="$2"
@@ -84,6 +107,9 @@ login() {
 echo "打包三个 Java 服务并启动 PostgreSQL、RocketMQ..."
 ./mvnw -q -DskipTests package
 docker compose "${COMPOSE_ARGS[@]}" up -d postgres rocketmq-namesrv rocketmq-volume-init rocketmq-broker
+wait_for_tcp 127.0.0.1 9876
+wait_for_tcp 127.0.0.1 10911
+# Broker 端口打开后还需要少量时间向 NameServer 注册自身，避免首批事件过早失败。
 sleep 10
 
 start_service "iam" "services/iam-service/target/iam-service-0.1.0-SNAPSHOT.jar" \
