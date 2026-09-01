@@ -8,14 +8,14 @@
 
 MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC、PostgreSQL RLS、MyBatis 持久化和 RocketMQ Transactional Outbox 基础链路。
 
-当前 Outbox 已具备数据库认领租约、指数退避、失败终态、死信查询、受控重放和审计；事件信封/业务 ID 校验、业务与消息指标、HTTP/事件 Trace 标识、依赖就绪探针、真实 RocketMQ E2E、并发竞争测试和跨服务对账均已接入。Redis 第一阶段用于 IAM 登录失败限流，数据库仍是认证与幂等的最终事实源。
+当前 Outbox 已具备数据库认领租约、指数退避、失败终态、死信查询、受控重放和审计；事件信封/业务 ID 校验、业务与消息指标、HTTP/事件 Trace 标识、依赖就绪探针、真实 RocketMQ E2E、并发竞争测试和跨服务对账均已接入。Redis 第一阶段用于 IAM 登录尝试限流，数据库仍是认证与幂等的最终事实源。
 
 ## 3.1 本轮实施状态
 
 | 状态 | 内容 |
 | --- | --- |
 | 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
-| 当前迭代 | Redis 登录失败限流（Java 业务链路待补齐）；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
+| 当前迭代 | Redis 登录尝试限流已完成；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、MinIO、独立风险/通知服务、完整监控平台和生产级高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围
@@ -62,7 +62,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 以下能力不纳入当前 MVP 的“已完成”判定，但保留为后续迭代需求：
 
 - Camunda 8 BPMN 流程编排。
-- Redis 缓存、短期幂等加速；登录失败限流属于当前迭代范围。
+- Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
 - MinIO 供应商材料上传、预签名 URL 和文件安全检查。
 - 独立风险服务、通知服务和业务审计服务。
 - Prometheus、Grafana、OpenTelemetry 的完整监控与告警平台。

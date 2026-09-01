@@ -67,13 +67,20 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
      */
     @Test
     void shouldRejectWrongPassword() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new LoginRequest("tenant-a", "applicant-a", "wrong-password")
                 )))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"))
+                .andReturn();
+
+        String traceId = result.getResponse().getHeader("X-Trace-Id");
+        String responseTraceId = objectMapper.readTree(result.getResponse().getContentAsString())
+            .get("traceId").asText();
+        assertThat(traceId).isNotBlank();
+        assertThat(responseTraceId).isEqualTo(traceId);
     }
 
     /**

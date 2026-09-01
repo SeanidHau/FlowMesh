@@ -41,7 +41,7 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
-    <!-- 作用：提供 Redis 客户端，用于登录失败次数的分布式限流。 -->
+    <!-- 作用：提供 Redis 客户端，用于登录尝试次数的分布式限流。 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-redis</artifactId>

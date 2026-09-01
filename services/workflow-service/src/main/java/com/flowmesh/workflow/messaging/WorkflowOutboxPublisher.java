@@ -37,6 +37,7 @@ public class WorkflowOutboxPublisher {
     private final Counter failedCounter;
     private final Counter retryCounter;
     private final Counter deadLetterCounter;
+    private final Counter confirmationFailedCounter;
 
     /**
      * 创建 workflow Outbox 发布器。
@@ -73,6 +74,9 @@ public class WorkflowOutboxPublisher {
         this.deadLetterCounter = Counter.builder("flowmesh.outbox.dead_lettered")
             .description("workflow Outbox 进入死信的事件数")
             .register(meterRegistry);
+        this.confirmationFailedCounter = Counter.builder("flowmesh.outbox.confirmation_failed")
+            .description("workflow Outbox 已发送但未完成数据库确认的事件数")
+            .register(meterRegistry);
         io.micrometer.core.instrument.Gauge.builder(
                 "flowmesh.outbox.pending", repository, WorkflowOutboxEventRepository::countPending
             )
@@ -101,8 +105,24 @@ public class WorkflowOutboxPublisher {
                     message,
                     SEND_TIMEOUT_MILLIS
                 );
-                publishedCounter.increment();
-                repository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
+                try {
+                    int updated = repository.markPublishedIfClaimed(
+                        event.getId(), event.getClaimToken(), Instant.now()
+                    );
+                    if (updated == 1) {
+                        publishedCounter.increment();
+                    } else {
+                        confirmationFailedCounter.increment();
+                        log.warn("RocketMQ workflow 事件已发送但未完成 Outbox 确认，eventId={}", event.getId());
+                    }
+                } catch (RuntimeException confirmationException) {
+                    confirmationFailedCounter.increment();
+                    log.error(
+                        "RocketMQ workflow 事件已发送但 Outbox 确认失败，eventId={}",
+                        event.getId(),
+                        confirmationException
+                    );
+                }
             } catch (RuntimeException exception) {
                 failedCounter.increment();
                 String error = exception.getMessage() == null ? "unknown" : exception.getMessage();

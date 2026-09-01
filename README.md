@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前 MVP 使用 Java 21、Spring Boot、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-当前已完成 MVP-3：IAM 登录/刷新/登出与认证审计、JWT 跨服务校验、供应商申请创建、持久化幂等、PostgreSQL RLS 隔离，以及通过 RocketMQ Outbox 驱动 workflow-service 创建幂等流程投影，并支持采购、法务、财务、运营四个角色按顺序推进审批。Camunda、Redis、MinIO、风险服务和通知审计服务仍属于后续阶段。总体设计见 [DESIGN.md](DESIGN.md)。
+当前已完成 MVP-4：在上述基础上补齐 RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。Camunda、Redis 缓存、MinIO、风险服务和通知审计服务仍属于后续阶段。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -10,12 +10,14 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | --- | --- | --- |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出和认证安全审计。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
-| RocketMQ | 基础能力已实现 | 主链使用 Outbox、认领租约、指数退避和失败终态，并暴露基础发布指标；真实 Broker E2E 仍需补充。 |
+| RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标。 |
 | PostgreSQL | 已实现 | 三个服务使用独立 Schema 和业务账号。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
-| Camunda、Redis、MinIO | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
+| Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；Redis 故障时降级放行。 |
+| Camunda、Redis 缓存、MinIO | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
 | Prometheus 指标端点 | 基础能力已实现 | 三个服务暴露 Actuator Prometheus 端点和 Outbox 发布成功/失败指标；完整监控平台仍待建设。 |
-| Grafana、OpenTelemetry、DLQ 重放、对账 | 计划中 | 当前仅保留设计和部分数据结构，运行组件及运维入口待补齐。 |
+| DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
+| Grafana、OpenTelemetry | 计划中 | 基础指标和 Trace ID 已接入，完整监控平台仍待建设。 |
 
 ## 项目目标
 

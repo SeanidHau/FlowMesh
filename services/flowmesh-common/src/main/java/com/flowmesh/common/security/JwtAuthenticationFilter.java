@@ -29,8 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String TRACE_ID_HEADER = "X-Trace-Id";
-
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
 
@@ -83,11 +81,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        String traceId = request.getHeader(TRACE_ID_HEADER);
         ErrorResponse body = ErrorResponse.of(
             "UNAUTHORIZED",
             "Access Token 缺失或已失效。",
-            traceId != null ? traceId : ""
+            TraceIdFilter.currentTraceId(request)
         );
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }

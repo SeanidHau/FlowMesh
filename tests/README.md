@@ -11,7 +11,6 @@
 ```
 
 脚本会临时创建环境变量和 Broker 配置，打包三个 Java 服务，并只启动本次测试使用的
-PostgreSQL 与真实 RocketMQ Broker。Redis 基础设施已提供，但登录限流 Java 链路完成前不会在该脚本中启用。
-脚本验证申请幂等、四级审批、消费回写、健康探针、
+PostgreSQL、Redis 与真实 RocketMQ Broker。脚本验证申请幂等、四级审批、消费回写、健康探针、
 Prometheus 指标、死信查询、受控重放、审计和跨服务对账；退出时停止并删除本次测试容器和数据卷。
 本地验证完成后请按 [运行手册](../docs/runbook.md) 退出 Docker Desktop。

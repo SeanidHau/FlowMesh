@@ -87,8 +87,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
       FLOWMESH_DEMO_DATA_ENABLED: ${FLOWMESH_DEMO_DATA_ENABLED:-true}
-      # Java 限流链路完成后再通过 .env 显式开启，避免未实现能力被误认为已生效。
-      FLOWMESH_LOGIN_RATE_LIMIT_ENABLED: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:-false}
+      FLOWMESH_LOGIN_RATE_LIMIT_ENABLED: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:-true}
     ports:
       - "8081:8081"
     read_only: true

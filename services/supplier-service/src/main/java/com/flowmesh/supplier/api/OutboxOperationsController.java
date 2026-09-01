@@ -1,11 +1,13 @@
 package com.flowmesh.supplier.api;
 
 import com.flowmesh.common.security.AuthPrincipal;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.supplier.api.dto.DeadLetterEventResponse;
 import com.flowmesh.supplier.api.dto.ReplayOutboxRequest;
 import com.flowmesh.supplier.api.dto.ReplayOutboxResponse;
 import com.flowmesh.supplier.application.OutboxOperationsService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,7 +64,7 @@ public class OutboxOperationsController {
      * @param principal 当前操作者
      * @param eventId 原死信标识
      * @param request 重放请求
-     * @param traceId 链路标识
+     * @param httpRequest HTTP 请求
      * @return 新事件标识和状态
      */
     @PostMapping("/{eventId}/replay")
@@ -70,8 +72,10 @@ public class OutboxOperationsController {
         @AuthenticationPrincipal AuthPrincipal principal,
         @PathVariable UUID eventId,
         @Valid @RequestBody ReplayOutboxRequest request,
-        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
+        HttpServletRequest httpRequest
     ) {
-        return service.replay(principal, eventId, request.reason(), traceId);
+        return service.replay(
+            principal, eventId, request.reason(), TraceIdFilter.currentTraceId(httpRequest)
+        );
     }
 }

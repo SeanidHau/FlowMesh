@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @param code 错误代码，如 {@code INVALID_CREDENTIALS}、{@code IDEMPOTENCY_KEY_CONFLICT}
  * @param message 人类可读的错误描述
- * @param traceId 请求追踪标识；来自 {@code X-Trace-Id} 请求头，无则空串
+ * @param traceId 请求追踪标识；由 HTTP Trace ID 上下文生成或透传
  * @param details 补充细节，如字段级校验错误列表
  */
 public record ErrorResponse(

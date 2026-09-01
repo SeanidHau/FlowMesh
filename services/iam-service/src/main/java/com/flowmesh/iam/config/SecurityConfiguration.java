@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
  * 其他路径默认要求认证。未认证请求返回 401 ErrorResponse。</p>
  */
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, LoginRateLimitProperties.class})
 public class SecurityConfiguration {
 
     /**
@@ -90,11 +90,10 @@ public class SecurityConfiguration {
                     response.setStatus(HttpStatus.UNAUTHORIZED.value());
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-                    String traceId = request.getHeader("X-Trace-Id");
                     ErrorResponse body = ErrorResponse.of(
                         "UNAUTHORIZED",
                         "Access Token 缺失或已失效。",
-                        traceId != null ? traceId : ""
+                        TraceIdFilter.currentTraceId(request)
                     );
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 })

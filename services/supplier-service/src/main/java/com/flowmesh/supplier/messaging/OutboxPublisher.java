@@ -40,6 +40,7 @@ public class OutboxPublisher {
     private final Counter failedCounter;
     private final Counter retryCounter;
     private final Counter deadLetterCounter;
+    private final Counter confirmationFailedCounter;
 
     /**
      * 创建 Outbox 发布器。
@@ -76,6 +77,9 @@ public class OutboxPublisher {
         this.deadLetterCounter = Counter.builder("flowmesh.outbox.dead_lettered")
             .description("supplier Outbox 进入死信的事件数")
             .register(meterRegistry);
+        this.confirmationFailedCounter = Counter.builder("flowmesh.outbox.confirmation_failed")
+            .description("supplier Outbox 已发送但未完成数据库确认的事件数")
+            .register(meterRegistry);
         io.micrometer.core.instrument.Gauge.builder(
                 "flowmesh.outbox.pending", outboxEventRepository, OutboxEventRepository::countPending
             )
@@ -109,8 +113,20 @@ public class OutboxPublisher {
                 message,
                 SEND_TIMEOUT_MILLIS
             );
-            publishedCounter.increment();
-            outboxEventRepository.markPublishedIfClaimed(event.getId(), event.getClaimToken(), Instant.now());
+            try {
+                int updated = outboxEventRepository.markPublishedIfClaimed(
+                    event.getId(), event.getClaimToken(), Instant.now()
+                );
+                if (updated == 1) {
+                    publishedCounter.increment();
+                } else {
+                    confirmationFailedCounter.increment();
+                    log.warn("RocketMQ 事件已发送但未完成 Outbox 确认，eventId={}", event.getId());
+                }
+            } catch (RuntimeException confirmationException) {
+                confirmationFailedCounter.increment();
+                log.error("RocketMQ 事件已发送但 Outbox 确认失败，eventId={}", event.getId(), confirmationException);
+            }
         } catch (RuntimeException exception) {
             failedCounter.increment();
             String error = exception.getMessage() == null ? "unknown" : exception.getMessage();

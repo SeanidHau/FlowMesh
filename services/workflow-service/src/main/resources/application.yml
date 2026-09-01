@@ -36,6 +36,8 @@ flowmesh:
     outbox:
       enabled: ${FLOWMESH_WORKFLOW_OUTBOX_ENABLED:false}
       publish-interval-ms: ${FLOWMESH_WORKFLOW_OUTBOX_PUBLISH_INTERVAL_MS:1000}
+      batch-size: ${FLOWMESH_WORKFLOW_OUTBOX_BATCH_SIZE:10}
+      lease-seconds: ${FLOWMESH_WORKFLOW_OUTBOX_LEASE_SECONDS:60}
       max-attempts: ${FLOWMESH_WORKFLOW_OUTBOX_MAX_ATTEMPTS:5}
       retry-base-delay-seconds: ${FLOWMESH_WORKFLOW_OUTBOX_RETRY_BASE_DELAY_SECONDS:1}
 

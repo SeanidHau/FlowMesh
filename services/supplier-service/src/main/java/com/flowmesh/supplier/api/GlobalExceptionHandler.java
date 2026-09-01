@@ -1,6 +1,7 @@
 package com.flowmesh.supplier.api;
 
 import com.flowmesh.common.api.ErrorResponse;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
 import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
 import com.flowmesh.supplier.application.DeadLetterEventNotFoundException;
@@ -176,7 +177,6 @@ public class GlobalExceptionHandler {
     }
 
     private static String traceId(HttpServletRequest request) {
-        String traceId = request.getHeader("X-Trace-Id");
-        return traceId != null ? traceId : "";
+        return TraceIdFilter.currentTraceId(request);
     }
 }

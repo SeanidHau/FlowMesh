@@ -1,10 +1,12 @@
 package com.flowmesh.supplier.api;
 
 import com.flowmesh.common.security.AuthPrincipal;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.supplier.api.dto.ApplicationResponse;
 import com.flowmesh.supplier.api.dto.CreateApplicationRequest;
 import com.flowmesh.supplier.application.SupplierApplicationService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +46,7 @@ public class SupplierApplicationController {
      * @param principal 已认证主体
      * @param idempotencyKey 幂等键
      * @param request 创建请求
-     * @param traceId 请求追踪标识
+     * @param httpRequest HTTP 请求
      * @return 首次响应或回放快照
      */
     @PostMapping
@@ -52,7 +54,7 @@ public class SupplierApplicationController {
         @AuthenticationPrincipal AuthPrincipal principal,
         @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
         @Valid @RequestBody CreateApplicationRequest request,
-        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
+        HttpServletRequest httpRequest
     ) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new MissingIdempotencyKeyException();
@@ -61,7 +63,9 @@ public class SupplierApplicationController {
             throw new InvalidIdempotencyKeyException();
         }
 
-        var result = applicationService.create(principal, idempotencyKey, request, traceId);
+        var result = applicationService.create(
+            principal, idempotencyKey, request, TraceIdFilter.currentTraceId(httpRequest)
+        );
 
         return ResponseEntity
             .status(result.status())

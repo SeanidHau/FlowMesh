@@ -89,22 +89,20 @@ public class SecurityConfiguration {
                     response.setStatus(HttpStatus.UNAUTHORIZED.value());
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-                    String traceId = request.getHeader("X-Trace-Id");
                     ErrorResponse body = ErrorResponse.of(
                         "UNAUTHORIZED",
                         "Access Token 缺失或已失效。",
-                        traceId != null ? traceId : ""
+                        TraceIdFilter.currentTraceId(request)
                     );
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 }).accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpStatus.FORBIDDEN.value());
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-                    String traceId = request.getHeader("X-Trace-Id");
                     ErrorResponse body = ErrorResponse.of(
                         "FORBIDDEN",
                         "角色或租户不允许执行此操作。",
-                        traceId != null ? traceId : ""
+                        TraceIdFilter.currentTraceId(request)
                     );
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 })

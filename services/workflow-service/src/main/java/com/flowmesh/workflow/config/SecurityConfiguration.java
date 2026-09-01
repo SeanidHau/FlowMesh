@@ -79,10 +79,12 @@ public class SecurityConfiguration {
             .logout(AbstractHttpConfigurer::disable)
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, exception) -> writeError(
-                    response, objectMapper, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Access Token 缺失或已失效。"
+                    request, response, objectMapper, HttpStatus.UNAUTHORIZED,
+                    "UNAUTHORIZED", "Access Token 缺失或已失效。"
                 ))
                 .accessDeniedHandler((request, response, exception) -> writeError(
-                    response, objectMapper, HttpStatus.FORBIDDEN, "FORBIDDEN", "角色或租户不允许执行此操作。"
+                    request, response, objectMapper, HttpStatus.FORBIDDEN,
+                    "FORBIDDEN", "角色或租户不允许执行此操作。"
                 ))
             )
             .addFilterBefore(traceIdFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -91,6 +93,7 @@ public class SecurityConfiguration {
     }
 
     private static void writeError(
+        jakarta.servlet.http.HttpServletRequest request,
         jakarta.servlet.http.HttpServletResponse response,
         ObjectMapper objectMapper,
         HttpStatus status,
@@ -100,6 +103,8 @@ public class SecurityConfiguration {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(objectMapper.writeValueAsString(ErrorResponse.of(code, message, "")));
+        response.getWriter().write(objectMapper.writeValueAsString(
+            ErrorResponse.of(code, message, TraceIdFilter.currentTraceId(request))
+        ));
     }
 }

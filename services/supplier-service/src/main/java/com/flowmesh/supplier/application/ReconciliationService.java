@@ -15,9 +15,11 @@ import com.flowmesh.supplier.repository.WorkflowEventInboxRepository;
 import com.flowmesh.supplier.rls.TenantRlsInitializer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 对比 supplier 本地状态、Inbox/Outbox 和 workflow 快照，并生成待处置记录。
@@ -32,6 +34,7 @@ public class ReconciliationService {
     private final WorkflowStateClient workflowStateClient;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * 创建对账服务。
@@ -43,6 +46,7 @@ public class ReconciliationService {
      * @param workflowStateClient workflow 状态客户端
      * @param tenantRlsInitializer RLS 初始化器
      * @param objectMapper JSON 处理器
+     * @param transactionManager 事务管理器
      */
     public ReconciliationService(
         SupplierApplicationRepository applicationRepository,
@@ -51,7 +55,8 @@ public class ReconciliationService {
         ReconciliationCaseRepository caseRepository,
         WorkflowStateClient workflowStateClient,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        PlatformTransactionManager transactionManager
     ) {
         this.applicationRepository = applicationRepository;
         this.outboxRepository = outboxRepository;
@@ -60,6 +65,7 @@ public class ReconciliationService {
         this.workflowStateClient = workflowStateClient;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -70,11 +76,40 @@ public class ReconciliationService {
      * @param bearerToken 当前访问令牌
      * @return 对账结果
      */
-    @Transactional
     public ReconciliationResponse reconcile(
         AuthPrincipal principal,
         UUID applicationId,
         String bearerToken
+    ) {
+        WorkflowStateClient.WorkflowState workflow;
+        boolean workflowUnavailable = false;
+        try {
+            workflow = workflowStateClient.find(principal.tenantId(), applicationId, bearerToken).orElse(null);
+        } catch (RuntimeException exception) {
+            workflow = null;
+            workflowUnavailable = true;
+        }
+        final WorkflowStateClient.WorkflowState workflowState = workflow;
+        final boolean unavailable = workflowUnavailable;
+        return Objects.requireNonNull(transactionTemplate.execute(status -> reconcileLocal(
+            principal, applicationId, workflowState, unavailable
+        )));
+    }
+
+    /**
+     * 在短数据库事务内读取本地状态并保存对账结果。
+     *
+     * @param principal 当前操作者
+     * @param applicationId 申请标识
+     * @param workflow workflow 远程快照
+     * @param workflowUnavailable workflow 是否因远程异常不可用
+     * @return 对账结果
+     */
+    private ReconciliationResponse reconcileLocal(
+        AuthPrincipal principal,
+        UUID applicationId,
+        WorkflowStateClient.WorkflowState workflow,
+        boolean workflowUnavailable
     ) {
         tenantRlsInitializer.initializeTenant(principal.tenantId());
         SupplierApplication application = applicationRepository.findById(applicationId)
@@ -88,14 +123,9 @@ public class ReconciliationService {
             discrepancies.add("SUBMISSION_EVENT_DEAD_LETTERED");
         }
 
-        WorkflowStateClient.WorkflowState workflow;
-        try {
-            workflow = workflowStateClient.find(principal.tenantId(), applicationId, bearerToken).orElse(null);
-        } catch (RuntimeException exception) {
-            workflow = null;
+        if (workflowUnavailable) {
             discrepancies.add("WORKFLOW_UNAVAILABLE");
         }
-        final WorkflowStateClient.WorkflowState workflowState = workflow;
 
         if (workflow == null && !discrepancies.contains("WORKFLOW_UNAVAILABLE")
             && submission != null && submission.getPublishedAt() != null) {
@@ -128,7 +158,7 @@ public class ReconciliationService {
         }
         List<UUID> caseIds = discrepancies.stream().map(type -> {
             ReconciliationCase reconciliationCase = new ReconciliationCase(
-                principal.tenantId(), applicationId, type, details(application, submission, workflowState, type)
+                principal.tenantId(), applicationId, type, details(application, submission, workflow, type)
             );
             caseRepository.upsertOpen(reconciliationCase);
             return reconciliationCase.getId();

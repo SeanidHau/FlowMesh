@@ -22,6 +22,11 @@ public class TraceIdFilter extends OncePerRequestFilter {
      */
     public static final String TRACE_ID_HEADER = "X-Trace-Id";
 
+    /**
+     * HTTP 请求属性名称，用于传递过滤器生成的最终 Trace ID。
+     */
+    public static final String TRACE_ID_ATTRIBUTE = TraceIdFilter.class.getName() + ".traceId";
+
     @Override
     protected void doFilterInternal(
         HttpServletRequest request,
@@ -31,9 +36,25 @@ public class TraceIdFilter extends OncePerRequestFilter {
         String header = request.getHeader(TRACE_ID_HEADER);
         String traceId = header == null || header.isBlank() || header.length() > 128
             ? UUID.randomUUID().toString() : header;
+        request.setAttribute(TRACE_ID_ATTRIBUTE, traceId);
         response.setHeader(TRACE_ID_HEADER, traceId);
         try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId)) {
             filterChain.doFilter(request, response);
         }
+    }
+
+    /**
+     * 读取当前请求最终采用的 Trace ID。
+     *
+     * @param request HTTP 请求
+     * @return 过滤器生成或接收的 Trace ID；上下文不存在时返回空串
+     */
+    public static String currentTraceId(HttpServletRequest request) {
+        Object attribute = request.getAttribute(TRACE_ID_ATTRIBUTE);
+        if (attribute instanceof String traceId && !traceId.isBlank()) {
+            return traceId;
+        }
+        String header = request.getHeader(TRACE_ID_HEADER);
+        return header == null || header.isBlank() || header.length() > 128 ? "" : header;
     }
 }

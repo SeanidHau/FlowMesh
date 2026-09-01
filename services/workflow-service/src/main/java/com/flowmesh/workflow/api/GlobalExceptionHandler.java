@@ -1,6 +1,7 @@
 package com.flowmesh.workflow.api;
 
 import com.flowmesh.common.api.ErrorResponse;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.workflow.application.WorkflowInstanceNotFoundException;
 import com.flowmesh.workflow.application.WorkflowTaskConflictException;
 import com.flowmesh.workflow.application.WorkflowTaskForbiddenException;
@@ -137,8 +138,7 @@ public class GlobalExceptionHandler {
         List<String> details
     ) {
         return ResponseEntity.status(status).body(new ErrorResponse(
-            code, message, request.getHeader("X-Trace-Id") == null
-                ? "" : request.getHeader("X-Trace-Id"), details
+            code, message, TraceIdFilter.currentTraceId(request), details
         ));
     }
 

@@ -1,5 +1,6 @@
 package com.flowmesh.supplier.messaging;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,6 +35,7 @@ class OutboxPublisherTest {
         OutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(1);
 
         OutboxPublisher publisher = new OutboxPublisher(
             repository, template, claimService, new SimpleMeterRegistry(), 3, 1
@@ -44,6 +46,30 @@ class OutboxPublisherTest {
             eq("supplier-events:ApplicationSubmitted"), any(Message.class), anyLong()
         );
         verify(repository).markPublishedIfClaimed(eq(event.getId()), eq(event.getClaimToken()), any());
+    }
+
+    /**
+     * 验证数据库未确认时不计入发布成功，并记录确认失败指标。
+     */
+    @Test
+    void shouldNotCountPublishWhenDatabaseConfirmationUpdatesNoRow() {
+        OutboxEventRepository repository = mock(OutboxEventRepository.class);
+        OutboxClaimService claimService = mock(OutboxClaimService.class);
+        RocketMQTemplate template = mock(RocketMQTemplate.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        OutboxEvent event = event();
+        event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
+        when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(0);
+
+        OutboxPublisher publisher = new OutboxPublisher(
+            repository, template, claimService, meterRegistry, 3, 1
+        );
+        publisher.publishPendingEvents();
+
+        assertThat(meterRegistry.get("flowmesh.outbox.published").counter().count()).isZero();
+        assertThat(meterRegistry.get("flowmesh.outbox.confirmation_failed").counter().count())
+            .isEqualTo(1);
     }
 
     /**

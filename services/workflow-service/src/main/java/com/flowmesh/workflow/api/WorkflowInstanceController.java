@@ -1,10 +1,12 @@
 package com.flowmesh.workflow.api;
 
 import com.flowmesh.common.security.AuthPrincipal;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.workflow.api.dto.CompleteTaskRequest;
 import com.flowmesh.workflow.api.dto.WorkflowInstanceResponse;
 import com.flowmesh.workflow.application.WorkflowInstanceService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +56,7 @@ public class WorkflowInstanceController {
      * @param principal 已认证主体
      * @param applicationId 申请标识
      * @param request 任务完成请求
+     * @param httpRequest HTTP 请求
      * @return 推进后的流程实例
      */
     @PostMapping("/{applicationId}/tasks")
@@ -61,10 +64,12 @@ public class WorkflowInstanceController {
         @AuthenticationPrincipal AuthPrincipal principal,
         @PathVariable UUID applicationId,
         @Valid @RequestBody CompleteTaskRequest request,
-        @RequestHeader(value = "X-Trace-Id", defaultValue = "") String traceId
+        HttpServletRequest httpRequest
     ) {
         return WorkflowInstanceResponse.from(
-            service.completeTask(principal, applicationId, request.taskKey(), traceId)
+            service.completeTask(
+                principal, applicationId, request.taskKey(), TraceIdFilter.currentTraceId(httpRequest)
+            )
         );
     }
 }

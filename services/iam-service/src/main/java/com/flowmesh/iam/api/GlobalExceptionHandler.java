@@ -1,7 +1,9 @@
 package com.flowmesh.iam.api;
 
 import com.flowmesh.common.api.ErrorResponse;
+import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.iam.application.auth.InvalidCredentialsException;
+import com.flowmesh.iam.application.auth.LoginRateLimitExceededException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理登录限流异常。
+     *
+     * @param exception 登录限流异常
+     * @param request HTTP 请求
+     * @return 429 ErrorResponse
+     */
+    @ExceptionHandler(LoginRateLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleLoginRateLimit(
+        LoginRateLimitExceededException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", "60")
+            .body(ErrorResponse.of(
+                "LOGIN_RATE_LIMITED",
+                "登录尝试过于频繁，请稍后再试。",
+                traceId(request)
+            ));
+    }
+
+    /**
      * 处理未预期的异常，返回 500。
      *
      * @param exception 未捕获异常
@@ -90,7 +114,6 @@ public class GlobalExceptionHandler {
     }
 
     private static String traceId(HttpServletRequest request) {
-        String traceId = request.getHeader("X-Trace-Id");
-        return traceId != null ? traceId : "";
+        return TraceIdFilter.currentTraceId(request);
     }
 }
