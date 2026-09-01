@@ -7,6 +7,7 @@ import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowInstanceStatus;
 import com.flowmesh.workflow.domain.WorkflowTask;
 import com.flowmesh.workflow.domain.WorkflowOutboxEvent;
+import com.flowmesh.workflow.api.dto.WorkflowReconciliationSnapshot;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
@@ -15,6 +16,8 @@ import java.util.UUID;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 提供流程实例查询和最小审批节点推进能力。
@@ -26,6 +29,7 @@ public class WorkflowInstanceService {
     private final WorkflowOutboxEventRepository outboxRepository;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final Counter taskCompletedCounter;
 
     /**
      * 创建流程实例应用服务。
@@ -34,17 +38,22 @@ public class WorkflowInstanceService {
      * @param outboxRepository workflow 事件 Outbox 仓储
      * @param tenantRlsInitializer 租户 RLS 初始化器
      * @param objectMapper JSON 序列化器
+     * @param meterRegistry Micrometer 指标注册器
      */
     public WorkflowInstanceService(
         WorkflowInstanceRepository repository,
         WorkflowOutboxEventRepository outboxRepository,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        MeterRegistry meterRegistry
     ) {
         this.repository = repository;
         this.outboxRepository = outboxRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.taskCompletedCounter = Counter.builder("flowmesh.workflow.task.completed")
+            .description("workflow 审批节点完成次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -59,6 +68,24 @@ public class WorkflowInstanceService {
         tenantRlsInitializer.initialize(tenantId);
         return repository.findByApplicationId(applicationId)
             .orElseThrow(WorkflowInstanceNotFoundException::new);
+    }
+
+    /**
+     * 读取供跨服务对账使用的流程快照。
+     *
+     * @param tenantId 租户标识
+     * @param applicationId 申请标识
+     * @return 流程和 Outbox 快照
+     */
+    @Transactional(readOnly = true)
+    public WorkflowReconciliationSnapshot snapshot(String tenantId, UUID applicationId) {
+        WorkflowInstance instance = find(tenantId, applicationId);
+        return new WorkflowReconciliationSnapshot(
+            instance.getStatus().name(),
+            instance.getCurrentTask() == null ? null : instance.getCurrentTask().name(),
+            outboxRepository.countPendingByTenantIdAndAggregateIdAndTag(tenantId, applicationId, null),
+            outboxRepository.countByTenantIdAndAggregateIdAndTag(tenantId, applicationId, null)
+        );
     }
 
     /**
@@ -121,6 +148,7 @@ public class WorkflowInstanceService {
                 new TaskCompletedPayload(task.name())
             ))
         ));
+        taskCompletedCounter.increment();
         return saved;
     }
 

@@ -27,6 +27,14 @@ public interface WorkflowEventInboxRepository {
     long count();
 
     /**
+     * 统计指定申请的审批完成事件数量。
+     *
+     * @param aggregateId 申请标识
+     * @return 事件数量
+     */
+    long countByAggregateId(@Param("aggregateId") UUID aggregateId);
+
+    /**
      * 保存事件 Inbox 记录。
      *
      * @param inbox Inbox 记录

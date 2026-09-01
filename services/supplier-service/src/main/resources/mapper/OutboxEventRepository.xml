@@ -17,16 +17,17 @@
     <result property="claimedUntil" column="claimed_until" />
     <result property="claimToken" column="claim_token" />
     <result property="deadLetteredAt" column="dead_lettered_at" />
+    <result property="originalEventId" column="original_event_id" />
     <result property="createdAt" column="created_at" />
   </resultMap>
 
   <insert id="insert" parameterType="com.flowmesh.supplier.domain.OutboxEvent">
     INSERT INTO supplier_outbox_events
       (id, tenant_id, aggregate_id, topic, tag, payload, attempt_count, last_error,
-       published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at)
+       published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, original_event_id, created_at)
     VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER}, #{topic}, #{tag}, CAST(#{payload} AS jsonb),
             #{attemptCount}, #{lastError}, #{publishedAt}, #{nextAttemptAt}, #{claimedUntil},
-            #{claimToken, jdbcType=OTHER}, #{deadLetteredAt}, #{createdAt})
+            #{claimToken, jdbcType=OTHER}, #{deadLetteredAt}, #{originalEventId, jdbcType=OTHER}, #{createdAt})
   </insert>
 
   <select id="claimBatch" resultMap="outboxResult">
@@ -65,17 +66,70 @@
   <update id="markDeadLetteredIfClaimed">
     UPDATE supplier_outbox_events
     SET attempt_count = attempt_count + 1, last_error = #{error}, dead_lettered_at = #{deadLetteredAt},
-        next_attempt_at = NULL, claimed_until = NULL, claim_token = NULL
+        next_attempt_at = #{deadLetteredAt}, claimed_until = NULL, claim_token = NULL
     WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
       AND published_at IS NULL AND attempt_count + 1 &gt;= #{maxAttempts}
   </update>
 
   <select id="findByAggregateIdAndTag" resultMap="outboxResult">
     SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
-           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, created_at
+           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, original_event_id, created_at
     FROM supplier_outbox_events
     WHERE aggregate_id = #{aggregateId, jdbcType=OTHER} AND tag = #{tag}
     ORDER BY created_at
     LIMIT 1
+  </select>
+
+  <select id="findByTenantIdAndAggregateIdAndTag" resultMap="outboxResult">
+    SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
+           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, original_event_id, created_at
+    FROM supplier_outbox_events
+    WHERE tenant_id = #{tenantId}
+      AND aggregate_id = #{aggregateId, jdbcType=OTHER}
+      AND tag = #{tag}
+    ORDER BY created_at
+    LIMIT 1
+  </select>
+
+  <select id="findDeadLettered" resultMap="outboxResult">
+    SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
+           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, original_event_id, created_at
+    FROM supplier_outbox_events
+    WHERE tenant_id = #{tenantId}
+      AND dead_lettered_at IS NOT NULL
+      <if test="tag != null and tag != ''">AND tag = #{tag}</if>
+      <if test="aggregateId != null">AND aggregate_id = #{aggregateId, jdbcType=OTHER}</if>
+    ORDER BY dead_lettered_at DESC
+    LIMIT #{limit}
+  </select>
+
+  <select id="findDeadLetteredById" resultMap="outboxResult">
+    SELECT id, tenant_id, aggregate_id, topic, tag, payload::text AS payload, attempt_count, last_error,
+           published_at, next_attempt_at, claimed_until, claim_token, dead_lettered_at, original_event_id, created_at
+    FROM supplier_outbox_events
+    WHERE tenant_id = #{tenantId} AND id = #{id, jdbcType=OTHER} AND dead_lettered_at IS NOT NULL
+  </select>
+
+  <select id="countByTenantIdAndAggregateIdAndTag" resultType="long">
+    SELECT COUNT(*) FROM supplier_outbox_events
+    WHERE tenant_id = #{tenantId} AND aggregate_id = #{aggregateId, jdbcType=OTHER}
+      <if test="tag != null and tag != ''">AND tag = #{tag}</if>
+  </select>
+
+  <select id="countPendingByTenantIdAndAggregateIdAndTag" resultType="long">
+    SELECT COUNT(*) FROM supplier_outbox_events
+    WHERE tenant_id = #{tenantId} AND aggregate_id = #{aggregateId, jdbcType=OTHER}
+      AND published_at IS NULL AND dead_lettered_at IS NULL
+      <if test="tag != null and tag != ''">AND tag = #{tag}</if>
+  </select>
+
+  <select id="countPending" resultType="long">
+    SELECT COUNT(*) FROM supplier_outbox_events
+    WHERE published_at IS NULL AND dead_lettered_at IS NULL
+  </select>
+
+  <select id="countDeadLettered" resultType="long">
+    SELECT COUNT(*) FROM supplier_outbox_events
+    WHERE dead_lettered_at IS NOT NULL
   </select>
 </mapper>

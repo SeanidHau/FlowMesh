@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /**
  * 验证审批节点按角色和顺序推进。
@@ -50,7 +51,8 @@ class WorkflowInstanceServiceTest {
             repository,
             outboxRepository,
             tenantRlsInitializer,
-            new ObjectMapper().registerModule(new JavaTimeModule())
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            new SimpleMeterRegistry()
         );
         AuthPrincipal principal = new AuthPrincipal(
             UUID.randomUUID(), "purchaser-a", "tenant-a", Set.of("PURCHASER")

@@ -17,4 +17,9 @@
   <select id="count" resultType="long">
     SELECT COUNT(*) FROM supplier_workflow_event_inbox
   </select>
+
+  <select id="countByAggregateId" resultType="long">
+    SELECT COUNT(*) FROM supplier_workflow_event_inbox
+    WHERE aggregate_id = #{aggregateId, jdbcType=OTHER}
+  </select>
 </mapper>

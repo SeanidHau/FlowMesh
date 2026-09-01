@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /**
  * 验证 workflow 消费投影的最小幂等行为。
@@ -53,7 +54,7 @@ class WorkflowEventProjectionServiceTest {
 
         when(repository.existsBySourceEventId(eventId)).thenReturn(false, true);
         WorkflowEventProjectionService service = new WorkflowEventProjectionService(
-            repository, new ObjectMapper(), tenantRlsInitializer
+            repository, new ObjectMapper(), tenantRlsInitializer, new SimpleMeterRegistry()
         );
 
         service.project(message);

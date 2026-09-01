@@ -91,6 +91,90 @@ public interface OutboxEventRepository {
     );
 
     /**
+     * 按租户、聚合和事件类型读取 Outbox 事件。
+     *
+     * @param tenantId 租户标识
+     * @param aggregateId 聚合标识
+     * @param tag 事件类型
+     * @return 对应事件；不存在时为空
+     */
+    Optional<OutboxEvent> findByTenantIdAndAggregateIdAndTag(
+        @Param("tenantId") String tenantId,
+        @Param("aggregateId") UUID aggregateId,
+        @Param("tag") String tag
+    );
+
+    /**
+     * 查询当前租户的死信事件。
+     *
+     * @param tenantId 租户标识
+     * @param tag 事件类型，可为空
+     * @param aggregateId 聚合标识，可为空
+     * @param limit 返回上限
+     * @return 死信事件
+     */
+    List<OutboxEvent> findDeadLettered(
+        @Param("tenantId") String tenantId,
+        @Param("tag") String tag,
+        @Param("aggregateId") UUID aggregateId,
+        @Param("limit") int limit
+    );
+
+    /**
+     * 按租户和事件标识读取死信事件。
+     *
+     * @param tenantId 租户标识
+     * @param id 事件标识
+     * @return 事件
+     */
+    Optional<OutboxEvent> findDeadLetteredById(
+        @Param("tenantId") String tenantId,
+        @Param("id") UUID id
+    );
+
+    /**
+     * 统计当前租户指定聚合的 Outbox 事件数量。
+     *
+     * @param tenantId 租户标识
+     * @param aggregateId 聚合标识
+     * @param tag 事件类型，可为空
+     * @return 事件数量
+     */
+    long countByTenantIdAndAggregateIdAndTag(
+        @Param("tenantId") String tenantId,
+        @Param("aggregateId") UUID aggregateId,
+        @Param("tag") String tag
+    );
+
+    /**
+     * 统计当前租户指定聚合的待发布事件数量。
+     *
+     * @param tenantId 租户标识
+     * @param aggregateId 聚合标识
+     * @param tag 事件类型，可为空
+     * @return 待发布事件数量
+     */
+    long countPendingByTenantIdAndAggregateIdAndTag(
+        @Param("tenantId") String tenantId,
+        @Param("aggregateId") UUID aggregateId,
+        @Param("tag") String tag
+    );
+
+    /**
+     * 统计当前 supplier Outbox 的待发布数量。
+     *
+     * @return 待发布数量
+     */
+    long countPending();
+
+    /**
+     * 统计当前 supplier Outbox 的死信数量。
+     *
+     * @return 死信数量
+     */
+    long countDeadLettered();
+
+    /**
      * 插入 Outbox 记录。
      *
      * @param event 待保存事件

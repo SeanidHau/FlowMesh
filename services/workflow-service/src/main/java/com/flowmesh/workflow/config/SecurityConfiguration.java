@@ -5,6 +5,7 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.common.security.JwtAuthenticationFilter;
 import com.flowmesh.common.security.JwtProperties;
 import com.flowmesh.common.security.JwtService;
+import com.flowmesh.common.security.TraceIdFilter;
 import java.nio.charset.StandardCharsets;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -40,6 +41,16 @@ public class SecurityConfiguration {
     }
 
     /**
+     * 创建 HTTP Trace ID 过滤器。
+     *
+     * @return Trace ID 过滤器
+     */
+    @Bean
+    public TraceIdFilter traceIdFilter() {
+        return new TraceIdFilter();
+    }
+
+    /**
      * 创建 workflow HTTP 安全链。
      *
      * @param http HTTP 安全配置
@@ -58,7 +69,9 @@ public class SecurityConfiguration {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
+                .requestMatchers("/api/v1/operations/**").hasRole("OPERATIONS")
+                .requestMatchers("/internal/v1/reconciliation/**").hasRole("OPERATIONS")
                 .anyRequest().authenticated()
             )
             .httpBasic(AbstractHttpConfigurer::disable)
@@ -72,6 +85,7 @@ public class SecurityConfiguration {
                     response, objectMapper, HttpStatus.FORBIDDEN, "FORBIDDEN", "角色或租户不允许执行此操作。"
                 ))
             )
+            .addFilterBefore(traceIdFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }

@@ -3,6 +3,8 @@ package com.flowmesh.supplier.api;
 import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
 import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
+import com.flowmesh.supplier.application.DeadLetterEventNotFoundException;
+import com.flowmesh.supplier.application.InvalidReplayException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +124,40 @@ public class GlobalExceptionHandler {
                 "供应商申请不存在。",
                 traceId(request)
             ));
+    }
+
+    /**
+     * 映射不存在的死信事件。
+     *
+     * @param exception 死信不存在异常
+     * @param request 当前请求
+     * @return 404 错误响应
+     */
+    @ExceptionHandler(DeadLetterEventNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDeadLetterNotFound(
+        DeadLetterEventNotFoundException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse.of(
+            "DEAD_LETTER_NOT_FOUND", "可重放的死信事件不存在。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射不可解析的死信事件。
+     *
+     * @param exception 重放格式异常
+     * @param request 当前请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler(InvalidReplayException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidReplay(
+        InvalidReplayException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.of(
+            "INVALID_REPLAY_EVENT", "死信事件载荷不是有效的事件信封。", traceId(request)
+        ));
     }
 
     @ExceptionHandler(Exception.class)

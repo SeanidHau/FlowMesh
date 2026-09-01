@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 处理 workflow-service 发来的审批完成事件。
@@ -31,6 +33,7 @@ public class WorkflowTaskCompletedService {
     private final OutboxEventRepository outboxRepository;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final Counter duplicateCounter;
 
     /**
      * 创建 workflow 审批结果处理服务。
@@ -46,13 +49,18 @@ public class WorkflowTaskCompletedService {
         WorkflowEventInboxRepository inboxRepository,
         OutboxEventRepository outboxRepository,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        MeterRegistry meterRegistry
     ) {
         this.applicationRepository = applicationRepository;
         this.inboxRepository = inboxRepository;
         this.outboxRepository = outboxRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.duplicateCounter = Counter.builder("flowmesh.messaging.duplicate")
+            .tag("consumer", "supplier-workflow-task-completed")
+            .description("supplier 重复事件次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -76,6 +84,7 @@ public class WorkflowTaskCompletedService {
 
         tenantRlsInitializer.initializeTenant(tenantId);
         if (inboxRepository.existsById(eventId)) {
+            duplicateCounter.increment();
             return;
         }
 

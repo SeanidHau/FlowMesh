@@ -35,12 +35,18 @@ public class WorkflowOutboxPublisher {
     private final long retryBaseDelaySeconds;
     private final Counter publishedCounter;
     private final Counter failedCounter;
+    private final Counter retryCounter;
+    private final Counter deadLetterCounter;
 
     /**
      * 创建 workflow Outbox 发布器。
      *
      * @param repository Outbox 仓储
      * @param rocketMQTemplate RocketMQ 消息模板
+     * @param claimService Outbox 认领服务
+     * @param meterRegistry Micrometer 指标注册器
+     * @param maxAttempts 单条事件最大尝试次数
+     * @param retryBaseDelaySeconds 指数退避的基础秒数
      */
     public WorkflowOutboxPublisher(
         WorkflowOutboxEventRepository repository,
@@ -60,6 +66,22 @@ public class WorkflowOutboxPublisher {
             .register(meterRegistry);
         this.failedCounter = Counter.builder("flowmesh.outbox.failed")
             .description("workflow Outbox 发送失败次数")
+            .register(meterRegistry);
+        this.retryCounter = Counter.builder("flowmesh.outbox.retry")
+            .description("workflow Outbox 重试次数")
+            .register(meterRegistry);
+        this.deadLetterCounter = Counter.builder("flowmesh.outbox.dead_lettered")
+            .description("workflow Outbox 进入死信的事件数")
+            .register(meterRegistry);
+        io.micrometer.core.instrument.Gauge.builder(
+                "flowmesh.outbox.pending", repository, WorkflowOutboxEventRepository::countPending
+            )
+            .description("workflow Outbox 待发布事件数")
+            .register(meterRegistry);
+        io.micrometer.core.instrument.Gauge.builder(
+                "flowmesh.outbox.dead_lettered.current", repository, WorkflowOutboxEventRepository::countDeadLettered
+            )
+            .description("workflow Outbox 当前死信事件数")
             .register(meterRegistry);
     }
 
@@ -86,10 +108,12 @@ public class WorkflowOutboxPublisher {
                 String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
                 int nextAttempt = event.getAttemptCount() + 1;
                 if (nextAttempt >= maxAttempts) {
+                    deadLetterCounter.increment();
                     repository.markDeadLetteredIfClaimed(
                         event.getId(), event.getClaimToken(), error, Instant.now(), maxAttempts
                     );
                 } else {
+                    retryCounter.increment();
                     long delay = Math.min(900L, retryBaseDelaySeconds * (1L << Math.min(nextAttempt - 1, 9)));
                     repository.recordRetryIfClaimed(
                         event.getId(), event.getClaimToken(), error,

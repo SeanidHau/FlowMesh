@@ -38,6 +38,8 @@ flowmesh:
   supplier:
     consumer:
       enabled: ${FLOWMESH_SUPPLIER_CONSUMER_ENABLED:false}
+  workflow:
+    base-url: ${FLOWMESH_WORKFLOW_BASE_URL:http://localhost:8083}
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
@@ -53,3 +55,8 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,rocketMq

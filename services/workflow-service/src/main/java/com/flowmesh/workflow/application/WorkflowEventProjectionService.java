@@ -10,6 +10,8 @@ import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 将供应商申请提交事件投影为流程实例。
@@ -20,6 +22,7 @@ public class WorkflowEventProjectionService {
     private final WorkflowInstanceRepository workflowInstanceRepository;
     private final ObjectMapper objectMapper;
     private final TenantRlsInitializer tenantRlsInitializer;
+    private final Counter duplicateCounter;
 
     /**
      * 创建流程事件投影服务。
@@ -31,11 +34,16 @@ public class WorkflowEventProjectionService {
     public WorkflowEventProjectionService(
         WorkflowInstanceRepository workflowInstanceRepository,
         ObjectMapper objectMapper,
-        TenantRlsInitializer tenantRlsInitializer
+        TenantRlsInitializer tenantRlsInitializer,
+        MeterRegistry meterRegistry
     ) {
         this.workflowInstanceRepository = workflowInstanceRepository;
         this.objectMapper = objectMapper;
         this.tenantRlsInitializer = tenantRlsInitializer;
+        this.duplicateCounter = Counter.builder("flowmesh.messaging.duplicate")
+            .tag("consumer", "workflow-application-submitted")
+            .description("workflow 重复事件次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -58,6 +66,7 @@ public class WorkflowEventProjectionService {
         }
         tenantRlsInitializer.initialize(tenantId);
         if (workflowInstanceRepository.existsBySourceEventId(eventId)) {
+            duplicateCounter.increment();
             return;
         }
 

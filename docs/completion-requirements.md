@@ -2,21 +2,20 @@
 
 ## 1. 文档目的
 
-本文记录 MVP-3 之后需要补齐的能力、实施顺序和验收标准。只有代码、测试和运行验证同时满足要求，才将项目标记为“已完成”。本轮先收敛可靠消息基础设施、契约校验、基础指标和工程验证，不把尚未接入运行链路的能力写成已完成。
+本文记录 MVP-3 之后需要补齐的能力、实施顺序和验收标准。只有代码、测试和运行验证同时满足要求，才将项目标记为“已完成”。本轮已完成 MVP-4 范围内的可靠消息、运营处置、可观测性和工程验证；后续产品能力仍单独保留。
 
 ## 2. 当前基线
 
 MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC、PostgreSQL RLS、MyBatis 持久化和 RocketMQ Transactional Outbox 基础链路。
 
-当前 Outbox 已具备数据库认领租约、指数退避和失败终态字段；事件信封校验、关键业务 ID 关联校验、基础 Prometheus 指标、Helm 校验和 PostgreSQL 集成测试已补齐。真实 RocketMQ Broker、多实例竞争和 DLQ 运维入口仍需验证或实现。
+当前 Outbox 已具备数据库认领租约、指数退避、失败终态、死信查询、受控重放和审计；事件信封/业务 ID 校验、业务与消息指标、HTTP/事件 Trace 标识、依赖就绪探针、真实 RocketMQ E2E、并发竞争测试和跨服务对账均已接入。
 
 ## 3.1 本轮实施状态
 
 | 状态 | 内容 |
 | --- | --- |
-| 已完成 | MyBatis UUID 类型处理、事件信封必填字段校验、业务 ID 关联校验、Outbox 发布成功/失败指标、Helm lint/模板渲染校验、完整 Maven Testcontainers 测试。 |
-| 部分完成 | Outbox 已有认领、退避和失败终态，但尚未提供 DLQ 查询、重放、审计和对账 API；指标暂未覆盖完整业务指标、消费指标和告警平台。 |
-| 待实现 | 真实 RocketMQ Broker E2E、多实例发布竞争、DLQ 运营闭环和跨服务状态对账。 |
+| 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
+| 明确不纳入本轮 | Camunda、Redis、MinIO、独立风险/通知服务、完整监控平台和生产级高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围
 
@@ -26,9 +25,9 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | --- | --- | --- |
 | MSG-01 | 消费者校验事件信封 | 校验 `eventId`、`eventType`、`schemaVersion`、`aggregateId`、`tenantId`、`occurredAt`、`traceId` 和 `payload` 必填字段。 |
 | MSG-02 | 校验业务关联关系 | `aggregateId` 与载荷中的业务 ID 不一致时拒绝处理，并记录可定位的错误信息。 |
-| MSG-03 | 发布器可靠性测试 | 代码已覆盖 ACK 后标记、发送失败、指数退避和失败终态；真实 Broker ACK 与发送窗口仍待 E2E 验证。 |
-| MSG-04 | 多实例竞争测试 | SQL 已使用租约和 `FOR UPDATE SKIP LOCKED`；两个独立发布器的并发集成测试待补充。 |
-| MSG-05 | 消费幂等测试 | 现有申请幂等、流程投影幂等和重复审批测试通过；跨服务重复投递 E2E 待补充。 |
+| MSG-03 | 发布器可靠性测试 | 单元测试覆盖 ACK 后标记、发送失败、指数退避和失败终态；真实 RocketMQ E2E 验证 Broker ACK 后主链路最终完成。 |
+| MSG-04 | 多实例竞争测试 | PostgreSQL 集成测试并发调用两个发布器，验证租约和 `FOR UPDATE SKIP LOCKED` 下同一事件只被认领一次。 |
+| MSG-05 | 消费幂等测试 | 申请幂等、流程投影幂等、重复审批和真实 RocketMQ 主链路均通过；消费者以 Inbox/业务唯一约束吸收重复事件。 |
 
 ### 3.2 DLQ 与运营处置
 
@@ -43,17 +42,17 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 
 | 编号 | 需求 | 验收标准 |
 | --- | --- | --- |
-| OBS-01 | 业务指标 | 已暴露 Outbox 发布成功/失败指标；申请、审批、重复事件、待发送数量指标待补充。 |
-| OBS-02 | 消息指标 | 已暴露发布成功/失败指标；消费、重试和死信指标待补充。 |
-| OBS-03 | 链路标识 | 已保留事件 `traceId`、`eventId`、`tenantId` 校验和安全日志约束；完整跨服务 Trace 采集待补充。 |
-| OBS-04 | 健康检查 | 已提供 Actuator 健康、存活和就绪探针；依赖级健康检查随真实基础设施接入补充。 |
+| OBS-01 | 业务指标 | 已暴露申请创建、审批节点完成、重复事件、Outbox 待发送和死信数量指标。 |
+| OBS-02 | 消息指标 | 已暴露发布/消费成功失败、重试和死信计数，以及 Outbox 当前待发送/死信 Gauge。 |
+| OBS-03 | 链路标识 | HTTP 入口生成/透传 `traceId`；事件信封携带 `traceId`、`eventId`、`tenantId`，日志不输出消息密文或 JWT。 |
+| OBS-04 | 健康检查 | Actuator 区分 liveness/readiness；readiness 纳入 PostgreSQL 和 RocketMQ NameServer TCP 检查。 |
 
 ### 3.4 测试与交付
 
 | 编号 | 需求 | 验收标准 |
 | --- | --- | --- |
 | QA-01 | PostgreSQL 集成测试 | Docker 可用时执行 `./mvnw -q test`，本轮完整通过。 |
-| QA-02 | RocketMQ 集成测试 | 使用真实 Broker 或等价 Compose 测试环境验证消息主链路，待补充。 |
+| QA-02 | RocketMQ 集成测试 | `tests/rocketmq-e2e.sh` 使用 Compose 真实 RocketMQ Broker 和本机 JAR 验证跨服务主链路、死信运维闭环和对账。 |
 | QA-03 | CI 校验 | Maven、前端构建、Helm lint 和模板渲染均已写入 GitHub Actions。 |
 | QA-04 | 资源回收 | 本地验证结束后停止本任务启动的 Compose 容器，并关闭 Docker Desktop；后续验证前再按需启动。 |
 

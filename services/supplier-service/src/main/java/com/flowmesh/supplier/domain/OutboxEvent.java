@@ -38,6 +38,8 @@ public class OutboxEvent {
 
     private Instant deadLetteredAt;
 
+    private UUID originalEventId;
+
     private Instant createdAt;
 
     /**
@@ -75,6 +77,32 @@ public class OutboxEvent {
     }
 
     /**
+     * 创建一条由死信重放产生的新 Outbox 事件。
+     *
+     * @param replayId 重放事件的新标识
+     * @param originalEventId 原始死信事件标识
+     * @param tenantId 租户标识
+     * @param aggregateId 业务聚合标识
+     * @param topic RocketMQ Topic
+     * @param tag RocketMQ Tag
+     * @param payload 已替换新事件标识的事件信封
+     * @return 待重放事件
+     */
+    public static OutboxEvent replay(
+        UUID replayId,
+        UUID originalEventId,
+        String tenantId,
+        UUID aggregateId,
+        String topic,
+        String tag,
+        String payload
+    ) {
+        OutboxEvent event = new OutboxEvent(replayId, tenantId, aggregateId, topic, tag, payload);
+        event.originalEventId = Objects.requireNonNull(originalEventId);
+        return event;
+    }
+
+    /**
      * 获取事件唯一标识。
      *
      * @return 事件 ID
@@ -90,6 +118,24 @@ public class OutboxEvent {
      */
     public String getTenantId() {
         return tenantId;
+    }
+
+    /**
+     * 获取死信时间。
+     *
+     * @return 死信时间；未进入死信时为 {@code null}
+     */
+    public Instant getDeadLetteredAt() {
+        return deadLetteredAt;
+    }
+
+    /**
+     * 获取原始死信事件标识。
+     *
+     * @return 原始事件标识；普通事件为 {@code null}
+     */
+    public UUID getOriginalEventId() {
+        return originalEventId;
     }
 
     /**

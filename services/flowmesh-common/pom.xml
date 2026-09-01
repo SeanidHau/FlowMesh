@@ -31,6 +31,18 @@
       <artifactId>spring-boot</artifactId>
     </dependency>
 
+    <!-- 作用：提供共享依赖健康检查器使用的 Actuator HealthIndicator API。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+
+    <!-- 作用：提供共享健康检查器使用的条件化配置注解。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
     <!-- 作用：提供共享 PostgreSQL UUID TypeHandler 所需的 MyBatis API。 -->
     <dependency>
       <groupId>org.mybatis</groupId>
@@ -52,6 +64,12 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
+    </dependency>
+
+    <!-- 作用：提供公共 TraceIdFilter 使用的 MDC 日志上下文 API。 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- 作用：Servlet API，JwtAuthenticationFilter 所需。 -->

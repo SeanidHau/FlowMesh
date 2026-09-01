@@ -5,6 +5,7 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.common.security.JwtAuthenticationFilter;
 import com.flowmesh.common.security.JwtProperties;
 import com.flowmesh.common.security.JwtService;
+import com.flowmesh.common.security.TraceIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -47,6 +48,16 @@ public class SecurityConfiguration {
     }
 
     /**
+     * 创建 HTTP Trace ID 过滤器。
+     *
+     * @return Trace ID 过滤器
+     */
+    @Bean
+    public TraceIdFilter traceIdFilter() {
+        return new TraceIdFilter();
+    }
+
+    /**
      * 创建 IAM 服务的安全过滤器链。
      *
      * @param http Spring Security 的 HTTP 配置对象
@@ -67,7 +78,7 @@ public class SecurityConfiguration {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
@@ -87,6 +98,10 @@ public class SecurityConfiguration {
                     );
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 })
+            )
+            .addFilterBefore(
+                traceIdFilter(),
+                UsernamePasswordAuthenticationFilter.class
             )
             .addFilterBefore(
                 jwtAuthenticationFilter,

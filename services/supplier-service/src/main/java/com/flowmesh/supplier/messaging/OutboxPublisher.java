@@ -38,12 +38,18 @@ public class OutboxPublisher {
     private final long retryBaseDelaySeconds;
     private final Counter publishedCounter;
     private final Counter failedCounter;
+    private final Counter retryCounter;
+    private final Counter deadLetterCounter;
 
     /**
      * 创建 Outbox 发布器。
      *
      * @param outboxEventRepository Outbox 事件仓储
      * @param rocketMQTemplate RocketMQ 消息模板
+     * @param outboxClaimService Outbox 认领服务
+     * @param meterRegistry Micrometer 指标注册器
+     * @param maxAttempts 单条事件最大尝试次数
+     * @param retryBaseDelaySeconds 指数退避的基础秒数
      */
     public OutboxPublisher(
         OutboxEventRepository outboxEventRepository,
@@ -63,6 +69,22 @@ public class OutboxPublisher {
             .register(meterRegistry);
         this.failedCounter = Counter.builder("flowmesh.outbox.failed")
             .description("supplier Outbox 发送失败次数")
+            .register(meterRegistry);
+        this.retryCounter = Counter.builder("flowmesh.outbox.retry")
+            .description("supplier Outbox 重试次数")
+            .register(meterRegistry);
+        this.deadLetterCounter = Counter.builder("flowmesh.outbox.dead_lettered")
+            .description("supplier Outbox 进入死信的事件数")
+            .register(meterRegistry);
+        io.micrometer.core.instrument.Gauge.builder(
+                "flowmesh.outbox.pending", outboxEventRepository, OutboxEventRepository::countPending
+            )
+            .description("supplier Outbox 待发布事件数")
+            .register(meterRegistry);
+        io.micrometer.core.instrument.Gauge.builder(
+                "flowmesh.outbox.dead_lettered.current", outboxEventRepository, OutboxEventRepository::countDeadLettered
+            )
+            .description("supplier Outbox 当前死信事件数")
             .register(meterRegistry);
     }
 
@@ -94,10 +116,12 @@ public class OutboxPublisher {
             String error = exception.getMessage() == null ? "unknown" : exception.getMessage();
             int nextAttempt = event.getAttemptCount() + 1;
             if (nextAttempt >= maxAttempts) {
+                deadLetterCounter.increment();
                 outboxEventRepository.markDeadLetteredIfClaimed(
                     event.getId(), event.getClaimToken(), error, Instant.now(), maxAttempts
                 );
             } else {
+                retryCounter.increment();
                 long delay = Math.min(900L, retryBaseDelaySeconds * (1L << Math.min(nextAttempt - 1, 9)));
                 outboxEventRepository.recordRetryIfClaimed(
                     event.getId(), event.getClaimToken(), error,

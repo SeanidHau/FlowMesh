@@ -37,6 +37,8 @@ public class WorkflowOutboxEvent {
 
     private Instant deadLetteredAt;
 
+    private UUID originalEventId;
+
     private Instant createdAt;
 
     /**
@@ -74,12 +76,65 @@ public class WorkflowOutboxEvent {
     }
 
     /**
+     * 创建一条由死信重放产生的新 workflow Outbox 事件。
+     *
+     * @param replayId 重放事件的新标识
+     * @param originalEventId 原始死信事件标识
+     * @param tenantId 租户标识
+     * @param aggregateId 业务聚合标识
+     * @param topic RocketMQ Topic
+     * @param tag RocketMQ Tag
+     * @param payload 已替换新事件标识的事件信封
+     * @return 待重放事件
+     */
+    public static WorkflowOutboxEvent replay(
+        UUID replayId,
+        UUID originalEventId,
+        String tenantId,
+        UUID aggregateId,
+        String topic,
+        String tag,
+        String payload
+    ) {
+        WorkflowOutboxEvent event = new WorkflowOutboxEvent(replayId, tenantId, aggregateId, topic, tag, payload);
+        event.originalEventId = Objects.requireNonNull(originalEventId);
+        return event;
+    }
+
+    /**
      * 获取事件标识。
      *
      * @return 事件标识
      */
     public UUID getId() {
         return id;
+    }
+
+    /**
+     * 获取租户标识。
+     *
+     * @return 租户标识
+     */
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    /**
+     * 获取死信时间。
+     *
+     * @return 死信时间；未进入死信时为 {@code null}
+     */
+    public Instant getDeadLetteredAt() {
+        return deadLetteredAt;
+    }
+
+    /**
+     * 获取原始死信事件标识。
+     *
+     * @return 原始事件标识；普通事件为 {@code null}
+     */
+    public UUID getOriginalEventId() {
+        return originalEventId;
     }
 
     /**
@@ -125,6 +180,15 @@ public class WorkflowOutboxEvent {
      */
     public int getAttemptCount() {
         return attemptCount;
+    }
+
+    /**
+     * 获取最近一次投递错误。
+     *
+     * @return 错误信息；从未失败时为 {@code null}
+     */
+    public String getLastError() {
+        return lastError;
     }
 
     /**

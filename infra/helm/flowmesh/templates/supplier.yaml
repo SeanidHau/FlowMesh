@@ -57,6 +57,8 @@ spec:
               value: "true"
             - name: FLOWMESH_SUPPLIER_CONSUMER_ENABLED
               value: "true"
+            - name: FLOWMESH_WORKFLOW_BASE_URL
+              value: "http://{{ include "flowmesh.fullname" . }}-workflow:{{ .Values.services.workflow.port }}"
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

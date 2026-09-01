@@ -23,6 +23,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * 处理供应商申请创建与请求幂等。
@@ -40,6 +42,8 @@ public class SupplierApplicationService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final IdempotencyReplayService idempotencyReplayService;
+    private final Counter createdCounter;
+    private final Counter duplicateCounter;
 
     /**
      * 创建申请服务。
@@ -59,7 +63,8 @@ public class SupplierApplicationService {
         TenantRlsInitializer tenantRlsInitializer,
         ObjectMapper objectMapper,
         org.springframework.transaction.PlatformTransactionManager transactionManager,
-        IdempotencyReplayService idempotencyReplayService
+        IdempotencyReplayService idempotencyReplayService,
+        MeterRegistry meterRegistry
     ) {
         this.applicationRepository = applicationRepository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
@@ -68,6 +73,12 @@ public class SupplierApplicationService {
         this.objectMapper = objectMapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.idempotencyReplayService = idempotencyReplayService;
+        this.createdCounter = Counter.builder("flowmesh.application.created")
+            .description("供应商申请创建成功次数")
+            .register(meterRegistry);
+        this.duplicateCounter = Counter.builder("flowmesh.application.duplicate")
+            .description("供应商申请幂等请求命中次数")
+            .register(meterRegistry);
     }
 
     /**
@@ -114,6 +125,7 @@ public class SupplierApplicationService {
             .findByTenantIdAndUserIdAndIdempotencyKey(principal.tenantId(), principal.userId(), idempotencyKey);
 
         if (existing.isPresent()) {
+            duplicateCounter.increment();
             IdempotencyRecord record = existing.get();
             if (!record.getRequestFingerprint().equals(fingerprint)) {
                 throw new IdempotencyKeyConflictException();
@@ -169,6 +181,8 @@ public class SupplierApplicationService {
                 )
             ))
         ));
+
+        createdCounter.increment();
 
         return new CreateResult(responseStatus, responseJson);
     }

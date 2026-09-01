@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.supplier.repository.ReconciliationCaseRepository">
+  <insert id="upsertOpen" parameterType="com.flowmesh.supplier.domain.ReconciliationCase">
+    INSERT INTO supplier_reconciliation_cases
+      (id, tenant_id, application_id, discrepancy_type, details, status, detected_at, resolved_at)
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{applicationId, jdbcType=OTHER}, #{discrepancyType},
+            CAST(#{details} AS jsonb), 'OPEN', #{detectedAt}, NULL)
+    ON CONFLICT (tenant_id, application_id, discrepancy_type)
+    DO UPDATE SET details = EXCLUDED.details, status = 'OPEN', detected_at = EXCLUDED.detected_at,
+                  resolved_at = NULL
+  </insert>
+
+  <update id="resolveOpenByApplication">
+    UPDATE supplier_reconciliation_cases
+    SET status = 'RESOLVED', resolved_at = CURRENT_TIMESTAMP
+    WHERE tenant_id = #{tenantId} AND application_id = #{applicationId, jdbcType=OTHER}
+      AND status = 'OPEN'
+  </update>
+</mapper>

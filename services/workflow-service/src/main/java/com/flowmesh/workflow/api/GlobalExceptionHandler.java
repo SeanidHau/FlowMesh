@@ -4,6 +4,8 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.workflow.application.WorkflowInstanceNotFoundException;
 import com.flowmesh.workflow.application.WorkflowTaskConflictException;
 import com.flowmesh.workflow.application.WorkflowTaskForbiddenException;
+import com.flowmesh.workflow.application.DeadLetterEventNotFoundException;
+import com.flowmesh.workflow.application.InvalidReplayException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -95,6 +97,36 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return response(HttpStatus.CONFLICT, "WORKFLOW_STATE_CONFLICT", "流程状态已发生变化，请刷新后重试。", request);
+    }
+
+    /**
+     * 映射不存在的死信事件。
+     *
+     * @param exception 死信不存在异常
+     * @param request 当前请求
+     * @return 404 错误响应
+     */
+    @ExceptionHandler(DeadLetterEventNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDeadLetterNotFound(
+        DeadLetterEventNotFoundException exception,
+        HttpServletRequest request
+    ) {
+        return response(HttpStatus.NOT_FOUND, "DEAD_LETTER_NOT_FOUND", "可重放的死信事件不存在。", request);
+    }
+
+    /**
+     * 映射不可解析的死信事件。
+     *
+     * @param exception 重放格式异常
+     * @param request 当前请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler(InvalidReplayException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidReplay(
+        InvalidReplayException exception,
+        HttpServletRequest request
+    ) {
+        return response(HttpStatus.BAD_REQUEST, "INVALID_REPLAY_EVENT", "死信事件载荷不是有效的事件信封。", request);
     }
 
     private ResponseEntity<ErrorResponse> response(

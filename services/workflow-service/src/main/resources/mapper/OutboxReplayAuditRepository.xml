@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.workflow.repository.OutboxReplayAuditRepository">
+  <insert id="insert" parameterType="com.flowmesh.workflow.domain.OutboxReplayAudit">
+    INSERT INTO workflow_outbox_replay_audits
+      (id, tenant_id, operator_user_id, original_event_id, replay_event_id, reason,
+       source_status, replay_status, trace_id, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{operatorUserId, jdbcType=OTHER},
+            #{originalEventId, jdbcType=OTHER}, #{replayEventId, jdbcType=OTHER}, #{reason},
+            #{sourceStatus}, #{replayStatus}, #{traceId}, #{createdAt})
+  </insert>
+</mapper>
