@@ -52,7 +52,7 @@
 
     <!-- 作用：统一 MyBatis Spring Boot 集成版本。 -->
     <mybatis.spring.version>3.0.4</mybatis.spring.version>
-    <mybatis.core.version>3.5.17</mybatis.core.version>
+    <mybatis.core.version>3.5.19</mybatis.core.version>
 
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
