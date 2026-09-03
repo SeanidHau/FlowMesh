@@ -37,7 +37,7 @@ jobs:
 
       # 使用非生产测试值校验 Chart 语法、合法凭据渲染和缺失凭据失败保护。
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: v3.18.6
 
