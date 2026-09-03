@@ -79,7 +79,7 @@ jobs:
 
       # 验证 Electron 渲染进程、主进程和生产构建产物。
       - name: Set up Node.js 26
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '26'
           cache: npm
