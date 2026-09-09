@@ -48,6 +48,13 @@ Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者，Gateway �
 桌面端默认访问宿主机的
 `8081`、`8082` 和 `8083` 端口。
 
+需要本地查看 Prometheus 指标时，可额外启用 `observability` profile，访问
+`http://localhost:9090`：
+
+```bash
+docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus
+```
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：

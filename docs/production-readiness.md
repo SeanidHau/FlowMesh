@@ -12,6 +12,7 @@
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
+- 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - CI 在 PR 构建四项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
 
 验证命令：
@@ -31,19 +32,19 @@ helm lint infra/helm/flowmesh \
 
 ### 依赖高可用
 
-- PostgreSQL 主备、自动切换、连接池上限和恢复演练。
+- PostgreSQL 主备、自动切换和恢复演练；当前应用已设置连接池上限和连接超时，但不替代数据库侧 HA。
 - RocketMQ 多 Broker、持久卷、跨故障域部署和消息恢复演练。
 - Redis 哨兵或托管 Redis；Redis 只能作为登录限流的派生状态。
 
 ### 平台与网络
 
-- Gateway 的 TLS 终止、外部 Ingress、统一限流、审计和服务间网络策略。
+- Gateway 的 TLS 终止、外部 Ingress、统一限流、审计和服务间网络策略；Helm 已提供可选 Ingress 路由模板。
 - Kubernetes NetworkPolicy、镜像仓库、镜像签名和运行时漏洞扫描。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 
 ### 可观测性与恢复
 
-- Prometheus/Grafana 告警规则、日志聚合和 OpenTelemetry Trace 后端。
+- 已提供 Prometheus 抓取配置和服务/Outbox/死信告警样例；生产环境仍需接入托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端。
 - PostgreSQL 备份定时化、异地保存、定期恢复验证和恢复时间目标记录。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 

@@ -47,4 +47,5 @@ Chart 默认启用三个消费者和 Outbox。只有 gateway 应作为外部 API
 Seccomp 配置、资源请求/限制、启动/就绪/存活探针、拓扑分散和优雅终止配置。生产覆盖值启用
 双副本、PodDisruptionBudget 和基于 CPU 的 HPA；集群必须安装 Metrics Server 才能使用 HPA。
 `postgresql.host`、`redis.host`、`rocketmq.namesrvAddr`、镜像地址和端口均可在自定义 values
-文件中覆盖。
+文件中覆盖。需要对外提供 HTTP API 时，设置 `ingress.enabled=true`、域名、TLS Secret
+和 Ingress Controller 注解；Ingress 只转发到 gateway，业务服务仍保持 ClusterIP。

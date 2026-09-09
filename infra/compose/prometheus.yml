@@ -1,0 +1,25 @@
+# 作用：本地/演示环境的 Prometheus 抓取配置。生产环境可迁移到托管 Prometheus。
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: flowmesh-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [gateway-service:8080]
+  - job_name: flowmesh-iam
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [iam-service:8081]
+  - job_name: flowmesh-supplier
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [supplier-service:8082]
+  - job_name: flowmesh-workflow
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [workflow-service:8083]

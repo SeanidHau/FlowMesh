@@ -6,5 +6,6 @@
 - `verify.sh`：执行格式、测试和基础验证。
 - `backup-postgres.sh`：导出 PostgreSQL 数据库和角色定义。
 - `restore-postgres.sh`：将 PostgreSQL custom-format 备份恢复到目标数据库。
+- `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境应将备份目录同步到独立、加密且具备生命周期策略的对象存储；恢复前必须完成审批和目标数据库隔离确认。

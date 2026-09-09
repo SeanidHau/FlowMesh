@@ -186,8 +186,23 @@ services:
       timeout: 5s
       retries: 12
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: [observability]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-rules.yml:/etc/prometheus/rules/flowmesh.yml:ro
+      - prometheusdata:/prometheus
+
 volumes:
   pgdata:
   redisdata:
   rocketmq-store:
   rocketmq-logs:
+  prometheusdata:

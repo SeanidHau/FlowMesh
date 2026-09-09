@@ -1,0 +1,31 @@
+# 作用：提供最小可用的服务可用性、Outbox 积压和死信告警样例。
+groups:
+  - name: flowmesh-availability
+    rules:
+      - alert: FlowMeshServiceDown
+        expr: up{job=~"flowmesh-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FlowMesh 服务不可用"
+          description: "{{ $labels.job }} 已连续两分钟无法抓取。"
+
+  - name: flowmesh-messaging
+    rules:
+      - alert: FlowMeshOutboxBacklog
+        expr: flowmesh_outbox_pending > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FlowMesh Outbox 持续积压"
+          description: "{{ $labels.instance }} 的 Outbox 待投递数量超过 100。"
+      - alert: FlowMeshDeadLetterEvents
+        expr: flowmesh_outbox_dead_lettered_current > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FlowMesh 出现死信事件"
+          description: "{{ $labels.instance }} 存在待处置死信事件。"
