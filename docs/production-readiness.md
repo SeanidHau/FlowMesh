@@ -9,6 +9,7 @@
 - Helm 默认提供 CPU/内存 requests 和 limits、启动/就绪/存活探针、滚动更新和优雅终止配置。
 - 生产 values 提供三个服务的双副本和 PodDisruptionBudget 配置。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
+- RocketMQ 消费线程在处理事件时恢复事件 `traceId` 到 MDC，并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 
 验证命令：

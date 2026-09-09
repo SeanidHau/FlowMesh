@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * 消费 supplier-service 发布的供应商申请提交事件。
@@ -56,14 +57,24 @@ public class ApplicationSubmittedListener implements RocketMQListener<String> {
      */
     @Override
     public void onMessage(String message) {
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
+            try {
+                projectionService.project(message);
+                successCounter.increment();
+                log.info("RocketMQ 消费成功，consumer=workflow-application-submitted，{}", eventContext(message));
+            } catch (RuntimeException exception) {
+                failureCounter.increment();
+                log.warn("RocketMQ 消费失败，consumer=workflow-application-submitted，{}", eventContext(message), exception);
+                throw exception;
+            }
+        }
+    }
+
+    private String traceId(String message) {
         try {
-            projectionService.project(message);
-            successCounter.increment();
-            log.info("RocketMQ 消费成功，consumer=workflow-application-submitted，{}", eventContext(message));
-        } catch (RuntimeException exception) {
-            failureCounter.increment();
-            log.warn("RocketMQ 消费失败，consumer=workflow-application-submitted，{}", eventContext(message), exception);
-            throw exception;
+            return objectMapper.readTree(message).path("traceId").asText("");
+        } catch (com.fasterxml.jackson.core.JsonProcessingException exception) {
+            return "";
         }
     }
 

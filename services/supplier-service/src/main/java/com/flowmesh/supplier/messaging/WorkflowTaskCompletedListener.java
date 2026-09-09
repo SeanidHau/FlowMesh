@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * 消费 workflow-service 发布的审批完成事件。
@@ -56,14 +57,24 @@ public class WorkflowTaskCompletedListener implements RocketMQListener<String> {
      */
     @Override
     public void onMessage(String message) {
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
+            try {
+                service.apply(message);
+                successCounter.increment();
+                log.info("RocketMQ 消费成功，consumer=supplier-workflow-task-completed，{}", eventContext(message));
+            } catch (RuntimeException exception) {
+                failureCounter.increment();
+                log.warn("RocketMQ 消费失败，consumer=supplier-workflow-task-completed，{}", eventContext(message), exception);
+                throw exception;
+            }
+        }
+    }
+
+    private String traceId(String message) {
         try {
-            service.apply(message);
-            successCounter.increment();
-            log.info("RocketMQ 消费成功，consumer=supplier-workflow-task-completed，{}", eventContext(message));
-        } catch (RuntimeException exception) {
-            failureCounter.increment();
-            log.warn("RocketMQ 消费失败，consumer=supplier-workflow-task-completed，{}", eventContext(message), exception);
-            throw exception;
+            return objectMapper.readTree(message).path("traceId").asText("");
+        } catch (com.fasterxml.jackson.core.JsonProcessingException exception) {
+            return "";
         }
     }
 
