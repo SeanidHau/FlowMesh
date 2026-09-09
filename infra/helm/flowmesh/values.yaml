@@ -18,6 +18,30 @@ redis:
   host: redis
   port: 6379
 
+gateway:
+  image: flowmesh/gateway-service
+  tag: 0.1.0
+  port: 8080
+  replicas: 1
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  terminationGracePeriodSeconds: 30
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
 services:
   iam:
     image: flowmesh/iam-service

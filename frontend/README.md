@@ -66,3 +66,9 @@ npm run package
 
 打包后的桌面端默认访问 `localhost` 上的三个后端端口。部署到其他环境时，在启动桌面端前设置
 `FLOWMESH_IAM_URL`、`FLOWMESH_SUPPLIER_URL` 和 `FLOWMESH_WORKFLOW_URL`。
+
+生产环境的 Electron 客户端可设置 `FLOWMESH_GATEWAY_URL`，此时请求会统一发送到
+Gateway 的 `/api/{service}/api/v1/**` 路径，不再直接访问业务服务。
+
+本地通过 Compose 验证统一入口时可使用 `http://localhost:8080`；浏览器开发模式仍由
+Vite 代理直接转发到三个本地业务服务。

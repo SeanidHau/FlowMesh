@@ -160,6 +160,32 @@ services:
       timeout: 5s
       retries: 12
 
+  gateway-service:
+    build:
+      context: ../..
+      dockerfile: services/gateway-service/Dockerfile
+    depends_on:
+      iam-service:
+        condition: service_healthy
+      supplier-service:
+        condition: service_healthy
+      workflow-service:
+        condition: service_healthy
+    environment:
+      FLOWMESH_IAM_URL: http://iam-service:8081
+      FLOWMESH_SUPPLIER_URL: http://supplier-service:8082
+      FLOWMESH_WORKFLOW_URL: http://workflow-service:8083
+    ports:
+      - "8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 volumes:
   pgdata:
   redisdata:

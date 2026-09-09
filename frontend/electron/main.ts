@@ -28,6 +28,7 @@ const serviceUrls: Record<ApiService, string> = {
   supplier: process.env.FLOWMESH_SUPPLIER_URL ?? 'http://127.0.0.1:8082',
   workflow: process.env.FLOWMESH_WORKFLOW_URL ?? 'http://127.0.0.1:8083',
 };
+const gatewayUrl = process.env.FLOWMESH_GATEWAY_URL;
 
 /**
  * 创建安全的 Electron 主窗口。
@@ -86,7 +87,9 @@ async function requestApi(event: Electron.IpcMainInvokeEvent, value: unknown): P
   }
 
   const request = parseRequest(value);
-  const url = new URL(request.path, serviceUrls[request.service]);
+  const url = gatewayUrl
+    ? new URL(`/api/${request.service}${request.path}`, gatewayUrl)
+    : new URL(request.path, serviceUrls[request.service]);
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (request.token) {
     headers.Authorization = `Bearer ${request.token}`;

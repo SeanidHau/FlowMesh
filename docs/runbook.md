@@ -27,9 +27,10 @@
    docker compose --env-file .env -f infra/compose/docker-compose.yml ps
    ```
 
-3. 检查三个服务的健康状态。
+3. 检查 Gateway 和三个业务服务的健康状态。
 
    ```bash
+   curl -fsS http://localhost:8080/actuator/health
    curl -fsS http://localhost:8081/actuator/health
    curl -fsS http://localhost:8082/actuator/health
    curl -fsS http://localhost:8083/actuator/health
@@ -43,7 +44,8 @@
    VITE_DEMO_MODE=true npm run dev
    ```
 
-Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者。桌面端默认访问宿主机的
+Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者，Gateway 监听宿主机 `8080`。
+桌面端默认访问宿主机的
 `8081`、`8082` 和 `8083` 端口。
 
 ## 停止与数据卷

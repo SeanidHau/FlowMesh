@@ -1,0 +1,58 @@
+# 作用：Gateway 服务的本地开发配置。
+
+spring:
+  application:
+    name: gateway-service
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:2000}
+            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:5s}
+          routes:
+            - id: iam-service
+              uri: ${FLOWMESH_IAM_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/iam/**
+              filters:
+                - StripPrefix=2
+            - id: supplier-service
+              uri: ${FLOWMESH_SUPPLIER_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/supplier/**
+              filters:
+                - StripPrefix=2
+            - id: workflow-service
+              uri: ${FLOWMESH_WORKFLOW_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/workflow/**
+              filters:
+                - StripPrefix=2
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+
+logging:
+  pattern:
+    level: "traceId=%X{traceId} %5p"

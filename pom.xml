@@ -35,6 +35,7 @@
   -->
   <modules>
     <module>services/flowmesh-common</module>
+    <module>services/gateway-service</module>
     <module>services/iam-service</module>
     <module>services/supplier-service</module>
     <module>services/workflow-service</module>
@@ -56,13 +57,26 @@
 
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
+    <!-- 作用：统一 Spring Cloud Gateway 与 Spring Boot 3.5 的兼容版本。 -->
+    <spring-cloud.version>2025.0.0</spring-cloud.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
-    <dependencyManagement>
+  <dependencyManagement>
     <dependencies>
+      <!--
+        作用：导入 Spring Cloud BOM，避免 Gateway 的传递依赖出现版本漂移。
+      -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <!--
         作用：子模块引用公共契约模块时统一版本。
         防止多个服务使用不同的内部模块版本。

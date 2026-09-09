@@ -1,13 +1,14 @@
 # FlowMesh（流织）
 
-FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前 MVP 使用 Java 21、Spring Boot、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
+FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-当前已完成 MVP-4：在上述基础上补齐 RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。Camunda、Redis 缓存、MinIO、风险服务和通知审计服务仍属于后续阶段。总体设计见 [DESIGN.md](DESIGN.md)。
+当前已完成 MVP-4，并开始补齐生产基线：在上述基础上接入统一 API Gateway、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。Camunda、Redis 缓存、MinIO、风险服务和通知审计服务仍属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
 | 能力 | 当前状态 | 说明 |
 | --- | --- | --- |
+| API Gateway | 已实现 | 统一路由到 IAM、Supplier 和 Workflow，业务服务保持内网入口。 |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出和认证安全审计。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标。 |
@@ -77,9 +78,9 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml up -d postgre
 Desktop；平时不要让 Docker 常驻后台，后续需要集成测试或本地环境时再启动。
 
 IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 导入根目录 `pom.xml`。
-运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `IamServiceApplication`、
-`SupplierServiceApplication` 或 `WorkflowServiceApplication`。IAM 默认端口为 8081，
-supplier 默认端口为 8082，workflow 默认端口为 8083。
+运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `GatewayServiceApplication`、
+`IamServiceApplication`、`SupplierServiceApplication` 或 `WorkflowServiceApplication`。
+Gateway 默认端口为 8080，IAM 默认端口为 8081，supplier 默认端口为 8082，workflow 默认端口为 8083。
 
 要演示消息闭环：启动 PostgreSQL 和 RocketMQ 后，将 `FLOWMESH_OUTBOX_ENABLED` 与
 `FLOWMESH_WORKFLOW_CONSUMER_ENABLED`、`FLOWMESH_SUPPLIER_CONSUMER_ENABLED`、
@@ -104,7 +105,7 @@ POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
 
 ## 启动完整本地环境
 
-在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ 和三个 Java 服务：
+在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ、三个 Java 服务和 API Gateway：
 
 ```bash
 cp .env.example .env

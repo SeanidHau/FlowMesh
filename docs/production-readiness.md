@@ -7,11 +7,12 @@
 - JWT 密钥、数据库密码和 Redis 密码不允许使用默认占位值。
 - Kubernetes 应用 Pod 使用非 root、只读根文件系统、默认 Seccomp，并关闭 ServiceAccount Token 自动挂载。
 - Helm 默认提供 CPU/内存 requests 和 limits、启动/就绪/存活探针、滚动更新和优雅终止配置。
-- 生产 values 提供三个服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
+- 生产 values 提供 gateway 和三个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
+- 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**` 和 `/api/workflow/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
-- RocketMQ 消费线程在处理事件时恢复事件 `traceId` 到 MDC，并在处理结束后清理线程上下文。
+- 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
-- CI 在 PR 构建三项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
+- CI 在 PR 构建四项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
 
 验证命令：
 
@@ -36,7 +37,7 @@ helm lint infra/helm/flowmesh \
 
 ### 平台与网络
 
-- 对外网关、TLS 终止、统一限流、审计和服务间网络策略。
+- Gateway 的 TLS 终止、外部 Ingress、统一限流、审计和服务间网络策略。
 - Kubernetes NetworkPolicy、镜像仓库、镜像签名和运行时漏洞扫描。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 

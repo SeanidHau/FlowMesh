@@ -126,6 +126,8 @@ jobs:
         include:
           - service: iam-service
             dockerfile: services/iam-service/Dockerfile
+          - service: gateway-service
+            dockerfile: services/gateway-service/Dockerfile
           - service: supplier-service
             dockerfile: services/supplier-service/Dockerfile
           - service: workflow-service
