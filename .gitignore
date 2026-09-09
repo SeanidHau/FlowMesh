@@ -32,6 +32,7 @@ release/
 logs/
 coverage/
 reports/
+backups/
 .gradle/
 
 # Local volumes and generated infrastructure state

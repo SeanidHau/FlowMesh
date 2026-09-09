@@ -4,7 +4,7 @@
 
 - `bootstrap.sh`：初始化本地开发环境。
 - `verify.sh`：执行格式、测试和基础验证。
-- `backup.sh`：备份 PostgreSQL、MinIO 与关键配置。
-- `restore.sh`：执行本地恢复演练。
+- `backup-postgres.sh`：导出 PostgreSQL 数据库和角色定义。
+- `restore-postgres.sh`：将 PostgreSQL custom-format 备份恢复到目标数据库。
 
-脚本落地前不得在 README 中宣称存在一键运行或恢复能力。
+备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境应将备份目录同步到独立、加密且具备生命周期策略的对象存储；恢复前必须完成审批和目标数据库隔离确认。

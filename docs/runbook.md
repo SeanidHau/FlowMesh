@@ -103,5 +103,22 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 
 ## 备份与恢复
 
-当前 Compose 已提供 PostgreSQL 和 RocketMQ 的持久化卷；备份脚本、MinIO、Camunda 和 Kubernetes
-恢复演练仍属于后续交付项。RocketMQ 为单 Broker 演示环境，不承诺灾备能力。
+PostgreSQL 备份使用 custom format，同时导出角色定义。备份文件必须写入独立、加密且具备
+生命周期策略的存储，不得提交到 Git：
+
+```bash
+export FLOWMESH_PG_PASSWORD='由 Secret Manager 注入'
+export FLOWMESH_BACKUP_ROOT='./backups/postgres'
+./scripts/backup-postgres.sh
+```
+
+恢复必须在隔离的目标数据库执行，并显式确认，避免误覆盖生产数据：
+
+```bash
+export FLOWMESH_CONFIRM_RESTORE=YES
+export FLOWMESH_PG_PASSWORD='由 Secret Manager 注入'
+./scripts/restore-postgres.sh ./backups/postgres/<timestamp>
+```
+
+`globals.sql` 包含角色定义和权限信息，必须由数据库管理员审核后执行。RocketMQ 当前仍为单
+Broker 演示拓扑；生产环境还需要多 Broker、持久卷、跨故障域部署和恢复演练。

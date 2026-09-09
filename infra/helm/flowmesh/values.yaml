@@ -27,7 +27,17 @@ services:
     dbPassword: ""
     loginRateLimitEnabled: true
     replicas: 1
-    resources: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+    terminationGracePeriodSeconds: 30
   supplier:
     image: flowmesh/supplier-service
     tag: 0.1.0
@@ -35,7 +45,17 @@ services:
     dbUser: flowmesh_supplier
     dbPassword: ""
     replicas: 1
-    resources: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+    terminationGracePeriodSeconds: 30
   workflow:
     image: flowmesh/workflow-service
     tag: 0.1.0
@@ -43,4 +63,14 @@ services:
     dbUser: flowmesh_workflow
     dbPassword: ""
     replicas: 1
-    resources: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+    terminationGracePeriodSeconds: 30

@@ -5,6 +5,9 @@ spring:
   application:
     name: supplier-service
 
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
   datasource:
     url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier
     username: ${SUPPLIER_DB_USER:flowmesh_supplier}
@@ -22,6 +25,11 @@ mybatis:
 
 server:
   port: 8082
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 5s
+    max-http-form-post-size: 1MB
+    max-swallow-size: 2MB
 
 flowmesh:
   security:

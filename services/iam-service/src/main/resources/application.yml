@@ -5,6 +5,9 @@ spring:
   application:
     name: iam-service
 
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
   datasource:
     url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=iam
     username: ${IAM_DB_USER:flowmesh_iam}
@@ -30,6 +33,11 @@ mybatis:
 
 server:
   port: 8081
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 5s
+    max-http-form-post-size: 1MB
+    max-swallow-size: 2MB
 
 flowmesh:
   demo-data:

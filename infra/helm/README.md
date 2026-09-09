@@ -1,6 +1,6 @@
 # Helm 与 kind 部署
 
-`flowmesh/` Chart 部署 IAM、supplier 和 workflow 三个应用服务。PostgreSQL 与 RocketMQ
+`flowmesh/` Chart 部署 IAM、supplier 和 workflow 三个应用服务。PostgreSQL、Redis 与 RocketMQ
 作为外部依赖，通过 `values.yaml` 配置地址；演示环境使用单副本或单 Broker 拓扑，不代表生产
 高可用部署。
 
@@ -24,6 +24,14 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
 ```
 
+生产环境应使用生产覆盖值，并让 `global.existingSecret` 指向外部 Secret：
+
+```bash
+helm upgrade --install flowmesh infra/helm/flowmesh \
+  -f infra/helm/flowmesh/values-production.yaml \
+  --set global.existingSecret=flowmesh-runtime-secrets
+```
+
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD` 和 `WORKFLOW_DB_PASSWORD` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
@@ -35,5 +43,6 @@ kubectl get deploy,svc,pods -l app.kubernetes.io/instance=flowmesh
 ```
 
 Chart 默认启用三个消费者和 Outbox。应用 Pod 使用非 root 用户、只读根文件系统、默认
-Seccomp 配置和健康探针。`postgresql.host`、`rocketmq.namesrvAddr`、镜像地址和端口均可在
-自定义 values 文件中覆盖。
+Seccomp 配置、资源请求/限制、启动/就绪/存活探针和优雅终止配置。生产覆盖值启用双副本和
+PodDisruptionBudget；`postgresql.host`、`redis.host`、`rocketmq.namesrvAddr`、镜像地址和端口
+均可在自定义 values 文件中覆盖。

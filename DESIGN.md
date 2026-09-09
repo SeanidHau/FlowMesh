@@ -187,7 +187,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ### 9.0 当前实现边界
 
-本设计蓝图包含后续演进目标。当前可运行 MVP 仅提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、Vue 3 和 Electron；Camunda、Redis、MinIO、风险服务、通知审计服务、Prometheus/Grafana、OpenTelemetry、对账和人工重放入口尚未接入运行链路。部署和面试说明必须以 README 的能力边界表为准。
+本设计蓝图包含后续演进目标。当前可运行基线提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、Vue 3、Electron、Redis 登录限流、Outbox 运维、跨服务对账和基础指标；Camunda、Redis 缓存、MinIO、风险服务、通知审计服务、完整 Prometheus/Grafana/OpenTelemetry 平台以及生产级高可用仍在后续生产化路线中。部署和面试说明必须以 README 与 `docs/production-readiness.md` 为准。
 
 ### 技术栈
 

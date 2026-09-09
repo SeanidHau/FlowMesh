@@ -1,0 +1,19 @@
+{{- $root := . -}}
+{{- range $name, $service := dict "iam" .Values.services.iam "supplier" .Values.services.supplier "workflow" .Values.services.workflow }}
+{{- if $service.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "flowmesh.fullname" $root }}-{{ $name }}
+  labels:
+    {{- include "flowmesh.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  minAvailable: {{ $service.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $root.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+---
+{{- end }}
+{{- end }}
