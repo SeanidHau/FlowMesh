@@ -1,0 +1,32 @@
+{{- $root := . -}}
+{{- range $name, $service := dict "iam" .Values.services.iam "supplier" .Values.services.supplier "workflow" .Values.services.workflow }}
+{{- if $service.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "flowmesh.fullname" $root }}-{{ $name }}
+  labels:
+    {{- include "flowmesh.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "flowmesh.fullname" $root }}-{{ $name }}
+  minReplicas: {{ $service.autoscaling.minReplicas }}
+  maxReplicas: {{ $service.autoscaling.maxReplicas }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $service.autoscaling.targetCPUUtilizationPercentage }}
+---
+{{- end }}
+{{- end }}

@@ -38,6 +38,11 @@ services:
       enabled: false
       minAvailable: 1
     terminationGracePeriodSeconds: 30
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
   supplier:
     image: flowmesh/supplier-service
     tag: 0.1.0
@@ -56,6 +61,11 @@ services:
       enabled: false
       minAvailable: 1
     terminationGracePeriodSeconds: 30
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
   workflow:
     image: flowmesh/workflow-service
     tag: 0.1.0
@@ -74,3 +84,8 @@ services:
       enabled: false
       minAvailable: 1
     terminationGracePeriodSeconds: 30
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70

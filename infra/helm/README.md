@@ -43,6 +43,7 @@ kubectl get deploy,svc,pods -l app.kubernetes.io/instance=flowmesh
 ```
 
 Chart 默认启用三个消费者和 Outbox。应用 Pod 使用非 root 用户、只读根文件系统、默认
-Seccomp 配置、资源请求/限制、启动/就绪/存活探针和优雅终止配置。生产覆盖值启用双副本和
-PodDisruptionBudget；`postgresql.host`、`redis.host`、`rocketmq.namesrvAddr`、镜像地址和端口
-均可在自定义 values 文件中覆盖。
+Seccomp 配置、资源请求/限制、启动/就绪/存活探针、拓扑分散和优雅终止配置。生产覆盖值启用
+双副本、PodDisruptionBudget 和基于 CPU 的 HPA；集群必须安装 Metrics Server 才能使用 HPA。
+`postgresql.host`、`redis.host`、`rocketmq.namesrvAddr`、镜像地址和端口均可在自定义 values
+文件中覆盖。
