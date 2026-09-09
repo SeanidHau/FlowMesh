@@ -38,7 +38,7 @@ class WorkflowOutboxPublisherTest {
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(1);
 
         WorkflowOutboxPublisher publisher = new WorkflowOutboxPublisher(
-            repository, template, claimService, meterRegistry, 3, 1
+            repository, template, claimService, meterRegistry, 3, 1, 3000
         );
         publisher.publishPendingEvents();
 
@@ -64,7 +64,7 @@ class WorkflowOutboxPublisherTest {
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(0);
 
         WorkflowOutboxPublisher publisher = new WorkflowOutboxPublisher(
-            repository, template, claimService, meterRegistry, 3, 1
+            repository, template, claimService, meterRegistry, 3, 1, 3000
         );
         publisher.publishPendingEvents();
 

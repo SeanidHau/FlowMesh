@@ -45,6 +45,7 @@ flowmesh:
     publish-interval-ms: ${FLOWMESH_RISK_PUBLISH_INTERVAL_MS:1000}
     batch-size: ${FLOWMESH_RISK_BATCH_SIZE:10}
     lease-seconds: ${FLOWMESH_RISK_LEASE_SECONDS:60}
+    send-timeout-ms: ${FLOWMESH_RISK_SEND_TIMEOUT_MS:3000}
     max-attempts: ${FLOWMESH_RISK_MAX_ATTEMPTS:5}
     retry-base-delay-seconds: ${FLOWMESH_RISK_RETRY_BASE_DELAY_SECONDS:1}
 

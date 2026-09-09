@@ -13,6 +13,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 发布风控结果 Outbox，收到 RocketMQ ACK 后才确认事件完成。
@@ -21,15 +23,19 @@ import io.micrometer.core.instrument.MeterRegistry;
 @ConditionalOnProperty(name = "flowmesh.risk.outbox-enabled", havingValue = "true")
 public class RiskOutboxPublisher {
 
+    private static final Logger log = LoggerFactory.getLogger(RiskOutboxPublisher.class);
+
     private final RiskOutboxRepository repository;
     private final RocketMQTemplate rocketMQTemplate;
     private final int batchSize;
     private final long leaseSeconds;
     private final int maxAttempts;
     private final long retryBaseDelaySeconds;
+    private final long sendTimeoutMillis;
     private final Counter publishedCounter;
     private final Counter failedCounter;
     private final Counter deadLetterCounter;
+    private final Counter confirmationFailedCounter;
 
     /**
      * 创建风控 Outbox 发布器。
@@ -41,6 +47,7 @@ public class RiskOutboxPublisher {
      * @param leaseSeconds 认领租约秒数
      * @param maxAttempts 最大尝试次数
      * @param retryBaseDelaySeconds 退避基数
+     * @param sendTimeoutMillis 单条消息发送超时时间
      */
     public RiskOutboxPublisher(
         RiskOutboxRepository repository,
@@ -49,19 +56,25 @@ public class RiskOutboxPublisher {
         @Value("${flowmesh.risk.batch-size:10}") int batchSize,
         @Value("${flowmesh.risk.lease-seconds:60}") long leaseSeconds,
         @Value("${flowmesh.risk.max-attempts:5}") int maxAttempts,
-        @Value("${flowmesh.risk.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
+        @Value("${flowmesh.risk.retry-base-delay-seconds:1}") long retryBaseDelaySeconds,
+        @Value("${flowmesh.risk.send-timeout-ms:3000}") long sendTimeoutMillis
     ) {
+        validateConfiguration(batchSize, leaseSeconds, maxAttempts, retryBaseDelaySeconds, sendTimeoutMillis);
         this.repository = repository;
         this.rocketMQTemplate = rocketMQTemplate;
         this.batchSize = batchSize;
         this.leaseSeconds = leaseSeconds;
         this.maxAttempts = maxAttempts;
         this.retryBaseDelaySeconds = retryBaseDelaySeconds;
+        this.sendTimeoutMillis = sendTimeoutMillis;
         this.publishedCounter = Counter.builder("flowmesh.outbox.published").tag("service", "risk")
             .register(meterRegistry);
         this.failedCounter = Counter.builder("flowmesh.outbox.failed").tag("service", "risk")
             .register(meterRegistry);
         this.deadLetterCounter = Counter.builder("flowmesh.outbox.dead_lettered").tag("service", "risk")
+            .register(meterRegistry);
+        this.confirmationFailedCounter = Counter.builder("flowmesh.outbox.confirmation_failed")
+            .tag("service", "risk")
             .register(meterRegistry);
     }
 
@@ -77,9 +90,19 @@ public class RiskOutboxPublisher {
         );
         for (RiskOutboxEvent event : events) {
             try {
-                rocketMQTemplate.syncSend(event.getTopic() + ":" + event.getTag(), event.getPayload());
-                if (repository.markPublished(event.getId(), claimToken) == 1) {
-                    publishedCounter.increment();
+                rocketMQTemplate.syncSend(
+                    event.getTopic() + ":" + event.getTag(), event.getPayload(), sendTimeoutMillis
+                );
+                try {
+                    if (repository.markPublished(event.getId(), claimToken) == 1) {
+                        publishedCounter.increment();
+                    } else {
+                        confirmationFailedCounter.increment();
+                        log.warn("RocketMQ 风控事件已发送但未完成 Outbox 确认，eventId={}", event.getId());
+                    }
+                } catch (RuntimeException confirmationException) {
+                    confirmationFailedCounter.increment();
+                    log.error("RocketMQ 风控事件已发送但 Outbox 确认失败，eventId={}", event.getId(), confirmationException);
                 }
             } catch (RuntimeException exception) {
                 failedCounter.increment();
@@ -96,6 +119,29 @@ public class RiskOutboxPublisher {
                     deadLetterCounter.increment();
                 }
             }
+        }
+    }
+
+    private void validateConfiguration(int configuredBatchSize, long configuredLeaseSeconds,
+                                      int configuredMaxAttempts, long configuredRetryBaseDelaySeconds,
+                                      long configuredSendTimeoutMillis) {
+        if (configuredBatchSize < 1 || configuredBatchSize > 100) {
+            throw new IllegalArgumentException("flowmesh.risk.batch-size must be between 1 and 100");
+        }
+        if (configuredSendTimeoutMillis < 100) {
+            throw new IllegalArgumentException("flowmesh.risk.send-timeout-ms must be at least 100");
+        }
+        long minimumLeaseSeconds = (configuredBatchSize * configuredSendTimeoutMillis + 999) / 1000 + 10;
+        if (configuredLeaseSeconds < minimumLeaseSeconds) {
+            throw new IllegalArgumentException(
+                "flowmesh.risk.lease-seconds must cover the batch send timeout plus a safety margin"
+            );
+        }
+        if (configuredMaxAttempts < 1) {
+            throw new IllegalArgumentException("flowmesh.risk.max-attempts must be at least 1");
+        }
+        if (configuredRetryBaseDelaySeconds < 1) {
+            throw new IllegalArgumentException("flowmesh.risk.retry-base-delay-seconds must be at least 1");
         }
     }
 

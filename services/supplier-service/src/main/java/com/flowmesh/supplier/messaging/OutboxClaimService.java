@@ -25,12 +25,15 @@ public class OutboxClaimService {
      * @param repository Outbox 仓储
      * @param batchSize 单次认领的最大事件数
      * @param leaseSeconds 单次认领租约秒数
+     * @param sendTimeoutMillis 单条消息发送超时时间
      */
     public OutboxClaimService(
         OutboxEventRepository repository,
         @Value("${flowmesh.outbox.batch-size:10}") int batchSize,
-        @Value("${flowmesh.outbox.lease-seconds:60}") long leaseSeconds
+        @Value("${flowmesh.outbox.lease-seconds:60}") long leaseSeconds,
+        @Value("${flowmesh.outbox.send-timeout-ms:3000}") long sendTimeoutMillis
     ) {
+        validateConfiguration(batchSize, leaseSeconds, sendTimeoutMillis);
         this.repository = repository;
         this.batchSize = batchSize;
         this.leaseSeconds = leaseSeconds;
@@ -46,5 +49,21 @@ public class OutboxClaimService {
         Instant now = Instant.now();
         UUID claimToken = UUID.randomUUID();
         return repository.claimBatch(now, claimToken, now.plusSeconds(leaseSeconds), batchSize);
+    }
+
+    private void validateConfiguration(int configuredBatchSize, long configuredLeaseSeconds,
+                                       long configuredSendTimeoutMillis) {
+        if (configuredBatchSize < 1 || configuredBatchSize > 100) {
+            throw new IllegalArgumentException("flowmesh.outbox.batch-size must be between 1 and 100");
+        }
+        if (configuredSendTimeoutMillis < 100) {
+            throw new IllegalArgumentException("flowmesh.outbox.send-timeout-ms must be at least 100");
+        }
+        long minimumLeaseSeconds = (configuredBatchSize * configuredSendTimeoutMillis + 999) / 1000 + 10;
+        if (configuredLeaseSeconds < minimumLeaseSeconds) {
+            throw new IllegalArgumentException(
+                "flowmesh.outbox.lease-seconds must cover the batch send timeout plus a safety margin"
+            );
+        }
     }
 }

@@ -1,12 +1,12 @@
 # FlowMesh（流织）正式设计蓝图
 
-> 状态：已确认，待实施
-> 更新日期：2026-08-13
+> 状态：生产化基线已实现，外部平台验证待完成
+> 更新日期：2026-09-09
 > 许可证：Apache-2.0
 
 ## 1. 定位与范围
 
-**FlowMesh** 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。它以 Java 21、Spring Boot、Camunda 8 与 Apache RocketMQ 为核心，重点证明跨服务长流程、可靠消息、失败恢复、审计追踪和 Kubernetes 工程化能力。
+**FlowMesh** 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前以 Java 21、Spring Boot、内部流程状态机与 Apache RocketMQ 为核心，重点证明跨服务长流程、可靠消息、失败恢复、审计追踪和 Kubernetes 工程化能力；Camunda 8 是保持事件契约不变的后续编排替换方案。
 
 首版不是通用 OA 或流程设计器。它只实现一个可完整演示的供应商准入流程，并提供四组可复现的可靠性验证剧本。
 
@@ -71,7 +71,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 - 申请状态仅由 `supplier-service` 的受控命令转换，并维护 `stateVersion`。
 - 补件最多两次；超过次数进入 `TERMINATED`。
 - 所有历史审批意见保留快照，补件不能覆盖历史记录。
-- 审批 SLA 为 24 小时：第 20 小时催办，24 小时转 `OPERATIONS`，由 Camunda Timer 实现。
+- 审批 SLA 为 24 小时：第 20 小时催办，24 小时转 `OPERATIONS`。当前由应用层任务与运维脚本承载，接入 Camunda 后可迁移为 Timer。
 
 ## 3. 服务边界
 
@@ -80,7 +80,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 | `gateway-service` | 认证入口、限流、路由、受信租户上下文透传 | 无业务数据 |
 | `iam-service` | 用户、角色、组织、JWT / Refresh Token | IAM Schema |
 | `supplier-service` | 申请、材料元数据、供应商主数据、状态机、审批快照、Outbox | Supplier Schema；启用供应商 Worker |
-| `workflow-service` | BPMN 部署、流程发起、Camunda 任务查询与完成、流程查询 | Workflow Schema；Camunda Client |
+| `workflow-service` | 流程实例投影、当前任务查询与完成、审批推进和流程查询 | Workflow Schema；当前由内部状态机承载 |
 | `risk-service` | 模拟风险校验、异步回调与受控故障注入 | Risk Schema；风险校验 Worker |
 | `notification-audit-service` | 通知、审计查询、DLQ 重放、事件对账 | Audit Schema；通知 Worker |
 
@@ -89,9 +89,9 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 ## 4. 状态真相源与跨系统恢复
 
 - `supplier-service` 是申请、供应商状态与审批快照的业务权威。
-- Camunda 是节点、用户任务、定时器及流程推进的编排权威。
-- 两者用 `applicationId + processInstanceKey` 关联，并由每 5 分钟对账任务检测差异。
-- Electron 桌面工作台经 `workflow-service` 查询和完成 Camunda User Task；Tasklist 仅供运维与演示观察，不维护第二套待办状态。
+- 当前 `workflow-service` 是节点、用户任务和流程推进的编排权威；未来接入 Camunda 后再由流程引擎承接该职责。
+- 两者用 `applicationId + workflowInstanceId` 关联，并由对账任务检测 Supplier 与 Workflow 投影差异。
+- Electron 桌面工作台经 `workflow-service` 查询和完成当前任务；未来接入 Camunda 时仍保持该 API 边界，不让客户端直接依赖引擎。
 
 ### 跨系统动作
 
@@ -193,7 +193,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ```text
 Java 21 LTS · Spring Boot 3.x · Maven Wrapper
-Camunda 8 · Apache RocketMQ · PostgreSQL · Redis · MinIO
+内部流程状态机（Camunda 8 演进路线） · Apache RocketMQ · PostgreSQL · Redis · MinIO
 Electron · Vue 3 · TypeScript · Vite
 Docker Compose · kind · Helm · GitHub Actions
 Prometheus · Grafana · OpenTelemetry · Loki
@@ -201,9 +201,9 @@ Prometheus · Grafana · OpenTelemetry · Loki
 
 ### 运行方式
 
-- Docker Compose：本地开发与四个剧本复现。
-- kind + Helm：唯一维护的 Kubernetes 演示运行时。
-- Camunda 使用最小单副本自托管拓扑：Zeebe、Operate、Tasklist、Identity。
+- Docker Compose：本地开发与四个剧本复现，当前包含 Gateway、IAM、Supplier、Workflow、Risk 和 Notification-Audit。
+- kind + Helm：唯一维护的 Kubernetes 演示运行时；当前 Chart 不部署 Camunda。
+- 若后续接入 Camunda，使用最小单副本自托管拓扑仅用于演示，不将其作为生产高可用证据。
 - RocketMQ 演示使用单 Broker。生产建议多 Broker/多副本、持久卷、监控与故障域；演示环境不承诺基础设施高可用或灾备。
 - 仅 Gateway 对外暴露，其他服务和中间件均为内网；调试用 Compose 端口或 `kubectl port-forward`。
 
@@ -274,7 +274,7 @@ scripts/                  # 初始化、备份、恢复、剧本辅助脚本
 
 ## 13. 关键风险与约束
 
-- 单 Broker 与单副本 Camunda 仅验证应用层可靠性，不能证明基础设施高可用。
+- 单 Broker 以及未来可能使用的单副本 Camunda 仅验证应用层可靠性，不能证明基础设施高可用。
 - RocketMQ 事务消息不保证下游业务恰好一次；所有下游处理仍必须幂等。
 - Redis 是可丢失派生层，绝不能作为审批、锁或幂等的唯一事实来源。
 - Camunda、业务库和 RocketMQ 不共享全局事务；全部跨系统动作均须可重试、可审计、可对账。

@@ -38,7 +38,7 @@ class OutboxPublisherTest {
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(1);
 
         OutboxPublisher publisher = new OutboxPublisher(
-            repository, template, claimService, new SimpleMeterRegistry(), 3, 1
+            repository, template, claimService, new SimpleMeterRegistry(), 3, 1, 3000
         );
         publisher.publishPendingEvents();
 
@@ -63,7 +63,7 @@ class OutboxPublisherTest {
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(0);
 
         OutboxPublisher publisher = new OutboxPublisher(
-            repository, template, claimService, meterRegistry, 3, 1
+            repository, template, claimService, meterRegistry, 3, 1, 3000
         );
         publisher.publishPendingEvents();
 
@@ -89,7 +89,7 @@ class OutboxPublisherTest {
             );
 
         OutboxPublisher publisher = new OutboxPublisher(
-            repository, template, claimService, new SimpleMeterRegistry(), 1, 1
+            repository, template, claimService, new SimpleMeterRegistry(), 1, 1, 3000
         );
         publisher.publishPendingEvents();
 

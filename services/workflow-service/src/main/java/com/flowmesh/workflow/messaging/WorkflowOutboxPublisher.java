@@ -26,13 +26,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 public class WorkflowOutboxPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(WorkflowOutboxPublisher.class);
-    private static final long SEND_TIMEOUT_MILLIS = 3_000L;
-
     private final WorkflowOutboxEventRepository repository;
     private final RocketMQTemplate rocketMQTemplate;
     private final WorkflowOutboxClaimService claimService;
     private final int maxAttempts;
     private final long retryBaseDelaySeconds;
+    private final long sendTimeoutMillis;
     private final Counter publishedCounter;
     private final Counter failedCounter;
     private final Counter retryCounter;
@@ -48,6 +47,7 @@ public class WorkflowOutboxPublisher {
      * @param meterRegistry Micrometer 指标注册器
      * @param maxAttempts 单条事件最大尝试次数
      * @param retryBaseDelaySeconds 指数退避的基础秒数
+     * @param sendTimeoutMillis 单条消息发送超时时间
      */
     public WorkflowOutboxPublisher(
         WorkflowOutboxEventRepository repository,
@@ -55,13 +55,15 @@ public class WorkflowOutboxPublisher {
         WorkflowOutboxClaimService claimService,
         MeterRegistry meterRegistry,
         @Value("${flowmesh.workflow.outbox.max-attempts:5}") int maxAttempts,
-        @Value("${flowmesh.workflow.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds
+        @Value("${flowmesh.workflow.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds,
+        @Value("${flowmesh.workflow.outbox.send-timeout-ms:3000}") long sendTimeoutMillis
     ) {
         this.repository = repository;
         this.rocketMQTemplate = rocketMQTemplate;
         this.claimService = claimService;
         this.maxAttempts = maxAttempts;
         this.retryBaseDelaySeconds = retryBaseDelaySeconds;
+        this.sendTimeoutMillis = sendTimeoutMillis;
         this.publishedCounter = Counter.builder("flowmesh.outbox.published")
             .description("已成功发送到 RocketMQ 的 workflow Outbox 事件数")
             .register(meterRegistry);
@@ -103,7 +105,7 @@ public class WorkflowOutboxPublisher {
                 rocketMQTemplate.syncSend(
                     event.getTopic() + ":" + event.getTag(),
                     message,
-                    SEND_TIMEOUT_MILLIS
+                    sendTimeoutMillis
                 );
                 try {
                     int updated = repository.markPublishedIfClaimed(

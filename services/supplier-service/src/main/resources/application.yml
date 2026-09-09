@@ -58,6 +58,7 @@ flowmesh:
     publish-interval-ms: ${FLOWMESH_OUTBOX_PUBLISH_INTERVAL_MS:1000}
     batch-size: ${FLOWMESH_OUTBOX_BATCH_SIZE:10}
     lease-seconds: ${FLOWMESH_OUTBOX_LEASE_SECONDS:60}
+    send-timeout-ms: ${FLOWMESH_OUTBOX_SEND_TIMEOUT_MS:3000}
     max-attempts: ${FLOWMESH_OUTBOX_MAX_ATTEMPTS:5}
     retry-base-delay-seconds: ${FLOWMESH_OUTBOX_RETRY_BASE_DELAY_SECONDS:1}
   supplier:
