@@ -11,6 +11,7 @@
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - RocketMQ 消费线程在处理事件时恢复事件 `traceId` 到 MDC，并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
+- CI 在 PR 构建三项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
 
 验证命令：
 
