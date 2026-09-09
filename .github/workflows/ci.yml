@@ -52,6 +52,8 @@ jobs:
           HELM_TEST_IAM_PASSWORD: ci-only-iam-password
           HELM_TEST_SUPPLIER_PASSWORD: ci-only-supplier-password
           HELM_TEST_WORKFLOW_PASSWORD: ci-only-workflow-password
+          HELM_TEST_RISK_PASSWORD: ci-only-risk-password
+          HELM_TEST_AUDIT_PASSWORD: ci-only-audit-password
           HELM_TEST_OBJECT_STORAGE_SECRET: ci-only-object-storage-secret
         run: |
           helm lint infra/helm/flowmesh \
@@ -60,6 +62,8 @@ jobs:
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+            --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
             --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
           helm template flowmesh infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
@@ -67,6 +71,8 @@ jobs:
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+            --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
             --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET" >/dev/null
           if helm template flowmesh infra/helm/flowmesh >/dev/null 2>&1; then
             echo 'Chart must fail to render when runtime credentials are missing.' >&2
@@ -139,6 +145,10 @@ jobs:
             dockerfile: services/supplier-service/Dockerfile
           - service: workflow-service
             dockerfile: services/workflow-service/Dockerfile
+          - service: risk-service
+            dockerfile: services/risk-service/Dockerfile
+          - service: notification-audit-service
+            dockerfile: services/notification-audit-service/Dockerfile
     steps:
       # 检出源码，供 Docker 构建上下文和镜像标签生成使用。
       - name: Check out source

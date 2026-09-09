@@ -5,9 +5,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
+import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,9 @@ class WorkflowEventProjectionServiceTest {
 
     @Mock
     private TenantRlsInitializer tenantRlsInitializer;
+
+    @Mock
+    private WorkflowOutboxEventRepository outboxRepository;
 
     /**
      * 验证同一事件第二次到达时不会创建第二个流程实例。
@@ -54,7 +59,9 @@ class WorkflowEventProjectionServiceTest {
 
         when(repository.existsBySourceEventId(eventId)).thenReturn(false, true);
         WorkflowEventProjectionService service = new WorkflowEventProjectionService(
-            repository, new ObjectMapper(), tenantRlsInitializer, new SimpleMeterRegistry()
+            repository, new ObjectMapper().registerModule(new JavaTimeModule()),
+            tenantRlsInitializer, outboxRepository,
+            new SimpleMeterRegistry()
         );
 
         service.project(message);

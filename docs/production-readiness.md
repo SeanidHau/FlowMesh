@@ -7,13 +7,13 @@
 - JWT 密钥、数据库密码和 Redis 密码不允许使用默认占位值。
 - Kubernetes 应用 Pod 使用非 root、只读根文件系统、默认 Seccomp，并关闭 ServiceAccount Token 自动挂载。
 - Helm 默认提供 CPU/内存 requests 和 limits、启动/就绪/存活探针、滚动更新和优雅终止配置。
-- 生产 values 提供 gateway 和三个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
+- 生产 values 提供 gateway 和四个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
 - 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**` 和 `/api/workflow/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 - 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
-- CI 在 PR 构建四项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
+- CI 在 PR 构建五项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
 
 验证命令：
 
@@ -53,7 +53,7 @@ helm lint infra/helm/flowmesh \
 ### 业务闭环
 
 - 已实现材料上传、私有对象存储、文件头校验、SHA-256、ClamAV 扫描和短期下载授权；生产环境仍需完成对象存储生命周期、备份和权限策略演练。
-- 风控、通知和独立审计服务的真实运行链路。
+- 已实现独立 risk-service 的异步 PASS/REJECT 运行链路，以及 notification-audit-service 的通知/审计投影链路；仍需在目标环境完成外部通知通道、保留策略和恢复演练。
 - 高并发压测、故障注入和跨租户安全回归。
 
 ## 完成判定

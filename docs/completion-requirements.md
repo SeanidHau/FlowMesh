@@ -17,7 +17,9 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
 | 当前迭代 | Redis 登录尝试限流已完成；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
 | 当前迭代 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
-| 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、独立风险/通知服务、完整监控平台和生产级高可用，详见后续产品能力。 |
+| 当前迭代 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
+| 当前迭代 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |
+| 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、完整监控平台和生产级高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围
 
@@ -64,7 +66,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 
 - Camunda 8 BPMN 流程编排。
 - Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
-- 独立风险服务、通知服务和业务审计服务。
+- 外部邮件/短信通道；通知审计服务和独立风险服务已在当前迭代接入。
 - Prometheus、Grafana、OpenTelemetry 的完整监控与告警平台。
 - RocketMQ、PostgreSQL 多副本高可用、备份恢复和 Chaos Mesh 故障演练。
 

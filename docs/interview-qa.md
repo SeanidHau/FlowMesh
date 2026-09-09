@@ -10,8 +10,14 @@ A: FlowMesh 是一个面向 B2B SaaS 场景的多租户供应商准入与采购�
 Q: 你本人具体负责了哪些模块？如何证明不是只会搭框架？
 A: 回答应落到可验证的代码和决策上，例如：负责 Gateway 与三个领域服务的边界设计、数据库迁移、认证链路、申请幂等、Outbox 发布器、RLS 和 Testcontainers 集成测试。面试时应能打开代码说明一次请求如何经过 Gateway、Controller、Application Service、Repository、事务和事件发布，而不是只罗列技术名词。
 
-Q: 为什么简历中不能把 Camunda、Redis 缓存和 MinIO 写成已落地能力？
-A: 因为当前仓库只接入了 Redis 登录限流，并未把 Redis 用作缓存或幂等事实源。Workflow 仍是 MVP 内部状态机，MinIO 和 Camunda 仍是后续演进方向。可以准确描述已落地的 Redis 限流，但不能说“已使用 Camunda 编排流程”或“使用 Redis 保证幂等”。
+Q: 为什么简历中不能把 Camunda、Redis 缓存和真实外部风控写成已落地能力？
+A: 因为当前仓库使用内部状态机推进审批，Redis 只承担登录限流，risk-service 使用可复现的模拟规则而非真实征信机构。MinIO 材料存储和独立 risk-service 已接入运行链路，但不能把尚未接入的 Camunda、Redis 缓存或外部风控供应商写成已落地能力。
+
+Q: 申请提交后为什么不是直接进入采购审批？
+A: Workflow 先创建 `RISK_CHECKING` 投影并通过 Outbox 发布 `RiskCheckRequested`。risk-service 消费后在本地事务中保存风控结果和 `RiskCheckCompleted`，Workflow 以事件 Inbox 做幂等；PASS 才进入采购初审，REJECT 进入终止状态。这样把外部风控延迟和失败重试从审批接口中隔离出来。
+
+Q: risk-service 为什么也需要 Outbox？
+A: 风控结果写入数据库和发布 RocketMQ 事件必须保持最终一致。如果结果已经落库但进程在发送前宕机，直接发送会丢事件；Outbox 让发布器按租约认领、收到 Broker ACK 后确认，失败按指数退避，达到上限后进入死信，Workflow 的事件 Inbox 再吸收重复投递。
 
 Q: 为什么拆分成 IAM、Supplier 和 Workflow 三个服务？
 A:

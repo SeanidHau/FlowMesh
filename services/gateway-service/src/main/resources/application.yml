@@ -33,6 +33,12 @@ spring:
                 - Path=/api/workflow/**
               filters:
                 - StripPrefix=2
+            - id: notification-audit-service
+              uri: ${FLOWMESH_NOTIFICATION_AUDIT_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/notification/**
+              filters:
+                - StripPrefix=2
 
 server:
   port: 8080

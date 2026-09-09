@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-当前已完成 MVP-4，并开始补齐生产基线：在上述基础上接入统一 API Gateway、供应商材料对象存储、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。Camunda、Redis 缓存、风险服务和通知审计服务仍属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+当前已完成 MVP-4，并进入生产化补齐阶段：在上述基础上接入统一 API Gateway、供应商材料对象存储、异步风控服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。Camunda、Redis 缓存和通知审计服务仍属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -12,12 +12,14 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出和认证安全审计。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描和短期下载 URL。 |
+| 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow。 |
+| 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标。 |
-| PostgreSQL | 已实现 | 三个服务使用独立 Schema 和业务账号。 |
+| PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；Redis 故障时降级放行。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
-| Prometheus 指标端点 | 基础能力已实现 | 四个服务暴露 Actuator Prometheus 端点和 Outbox 发布成功/失败指标；完整监控平台仍待建设。 |
+| Prometheus 指标端点 | 基础能力已实现 | Gateway、IAM、Supplier、Workflow、Risk 暴露 Actuator Prometheus 端点；完整监控平台仍待建设。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
 | Grafana、OpenTelemetry | 计划中 | 基础指标和 Trace ID 已接入，完整监控平台仍待建设。 |
 
@@ -80,14 +82,17 @@ Desktop；平时不要让 Docker 常驻后台，后续需要集成测试或本�
 
 IDEA 应打开仓库根目录 `/Users/shigureli/FlowMesh`，并使用 Java 21 导入根目录 `pom.xml`。
 运行服务前先执行 `./mvnw install -DskipTests`，再分别运行 `GatewayServiceApplication`、
-`IamServiceApplication`、`SupplierServiceApplication` 或 `WorkflowServiceApplication`。
+`IamServiceApplication`、`SupplierServiceApplication`、`WorkflowServiceApplication` 或
+`RiskServiceApplication`。
 Gateway 默认端口为 8080，IAM 默认端口为 8081，supplier 默认端口为 8082，workflow 默认端口为 8083。
 
 要演示消息闭环：启动 PostgreSQL 和 RocketMQ 后，将 `FLOWMESH_OUTBOX_ENABLED` 与
 `FLOWMESH_WORKFLOW_CONSUMER_ENABLED`、`FLOWMESH_SUPPLIER_CONSUMER_ENABLED`、
-`FLOWMESH_WORKFLOW_OUTBOX_ENABLED` 设为 `true`，再启动 supplier 和 workflow 服务。
+`FLOWMESH_WORKFLOW_OUTBOX_ENABLED`、`FLOWMESH_RISK_CONSUMER_ENABLED`、
+`FLOWMESH_RISK_OUTBOX_ENABLED` 设为 `true`，再启动 supplier、workflow 和 risk 服务。
 
-完整链路为：supplier 创建申请并写入 Outbox → workflow 创建流程实例 → 角色完成审批 →
+完整链路为：supplier 创建申请并写入 Outbox → workflow 创建风控中的流程实例 → risk-service
+返回 PASS/REJECT → 通过后角色完成审批 →
 workflow 写入审批完成 Outbox → supplier 更新申请状态；运营节点完成后状态为 `ENABLED`，
 并生成 `SupplierActivated` 通知事件。
 
@@ -106,7 +111,7 @@ POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
 
 ## 启动完整本地环境
 
-在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ、三个 Java 服务和 API Gateway：
+在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ、五个 Java 服务和 API Gateway：
 
 ```bash
 cp .env.example .env

@@ -58,3 +58,23 @@ services:
     podDisruptionBudget:
       enabled: true
       minAvailable: 1
+  risk:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+  notificationAudit:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1

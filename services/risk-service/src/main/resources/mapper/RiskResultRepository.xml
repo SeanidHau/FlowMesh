@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.risk.repository.RiskResultRepository">
+  <resultMap id="riskResult" type="com.flowmesh.risk.domain.RiskResult">
+    <id property="id" column="id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="applicationId" column="application_id" />
+    <result property="decision" column="decision" />
+    <result property="reason" column="reason" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <select id="findByApplicationId" resultMap="riskResult">
+    SELECT id, tenant_id, application_id, decision, reason, created_at
+    FROM risk_results
+    WHERE application_id = #{applicationId, jdbcType=OTHER}
+  </select>
+
+  <insert id="insert" parameterType="com.flowmesh.risk.domain.RiskResult">
+    INSERT INTO risk_results (id, tenant_id, application_id, decision, reason, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{applicationId, jdbcType=OTHER},
+            #{decision}, #{reason}, #{createdAt})
+  </insert>
+</mapper>

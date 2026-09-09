@@ -49,8 +49,8 @@ public class WorkflowInstance {
         this.sourceEventId = Objects.requireNonNull(sourceEventId);
         this.tenantId = Objects.requireNonNull(tenantId);
         this.processDefinitionKey = "supplier-onboarding";
-        this.status = WorkflowInstanceStatus.IN_PROGRESS;
-        this.currentTask = WorkflowTask.PURCHASER_REVIEW;
+        this.status = WorkflowInstanceStatus.RISK_CHECKING;
+        this.currentTask = null;
         this.version = 0;
         this.createdAt = Instant.now();
     }
@@ -145,6 +145,27 @@ public class WorkflowInstance {
             return;
         }
         currentTask = next;
+    }
+
+    /**
+     * 风控通过后启动采购初审。
+     */
+    public void startProcurementReview() {
+        if (status != WorkflowInstanceStatus.RISK_CHECKING || currentTask != null) {
+            throw new IllegalStateException("流程当前不允许启动采购初审");
+        }
+        status = WorkflowInstanceStatus.IN_PROGRESS;
+        currentTask = WorkflowTask.PURCHASER_REVIEW;
+    }
+
+    /**
+     * 风控拒绝后终止流程。
+     */
+    public void rejectRisk() {
+        if (status != WorkflowInstanceStatus.RISK_CHECKING || currentTask != null) {
+            throw new IllegalStateException("流程当前不允许被风控终止");
+        }
+        status = WorkflowInstanceStatus.REJECTED;
     }
 
     /**

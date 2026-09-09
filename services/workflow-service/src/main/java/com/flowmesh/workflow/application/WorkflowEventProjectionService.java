@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.messaging.EventEnvelopeValidator;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
+import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
+import com.flowmesh.workflow.domain.WorkflowOutboxEvent;
+import java.time.Instant;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ public class WorkflowEventProjectionService {
     private final WorkflowInstanceRepository workflowInstanceRepository;
     private final ObjectMapper objectMapper;
     private final TenantRlsInitializer tenantRlsInitializer;
+    private final WorkflowOutboxEventRepository outboxRepository;
     private final Counter duplicateCounter;
 
     /**
@@ -35,11 +39,13 @@ public class WorkflowEventProjectionService {
         WorkflowInstanceRepository workflowInstanceRepository,
         ObjectMapper objectMapper,
         TenantRlsInitializer tenantRlsInitializer,
+        WorkflowOutboxEventRepository outboxRepository,
         MeterRegistry meterRegistry
     ) {
         this.workflowInstanceRepository = workflowInstanceRepository;
         this.objectMapper = objectMapper;
         this.tenantRlsInitializer = tenantRlsInitializer;
+        this.outboxRepository = outboxRepository;
         this.duplicateCounter = Counter.builder("flowmesh.messaging.duplicate")
             .tag("consumer", "workflow-application-submitted")
             .description("workflow 重复事件次数")
@@ -60,7 +66,7 @@ public class WorkflowEventProjectionService {
         JsonNode payload = EventEnvelopeValidator.validate(event, "ApplicationSubmitted");
         UUID payloadApplicationId = EventEnvelopeValidator.requiredUuid(payload, "applicationId");
         EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
-        EventEnvelopeValidator.requiredText(payload, "supplierName");
+        String supplierName = EventEnvelopeValidator.requiredText(payload, "supplierName");
         if (!applicationId.equals(payloadApplicationId)) {
             throw new IllegalArgumentException("事件 aggregateId 与 payload.applicationId 不一致");
         }
@@ -71,6 +77,65 @@ public class WorkflowEventProjectionService {
         }
 
         workflowInstanceRepository.save(new WorkflowInstance(applicationId, eventId, tenantId));
+        UUID riskEventId = UUID.randomUUID();
+        outboxRepository.save(new WorkflowOutboxEvent(
+            riskEventId,
+            tenantId,
+            applicationId,
+            "risk-events",
+            "RiskCheckRequested",
+            writeJson(new RiskCheckRequestedMessage(
+                riskEventId,
+                "RiskCheckRequested",
+                1,
+                tenantId,
+                applicationId,
+                Instant.now(),
+                event.path("traceId").asText(""),
+                new RiskCheckRequestedPayload(applicationId, supplierName)
+            ))
+        ));
+    }
+
+    private String writeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("风控事件序列化失败", exception);
+        }
+    }
+
+    /**
+     * 风控请求事件信封。
+     *
+     * @param eventId 事件标识
+     * @param eventType 事件类型
+     * @param schemaVersion 结构版本
+     * @param tenantId 租户标识
+     * @param aggregateId 申请标识
+     * @param occurredAt 发生时间
+     * @param traceId 链路标识
+     * @param payload 风控请求载荷
+     */
+    private record RiskCheckRequestedMessage(
+        UUID eventId,
+        String eventType,
+        int schemaVersion,
+        String tenantId,
+        UUID aggregateId,
+        Instant occurredAt,
+        String traceId,
+        RiskCheckRequestedPayload payload
+    ) {
+    }
+
+    /**
+     * 风控请求载荷。
+     *
+     * @param applicationId 申请标识
+     * @param supplierName 供应商名称
+     */
+    private record RiskCheckRequestedPayload(UUID applicationId, String supplierName) {
     }
 
     private JsonNode readEvent(String message) {

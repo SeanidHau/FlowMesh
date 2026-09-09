@@ -1,5 +1,5 @@
 {{- $root := . -}}
-{{- range $name, $service := dict "gateway" .Values.gateway "iam" .Values.services.iam "supplier" .Values.services.supplier "workflow" .Values.services.workflow }}
+{{- range $name, $service := dict "gateway" .Values.gateway "iam" .Values.services.iam "supplier" .Values.services.supplier "workflow" .Values.services.workflow "risk" .Values.services.risk "notification-audit" .Values.services.notificationAudit }}
 {{- if $service.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget

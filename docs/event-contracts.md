@@ -50,13 +50,16 @@
 
 ## 投递、重试与重放
 
-当前 MVP 已落地 `ApplicationSubmitted`：supplier-service 在申请事务内写入 Outbox，
+当前版本已落地 `ApplicationSubmitted` 和风控事件链：supplier-service 在申请事务内写入 Outbox，
 发布器收到 RocketMQ 同步发送成功结果后标记 `published_at`，workflow-service 以
-`sourceEventId` 唯一约束实现重复消费幂等，并创建 `supplier-onboarding` 流程实例投影。
+`sourceEventId` 唯一约束实现重复消费幂等，并创建处于 `RISK_CHECKING` 的
+`supplier-onboarding` 流程实例投影；workflow 再写入 `RiskCheckRequested`，risk-service
+将结果和 `RiskCheckCompleted` 写入同一事务，workflow 以事件 Inbox 幂等地推进到采购审批或拒绝终态。
 
 审批完成后，workflow-service 在推进流程实例的同一事务内写入 `WorkflowTaskCompleted`
 Outbox；supplier-service 以事件 Inbox 去重、更新申请状态，完成运营节点后再写入
-`SupplierActivated` Outbox。
+`SupplierActivated` Outbox；notification-audit-service 以事件 Inbox 去重，并将该事件写入
+审计表和申请人站内通知表。邮件、短信等外部通道不在当前版本的事务边界内。
 
 1. 业务事务提交时，同时写入 Outbox 记录。
 2. Publisher 发送事件。只有收到 Broker ACK 后，才能标记 Outbox 已投递。

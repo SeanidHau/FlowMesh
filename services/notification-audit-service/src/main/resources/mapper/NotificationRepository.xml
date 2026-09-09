@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.notificationaudit.repository.NotificationRepository">
+  <resultMap id="notification" type="com.flowmesh.notificationaudit.domain.Notification">
+    <id property="id" column="id" />
+    <result property="sourceEventId" column="source_event_id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="recipientUserId" column="recipient_user_id" />
+    <result property="notificationType" column="notification_type" />
+    <result property="title" column="title" />
+    <result property="content" column="content" />
+    <result property="status" column="status" />
+    <result property="createdAt" column="created_at" />
+    <result property="readAt" column="read_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.notificationaudit.domain.Notification">
+    INSERT INTO notifications
+      (id, source_event_id, tenant_id, recipient_user_id, notification_type, title, content, status, created_at)
+    VALUES
+      (#{id, jdbcType=OTHER}, #{sourceEventId, jdbcType=OTHER}, #{tenantId}, #{recipientUserId, jdbcType=OTHER},
+       #{notificationType}, #{title}, #{content}, #{status}, #{createdAt})
+  </insert>
+
+  <select id="findForUser" resultMap="notification">
+    SELECT id, source_event_id, tenant_id, recipient_user_id, notification_type,
+           title, content, status, created_at, read_at
+    FROM notifications
+    WHERE tenant_id = #{tenantId}
+      AND recipient_user_id = #{recipientUserId, jdbcType=OTHER}
+    ORDER BY created_at DESC
+    LIMIT #{limit}
+  </select>
+</mapper>

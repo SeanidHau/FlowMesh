@@ -8,6 +8,8 @@ services:
       IAM_DB_PASSWORD: ${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be set in .env}
       SUPPLIER_DB_PASSWORD: ${SUPPLIER_DB_PASSWORD:?SUPPLIER_DB_PASSWORD must be set in .env}
       WORKFLOW_DB_PASSWORD: ${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be set in .env}
+      RISK_DB_PASSWORD: ${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be set in .env}
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be set in .env}
     ports:
       - "5432:5432"
     volumes:
@@ -213,6 +215,63 @@ services:
       timeout: 5s
       retries: 12
 
+  risk-service:
+    build:
+      context: ../..
+      dockerfile: services/risk-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=risk
+      RISK_DB_USER: flowmesh_risk
+      RISK_DB_PASSWORD: ${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be set in .env}
+      ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876
+      FLOWMESH_RISK_CONSUMER_ENABLED: ${FLOWMESH_RISK_CONSUMER_ENABLED:-true}
+      FLOWMESH_RISK_OUTBOX_ENABLED: ${FLOWMESH_RISK_OUTBOX_ENABLED:-true}
+    ports:
+      - "8084:8084"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/flowmesh/logs:uid=10001,gid=10001,mode=1770
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  notification-audit-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-audit-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=audit
+      AUDIT_DB_USER: flowmesh_audit
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be set in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
+      ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876
+      FLOWMESH_AUDIT_CONSUMER_ENABLED: ${FLOWMESH_AUDIT_CONSUMER_ENABLED:-true}
+    ports:
+      - "8085:8085"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/flowmesh/logs:uid=10001,gid=10001,mode=1770
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8085/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   gateway-service:
     build:
       context: ../..
@@ -228,6 +287,7 @@ services:
       FLOWMESH_IAM_URL: http://iam-service:8081
       FLOWMESH_SUPPLIER_URL: http://supplier-service:8082
       FLOWMESH_WORKFLOW_URL: http://workflow-service:8083
+      FLOWMESH_NOTIFICATION_AUDIT_URL: http://notification-audit-service:8085
     ports:
       - "8080:8080"
     read_only: true

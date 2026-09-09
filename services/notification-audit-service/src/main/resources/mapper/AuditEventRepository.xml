@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.notificationaudit.repository.AuditEventRepository">
+  <select id="existsByEventId" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM audit_event_inbox WHERE event_id = #{eventId, jdbcType=OTHER})
+  </select>
+
+  <insert id="insert">
+    INSERT INTO audit_events
+      (id, event_id, tenant_id, aggregate_id, event_type, trace_id, payload, occurred_at)
+    VALUES
+      (#{id, jdbcType=OTHER}, #{eventId, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER},
+       #{eventType}, #{traceId}, CAST(#{payload} AS JSONB), #{occurredAt})
+  </insert>
+
+  <insert id="insertInbox">
+    INSERT INTO audit_event_inbox (event_id, tenant_id, aggregate_id)
+    VALUES (#{eventId, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER})
+  </insert>
+</mapper>

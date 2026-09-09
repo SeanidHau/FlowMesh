@@ -1,0 +1,65 @@
+# 作用：通知与审计服务的本地开发配置。
+spring:
+  application:
+    name: notification-audit-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=audit
+    username: ${AUDIT_DB_USER:flowmesh_audit}
+    password: ${AUDIT_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:8}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS:3000}
+      validation-timeout: ${DB_POOL_VALIDATION_TIMEOUT_MS:1000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
+  flyway:
+    schemas: audit
+    create-schemas: true
+    fail-on-missing-locations: false
+
+mybatis:
+  mapper-locations: classpath:/mapper/*.xml
+  type-handlers-package: com.flowmesh.common.persistence
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8085
+  shutdown: graceful
+
+flowmesh:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:flowmesh-local}
+      signing-key: ${JWT_SIGNING_KEY}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+  audit:
+    consumer-enabled: ${FLOWMESH_AUDIT_CONSUMER_ENABLED:false}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+  consumer:
+    group: ${ROCKETMQ_CONSUMER_GROUP:flowmesh-notification-audit}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,rocketMq
+
+logging:
+  pattern:
+    level: "traceId=%X{traceId} %5p"

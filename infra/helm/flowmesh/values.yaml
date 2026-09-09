@@ -135,3 +135,49 @@ services:
       minReplicas: 2
       maxReplicas: 6
       targetCPUUtilizationPercentage: 70
+  risk:
+    image: flowmesh/risk-service
+    tag: 0.1.0
+    port: 8084
+    dbUser: flowmesh_risk
+    dbPassword: ""
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+    terminationGracePeriodSeconds: 30
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+  notificationAudit:
+    image: flowmesh/notification-audit-service
+    tag: 0.1.0
+    port: 8085
+    dbUser: flowmesh_audit
+    dbPassword: ""
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+    terminationGracePeriodSeconds: 30
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70

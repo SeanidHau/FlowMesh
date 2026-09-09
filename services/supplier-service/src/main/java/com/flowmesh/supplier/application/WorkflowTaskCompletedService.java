@@ -111,7 +111,9 @@ public class WorkflowTaskCompletedService {
                     tenantId,
                     applicationId,
                     Instant.now(),
-                    event.path("traceId").asText("")
+                    event.path("traceId").asText(""),
+                    application.getApplicantUserId(),
+                    application.getSupplierName()
                 ))
             ));
         }
@@ -145,6 +147,8 @@ public class WorkflowTaskCompletedService {
      * @param aggregateId 申请标识
      * @param occurredAt 事件发生时间
      * @param traceId 链路追踪标识
+     * @param applicantUserId 申请人标识
+     * @param supplierName 供应商名称
      */
     private record SupplierActivatedMessage(
         UUID eventId,
@@ -153,7 +157,9 @@ public class WorkflowTaskCompletedService {
         String tenantId,
         UUID aggregateId,
         Instant occurredAt,
-        String traceId
+        String traceId,
+        UUID applicantUserId,
+        String supplierName
     ) {
     }
 }

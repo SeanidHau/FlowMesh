@@ -1,6 +1,6 @@
 # Helm 与 kind 部署
 
-`flowmesh/` Chart 部署 gateway、IAM、supplier 和 workflow 四个应用服务。PostgreSQL、Redis 与 RocketMQ
+`flowmesh/` Chart 部署 gateway、IAM、supplier、workflow、risk 和 notification-audit 六个应用服务。PostgreSQL、Redis 与 RocketMQ
 作为外部依赖，通过 `values.yaml` 配置地址；演示环境使用单副本或单 Broker 拓扑，不代表生产
 高可用部署。
 
@@ -33,7 +33,7 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 ```
 
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
-`SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
+`SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
 `OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
 

@@ -44,6 +44,7 @@ class WorkflowInstanceServiceTest {
         WorkflowInstance instance = new WorkflowInstance(
             applicationId, UUID.randomUUID(), "tenant-a"
         );
+        instance.startProcurementReview();
         when(repository.findByApplicationId(applicationId)).thenReturn(Optional.of(instance));
         when(repository.updateState(instance)).thenReturn(1);
 

@@ -12,7 +12,10 @@ flowchart LR
   GW --> IAM[iam-service]
   GW --> SUP[supplier-service]
   GW --> WF[workflow-service]
-  WF <--> CAM[Camunda 8]
+  WF --> RISK[risk-service]
+  RISK --> RMQ[Apache RocketMQ]
+  SUP --> NOTIFY[notification-audit-service]
+  NOTIFY --> PG[(PostgreSQL)]
   SUP --> RMQ[Apache RocketMQ]
   SUP --> MINIO[MinIO]
   SUP --> CLAMAV[ClamAV]
@@ -30,7 +33,8 @@ flowchart LR
 | `iam-service` | 用户、角色、Token 与会话 | 供应商审批 |
 | `supplier-service` | 申请、供应商状态机、材料元数据、审批快照 | BPMN 节点推进 |
 | `workflow-service` | 消费申请提交事件、保存流程实例投影、发布审批完成事件；后续承载 BPMN 和用户任务 | 供应商主数据 |
-| 风控、通知、审计服务 | 规划中的事件消费者和运营能力 | 当前版本尚未纳入部署拓扑 |
+| `risk-service` | 消费风控请求，持久化风控结论并发布结果事件 | 当前使用可复现的模拟规则，不代表接入真实征信机构 |
+| 通知、审计服务 | 规划中的通知消费者和审计投影 | 当前版本尚未纳入部署拓扑 |
 
 ## 数据与网络边界
 

@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-notification-audit
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-audit
+spec:
+  replicas: {{ .Values.services.notificationAudit.replicas }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: notification-audit
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: notification-audit
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.services.notificationAudit.terminationGracePeriodSeconds }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              app.kubernetes.io/component: notification-audit
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: notification-audit
+          image: "{{ .Values.services.notificationAudit.image }}:{{ .Values.services.notificationAudit.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.notificationAudit.port }}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=audit"
+            - name: AUDIT_DB_USER
+              value: {{ .Values.services.notificationAudit.dbUser | quote }}
+            - name: AUDIT_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: AUDIT_DB_PASSWORD
+            - name: JWT_ISSUER
+              value: {{ .Values.global.jwtIssuer | quote }}
+            - name: JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: JWT_SIGNING_KEY
+            - name: ROCKETMQ_NAMESRV_ADDR
+              value: {{ .Values.rocketmq.namesrvAddr | quote }}
+            - name: FLOWMESH_AUDIT_CONSUMER_ENABLED
+              value: "true"
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+          resources:
+            {{- toYaml .Values.services.notificationAudit.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-notification-audit
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-audit
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: notification-audit
+  ports:
+    - name: http
+      port: {{ .Values.services.notificationAudit.port }}
+      targetPort: http

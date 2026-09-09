@@ -57,6 +57,8 @@ spec:
               value: "http://{{ include "flowmesh.fullname" . }}-supplier:{{ .Values.services.supplier.port }}"
             - name: FLOWMESH_WORKFLOW_URL
               value: "http://{{ include "flowmesh.fullname" . }}-workflow:{{ .Values.services.workflow.port }}"
+            - name: FLOWMESH_NOTIFICATION_AUDIT_URL
+              value: "http://{{ include "flowmesh.fullname" . }}-notification-audit:{{ .Values.services.notificationAudit.port }}"
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 10

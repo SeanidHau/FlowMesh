@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 作用：使用真实 RocketMQ Broker 验证 supplier -> workflow -> supplier 主链路。
+# 作用：使用真实 RocketMQ Broker 验证 supplier -> workflow -> risk -> supplier 主链路。
 # 脚本只管理本次 Compose 项目创建的基础设施容器，退出时删除临时数据卷。
 
 set -Eeuo pipefail
@@ -49,6 +49,8 @@ POSTGRES_DB=flowmesh
 IAM_DB_PASSWORD=flowmesh-e2e-iam
 SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier
 WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow
+RISK_DB_PASSWORD=flowmesh-e2e-risk
+AUDIT_DB_PASSWORD=flowmesh-e2e-audit
 REDIS_PASSWORD=flowmesh-e2e-redis
 JWT_SIGNING_KEY=${JWT_KEY}
 JWT_ISSUER=flowmesh-e2e
@@ -56,6 +58,8 @@ FLOWMESH_OUTBOX_ENABLED=true
 FLOWMESH_SUPPLIER_CONSUMER_ENABLED=true
 FLOWMESH_WORKFLOW_OUTBOX_ENABLED=true
 FLOWMESH_WORKFLOW_CONSUMER_ENABLED=true
+FLOWMESH_RISK_CONSUMER_ENABLED=true
+FLOWMESH_RISK_OUTBOX_ENABLED=true
 FLOWMESH_DEMO_DATA_ENABLED=true
 ROCKETMQ_BROKER_CONFIG=${BROKER_CONFIG}
 EOF
@@ -107,7 +111,7 @@ login() {
     http://localhost:8081/api/v1/auth/login | json_field accessToken
 }
 
-echo "打包三个 Java 服务并启动 PostgreSQL、RocketMQ..."
+echo "打包五个 Java 服务并启动 PostgreSQL、RocketMQ..."
 ./mvnw -q -DskipTests package
 docker compose "${COMPOSE_ARGS[@]}" up -d postgres redis rocketmq-namesrv rocketmq-volume-init rocketmq-broker
 wait_for_tcp 127.0.0.1 9876
@@ -133,13 +137,27 @@ start_service "workflow" "services/workflow-service/target/workflow-service-0.1.
   WORKFLOW_DB_USER=flowmesh_workflow WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_WORKFLOW_OUTBOX_ENABLED=true FLOWMESH_WORKFLOW_CONSUMER_ENABLED=true
+start_service "risk" "services/risk-service/target/risk-service-0.1.0-SNAPSHOT.jar" \
+  SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=risk" \
+  RISK_DB_USER=flowmesh_risk RISK_DB_PASSWORD=flowmesh-e2e-risk \
+  ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
+  FLOWMESH_RISK_CONSUMER_ENABLED=true FLOWMESH_RISK_OUTBOX_ENABLED=true
+start_service "notification-audit" "services/notification-audit-service/target/notification-audit-service-0.1.0-SNAPSHOT.jar" \
+  SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=audit" \
+  AUDIT_DB_USER=flowmesh_audit AUDIT_DB_PASSWORD=flowmesh-e2e-audit \
+  JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
+  FLOWMESH_AUDIT_CONSUMER_ENABLED=true
 
 wait_for_url http://localhost:8081/actuator/health
 wait_for_url http://localhost:8082/actuator/health
 wait_for_url http://localhost:8083/actuator/health
+wait_for_url http://localhost:8084/actuator/health
+wait_for_url http://localhost:8085/actuator/health
 wait_for_url http://localhost:8081/actuator/health/liveness
 wait_for_url http://localhost:8082/actuator/health/readiness
 wait_for_url http://localhost:8083/actuator/health/readiness
+wait_for_url http://localhost:8084/actuator/health/readiness
+wait_for_url http://localhost:8085/actuator/health/readiness
 
 APPLICANT_TOKEN="$(login applicant-a)"
 PURCHASER_TOKEN="$(login purchaser-a)"
@@ -195,11 +213,24 @@ for attempt in $(seq 1 60); do
   application_status="$(curl --fail --silent --show-error \
     -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
     "http://localhost:8082/api/v1/supplier-applications/${APPLICATION_ID}" | json_field status)"
-  if [ "${application_status}" = "ENABLED" ]; then
+if [ "${application_status}" = "ENABLED" ]; then
     break
   fi
   if [ "$attempt" -eq 60 ]; then
     echo "Workflow 完成事件未能驱动 supplier 进入 ENABLED。当前状态：${application_status}" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+for attempt in $(seq 1 60); do
+  if curl --fail --silent --show-error \
+    -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
+    "http://localhost:8085/api/v1/notifications" | grep -q '供应商已启用'; then
+    break
+  fi
+  if [ "$attempt" -eq 60 ]; then
+    echo "SupplierActivated 未能生成申请人通知。" >&2
     exit 1
   fi
   sleep 2
@@ -258,6 +289,10 @@ fi
 curl --fail --silent --show-error http://localhost:8082/actuator/prometheus \
   | grep -q 'flowmesh_outbox_pending'
 curl --fail --silent --show-error http://localhost:8083/actuator/prometheus \
+  | grep -q 'flowmesh_messaging_consumed'
+curl --fail --silent --show-error http://localhost:8084/actuator/prometheus \
+  | grep -q 'flowmesh_messaging_consumed'
+curl --fail --silent --show-error http://localhost:8085/actuator/prometheus \
   | grep -q 'flowmesh_messaging_consumed'
 
 echo "RocketMQ E2E 通过：${APPLICATION_ID} 已完成四级审批并进入 ENABLED。"

@@ -1,0 +1,69 @@
+# 作用：risk 服务本地开发配置。
+
+spring:
+  application:
+    name: risk-service
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=risk
+    username: ${RISK_DB_USER:flowmesh_risk}
+    password: ${RISK_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:8}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS:3000}
+      validation-timeout: ${DB_POOL_VALIDATION_TIMEOUT_MS:1000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
+
+  flyway:
+    schemas: risk
+    create-schemas: true
+    fail-on-missing-locations: false
+
+mybatis:
+  mapper-locations: classpath:/mapper/*.xml
+  type-handlers-package: com.flowmesh.common.persistence
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8084
+  shutdown: graceful
+
+logging:
+  pattern:
+    level: "traceId=%X{traceId} %5p"
+
+flowmesh:
+  risk:
+    consumer-enabled: ${FLOWMESH_RISK_CONSUMER_ENABLED:false}
+    outbox-enabled: ${FLOWMESH_RISK_OUTBOX_ENABLED:false}
+    publish-interval-ms: ${FLOWMESH_RISK_PUBLISH_INTERVAL_MS:1000}
+    batch-size: ${FLOWMESH_RISK_BATCH_SIZE:10}
+    lease-seconds: ${FLOWMESH_RISK_LEASE_SECONDS:60}
+    max-attempts: ${FLOWMESH_RISK_MAX_ATTEMPTS:5}
+    retry-base-delay-seconds: ${FLOWMESH_RISK_RETRY_BASE_DELAY_SECONDS:1}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:flowmesh-risk-producer}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,rocketMq

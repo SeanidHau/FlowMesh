@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.risk.repository.RiskOutboxRepository">
+  <resultMap id="riskOutbox" type="com.flowmesh.risk.domain.RiskOutboxEvent">
+    <id property="id" column="id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="aggregateId" column="aggregate_id" />
+    <result property="topic" column="topic" />
+    <result property="tag" column="tag" />
+    <result property="payload" column="payload" />
+    <result property="attemptCount" column="attempt_count" />
+    <result property="lastError" column="last_error" />
+    <result property="nextAttemptAt" column="next_attempt_at" />
+    <result property="claimedUntil" column="claimed_until" />
+    <result property="claimToken" column="claim_token" />
+    <result property="publishedAt" column="published_at" />
+    <result property="deadLetteredAt" column="dead_lettered_at" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.risk.domain.RiskOutboxEvent">
+    INSERT INTO risk_outbox_events
+      (id, tenant_id, aggregate_id, topic, tag, payload, attempt_count, next_attempt_at, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{aggregateId, jdbcType=OTHER}, #{topic}, #{tag},
+            CAST(#{payload} AS JSONB), #{attemptCount}, #{nextAttemptAt}, #{createdAt})
+  </insert>
+
+  <select id="claimBatch" resultMap="riskOutbox">
+    WITH candidates AS (
+      SELECT id
+      FROM risk_outbox_events
+      WHERE published_at IS NULL
+        AND dead_lettered_at IS NULL
+        AND next_attempt_at &lt;= #{now}
+        AND (claimed_until IS NULL OR claimed_until &lt; #{now})
+      ORDER BY created_at
+      FOR UPDATE SKIP LOCKED
+      LIMIT #{limit}
+    )
+    UPDATE risk_outbox_events event
+    SET claim_token = #{claimToken, jdbcType=OTHER}, claimed_until = #{claimedUntil}
+    FROM candidates
+    WHERE event.id = candidates.id
+    RETURNING event.*
+  </select>
+
+  <update id="markPublished">
+    UPDATE risk_outbox_events
+    SET published_at = CURRENT_TIMESTAMP, claimed_until = NULL, claim_token = NULL
+    WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
+  </update>
+
+  <update id="markFailed">
+    UPDATE risk_outbox_events
+    SET attempt_count = #{attemptCount}, next_attempt_at = #{nextAttemptAt},
+        last_error = #{lastError}, dead_lettered_at = #{deadLetteredAt},
+        claimed_until = NULL, claim_token = NULL
+    WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
+  </update>
+</mapper>
