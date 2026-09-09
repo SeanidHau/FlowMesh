@@ -3,18 +3,19 @@
 > 由 `docs/technical-interview-qa.md` 整理而来；每个文档最多包含 200 组问答。
 
 Q: 请介绍一下 FlowMesh 项目
-A: FlowMesh 是一个面向 B2B SaaS 场景的多租户供应商准入与采购审批平台。当前 MVP 由 IAM、Supplier 和 Workflow 三个微服务组成，支持用户登录、供应商申请、采购初审、法务审核、财务审核和运营启用等流程。
+A: FlowMesh 是一个面向 B2B SaaS 场景的多租户供应商准入与采购审批平台。当前版本由 Gateway、IAM、Supplier 和 Workflow 组成，支持用户登录、供应商申请、采购初审、法务审核、财务审核和运营启用等流程。
 
 项目重点解决四类问题：使用 JWT、RBAC 和 PostgreSQL RLS 实现多租户安全隔离；使用 `Idempotency-Key` 防止重复创建；使用 MyBatis 条件更新实现乐观锁，避免并发审批覆盖；使用 RocketMQ Transactional Outbox 保证跨服务事件最终一致性。
 
 Q: 你本人具体负责了哪些模块？如何证明不是只会搭框架？
-A: 回答应落到可验证的代码和决策上，例如：负责三个服务的边界设计、数据库迁移、认证链路、申请幂等、Outbox 发布器、RLS 和 Testcontainers 集成测试。面试时应能打开代码说明一次请求如何经过 Controller、Application Service、Repository、事务和事件发布，而不是只罗列技术名词。
+A: 回答应落到可验证的代码和决策上，例如：负责 Gateway 与三个领域服务的边界设计、数据库迁移、认证链路、申请幂等、Outbox 发布器、RLS 和 Testcontainers 集成测试。面试时应能打开代码说明一次请求如何经过 Gateway、Controller、Application Service、Repository、事务和事件发布，而不是只罗列技术名词。
 
 Q: 为什么简历中不能把 Camunda、Redis 缓存和 MinIO 写成已落地能力？
 A: 因为当前仓库只接入了 Redis 登录限流，并未把 Redis 用作缓存或幂等事实源。Workflow 仍是 MVP 内部状态机，MinIO 和 Camunda 仍是后续演进方向。可以准确描述已落地的 Redis 限流，但不能说“已使用 Camunda 编排流程”或“使用 Redis 保证幂等”。
 
 Q: 为什么拆分成 IAM、Supplier 和 Workflow 三个服务？
 A:
+- Gateway 负责统一 API 入口和下游路由，不拥有业务数据。
 - IAM 负责租户、用户、角色、JWT 和 Refresh Token。
 - Supplier 负责供应商申请及申请状态，是申请数据的唯一拥有者。
 - Workflow 负责审批流程实例、当前任务和审批推进，是流程数据的唯一拥有者。
@@ -39,7 +40,7 @@ Q: 最终一致性会不会让用户看到错误状态？
 A: 会存在短暂的中间状态，所以 API 和前端不能假设申请创建后流程实例立即可见。应该返回申请已提交，并通过查询、状态字段或异步刷新展示流程同步状态。对用户可见的状态必须与实际状态机定义一致，不能用“请求成功”掩盖后续处理失败。
 
 Q: 当前项目哪些内容已经实现，哪些内容还没有实现？
-A: 已经实现：三个核心微服务、JWT 登录刷新登出、RBAC、多租户 RLS、供应商申请、持久化接口幂等、审批状态流转、RocketMQ Outbox 基础链路、PostgreSQL 迁移、Docker Compose、Helm 和 CI 校验。
+A: 已经实现：统一 Gateway、三个核心领域微服务、JWT 登录刷新登出、RBAC、多租户 RLS、供应商申请、持久化接口幂等、审批状态流转、RocketMQ Outbox 基础链路、PostgreSQL 迁移、Docker Compose、Helm 和 CI 校验。
 
 尚未作为运行链路实现：Camunda 流程引擎、Redis 缓存、MinIO、风险服务、通知审计服务、完整 Prometheus/Grafana/OpenTelemetry 平台和多副本故障演练。Redis 登录限流已实现；真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标也已经实现。
 
@@ -215,15 +216,15 @@ A: Docker Compose 面向本地开发和演示，负责启动 PostgreSQL、Rocket
 
 两套配置的目标不同：Compose 优先本地可用性，Helm 优先集群部署规范和 Secret 管理，不能把 Compose 的单 Broker 演示拓扑直接当成生产高可用方案。
 
-Q: Helm 副本数扩容后，如何保证消息和任务不会重复处理？
+Q: Gateway 和业务服务扩容后，如何保证消息和任务不会重复处理？
 A: Outbox 发布使用数据库认领和条件更新，消费者使用事件 ID、Inbox 或业务唯一约束幂等。扩容只能提高处理能力，不能替代幂等设计；还需要补充双副本并发、Broker ACK 后宕机和重复投递的集成测试，才能证明扩容后的行为。
 
 Q: 项目当前有哪些明显的技术债或风险？
 A:
-- 完整监控平台、告警规则、生产级 Broker/数据库高可用和 Chaos 故障演练仍需补充；核心 RocketMQ E2E 和多实例 Outbox 竞争测试已完成。
+- 完整监控平台、生产级 Broker/数据库高可用和 Chaos 故障演练仍需补充；当前已提供 Prometheus 抓取与告警样例，核心 RocketMQ E2E 和多实例 Outbox 竞争测试已完成。
 - 当前 workflow 是 MVP 内部流程状态实现，尚未接入 Camunda 8。
 - Redis 缓存、MinIO、独立风险/通知服务仍未接入运行链路；Redis 登录限流、DLQ 查询/重放/审计和对账入口已接入。
-- Compose 和当前 Helm 演示拓扑不提供生产级高可用。
+- Compose 仍是单机演示拓扑；Helm 已提供 Gateway、双副本、HPA、PDB、Ingress 和业务入口 NetworkPolicy，但外部依赖 HA 仍由目标平台负责。
 - 当前已具备基础业务/消息指标、HTTP Trace ID、依赖就绪探针；告警平台、消息处理耗时和大规模并发压测仍需补充。
 
 Q: 当前实现扩容时最可能的瓶颈是什么？
@@ -232,7 +233,7 @@ A: 主要瓶颈包括 Outbox 扫描和认领 SQL、RocketMQ 发布吞吐、消�
 主动说明边界比把设计蓝图中的规划内容包装成已完成能力更可信。
 
 Q: 如果让你继续迭代，下一步会做什么？
-A: 下一步优先补充完整监控告警、消息处理耗时指标和更大规模并发压测；核心正确性链路已经通过真实 RocketMQ E2E、多实例竞争、DLQ 运维和对账验证。
+A: 下一步优先完成真实集群的 Ingress/TLS、NetworkPolicy、HPA/PDB 和数据库/RocketMQ/Redis HA 演练，再做消息处理耗时指标和更大规模并发压测；核心正确性链路已经通过真实 RocketMQ E2E、多实例竞争、DLQ 运维和对账验证。
 
 在此基础上再接入 Camunda 8、Redis 缓存和 MinIO，并重新评估服务边界、流程编排和基础设施高可用，而不是在当前 MVP 尚未验证核心链路时继续堆叠中间件。
 
