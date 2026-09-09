@@ -1,0 +1,39 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . -}}
+{{- range $name := list "iam" "supplier" "workflow" }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "flowmesh.fullname" $root }}-{{ $name }}-ingress
+  labels:
+    {{- include "flowmesh.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $root.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ $root.Release.Name }}
+              app.kubernetes.io/component: gateway
+      ports:
+        - protocol: TCP
+          port: http
+    {{- if eq $name "workflow" }}
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ $root.Release.Name }}
+              app.kubernetes.io/component: supplier
+      ports:
+        - protocol: TCP
+          port: http
+    {{- end }}
+---
+{{- end }}
+{{- end }}

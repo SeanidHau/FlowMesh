@@ -39,7 +39,8 @@ helm lint infra/helm/flowmesh \
 ### 平台与网络
 
 - Gateway 的 TLS 终止、外部 Ingress、统一限流、审计和服务间网络策略；Helm 已提供可选 Ingress 路由模板。
-- Kubernetes NetworkPolicy、镜像仓库、镜像签名和运行时漏洞扫描。
+- Helm 生产覆盖值已提供业务服务入口 NetworkPolicy；仍需在目标 CNI 和真实集群完成连通性演练。
+- 镜像仓库、镜像签名和运行时漏洞扫描。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 
 ### 可观测性与恢复

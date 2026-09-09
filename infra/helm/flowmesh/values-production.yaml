@@ -3,6 +3,9 @@ global:
   imagePullPolicy: IfNotPresent
   existingSecret: flowmesh-runtime-secrets
 
+networkPolicy:
+  enabled: true
+
 gateway:
   replicas: 2
   autoscaling:

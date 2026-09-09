@@ -25,6 +25,9 @@ ingress:
   host: ""
   tls: []
 
+networkPolicy:
+  enabled: false
+
 gateway:
   image: flowmesh/gateway-service
   tag: 0.1.0
