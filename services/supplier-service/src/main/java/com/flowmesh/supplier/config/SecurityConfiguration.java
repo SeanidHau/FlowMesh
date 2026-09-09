@@ -79,6 +79,8 @@ public class SecurityConfiguration {
                 .requestMatchers("/api/v1/operations/**").hasRole("OPERATIONS")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/supplier-applications")
                     .hasRole("APPLICANT")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/supplier-applications/*/documents")
+                    .hasRole("APPLICANT")
                 .anyRequest().authenticated()
             )
             .httpBasic(AbstractHttpConfigurer::disable)

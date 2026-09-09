@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.supplier.repository.SupplierDocumentRepository">
+  <resultMap id="documentResult" type="com.flowmesh.supplier.domain.SupplierDocument">
+    <id property="id" column="id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="applicationId" column="application_id" />
+    <result property="uploadedBy" column="uploaded_by" />
+    <result property="objectKey" column="object_key" />
+    <result property="originalFilename" column="original_filename" />
+    <result property="contentType" column="content_type" />
+    <result property="sizeBytes" column="size_bytes" />
+    <result property="sha256" column="sha256" />
+    <result property="scanStatus" column="scan_status" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.supplier.domain.SupplierDocument">
+    INSERT INTO supplier_documents
+      (id, tenant_id, application_id, uploaded_by, object_key, original_filename,
+       content_type, size_bytes, sha256, scan_status, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{applicationId, jdbcType=OTHER},
+            #{uploadedBy, jdbcType=OTHER}, #{objectKey}, #{originalFilename},
+            #{contentType}, #{sizeBytes}, #{sha256}, #{scanStatus}, #{createdAt})
+  </insert>
+
+  <select id="findByApplicationId" resultMap="documentResult">
+    SELECT id, tenant_id, application_id, uploaded_by, object_key, original_filename,
+           content_type, size_bytes, sha256, scan_status, created_at
+    FROM supplier_documents
+    WHERE application_id = #{applicationId, jdbcType=OTHER}
+    ORDER BY created_at ASC
+  </select>
+
+  <select id="findById" resultMap="documentResult">
+    SELECT id, tenant_id, application_id, uploaded_by, object_key, original_filename,
+           content_type, size_bytes, sha256, scan_status, created_at
+    FROM supplier_documents
+    WHERE id = #{id, jdbcType=OTHER}
+  </select>
+</mapper>

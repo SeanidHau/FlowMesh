@@ -33,7 +33,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 ```
 
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
-`SUPPLIER_DB_PASSWORD` 和 `WORKFLOW_DB_PASSWORD` 的 Secret，然后设置
+`SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
+`OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
 
 检查部署状态：

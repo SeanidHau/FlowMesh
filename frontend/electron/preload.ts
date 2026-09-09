@@ -6,6 +6,7 @@ interface ApiRequest {
   method?: 'GET' | 'POST';
   token?: string;
   body?: unknown;
+  file?: { name: string; type: string; data: ArrayBuffer };
   headers?: Record<string, string>;
 }
 

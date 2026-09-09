@@ -24,7 +24,8 @@ helm lint infra/helm/flowmesh \
   --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
   --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
   --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
-  --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD"
+  --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+  --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
 ./mvnw -q -DskipTests package
 ```
 
@@ -51,7 +52,7 @@ helm lint infra/helm/flowmesh \
 
 ### 业务闭环
 
-- 材料上传与对象存储安全检查。
+- 已实现材料上传、私有对象存储、文件头校验、SHA-256、ClamAV 扫描和短期下载授权；生产环境仍需完成对象存储生命周期、备份和权限策略演练。
 - 风控、通知和独立审计服务的真实运行链路。
 - 高并发压测、故障注入和跨租户安全回归。
 

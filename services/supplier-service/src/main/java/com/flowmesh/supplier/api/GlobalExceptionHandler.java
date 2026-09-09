@@ -5,7 +5,14 @@ import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.supplier.application.IdempotencyKeyConflictException;
 import com.flowmesh.supplier.application.SupplierApplicationNotFoundException;
 import com.flowmesh.supplier.application.DeadLetterEventNotFoundException;
+import com.flowmesh.supplier.application.DocumentAccessDeniedException;
+import com.flowmesh.supplier.application.DocumentInfectedException;
+import com.flowmesh.supplier.application.DocumentUploadClosedException;
 import com.flowmesh.supplier.application.InvalidReplayException;
+import com.flowmesh.supplier.application.SupplierDocumentNotFoundException;
+import com.flowmesh.supplier.storage.DocumentValidationException;
+import com.flowmesh.supplier.storage.FileScanUnavailableException;
+import com.flowmesh.supplier.storage.ObjectStorageException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +22,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -174,6 +182,125 @@ public class GlobalExceptionHandler {
                 "服务内部错误。",
                 traceId(request)
             ));
+    }
+
+    /**
+     * 映射材料参数校验失败。
+     *
+     * @param exception 材料校验异常
+     * @param request 当前请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler(DocumentValidationException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentValidation(
+        DocumentValidationException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(ErrorResponse.of(
+            "INVALID_DOCUMENT", exception.getMessage(), traceId(request)
+        ));
+    }
+
+    /**
+     * 映射 Web 容器层面的上传大小限制。
+     *
+     * @param exception 上传大小异常
+     * @param request 当前请求
+     * @return 413 错误响应
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(
+        MaxUploadSizeExceededException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ErrorResponse.of(
+            "DOCUMENT_TOO_LARGE", "上传文件超过大小限制。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射恶意文件。
+     *
+     * @param exception 恶意文件异常
+     * @param request 当前请求
+     * @return 422 错误响应
+     */
+    @ExceptionHandler(DocumentInfectedException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentInfected(
+        DocumentInfectedException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ErrorResponse.of(
+            "INFECTED_DOCUMENT", "文件安全扫描未通过。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射已关闭申请的材料上传。
+     *
+     * @param exception 申请已关闭异常
+     * @param request 当前请求
+     * @return 409 错误响应
+     */
+    @ExceptionHandler(DocumentUploadClosedException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentUploadClosed(
+        DocumentUploadClosedException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(
+            "DOCUMENT_UPLOAD_CLOSED", "申请已进入启用状态，不能继续上传材料。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射材料访问权限错误。
+     *
+     * @param exception 权限异常
+     * @param request 当前请求
+     * @return 403 错误响应
+     */
+    @ExceptionHandler(DocumentAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentAccessDenied(
+        DocumentAccessDeniedException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse.of(
+            "DOCUMENT_ACCESS_DENIED", "当前用户无权访问该申请材料。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射材料不存在。
+     *
+     * @param exception 材料不存在异常
+     * @param request 当前请求
+     * @return 404 错误响应
+     */
+    @ExceptionHandler(SupplierDocumentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentNotFound(
+        SupplierDocumentNotFoundException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse.of(
+            "DOCUMENT_NOT_FOUND", "供应商材料不存在。", traceId(request)
+        ));
+    }
+
+    /**
+     * 映射对象存储或扫描引擎暂时不可用。
+     *
+     * @param exception 基础设施异常
+     * @param request 当前请求
+     * @return 503 错误响应
+     */
+    @ExceptionHandler({ObjectStorageException.class, FileScanUnavailableException.class})
+    public ResponseEntity<ErrorResponse> handleDocumentInfrastructure(
+        RuntimeException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ErrorResponse.of(
+            "DOCUMENT_INFRASTRUCTURE_UNAVAILABLE", "材料安全扫描或对象存储暂时不可用。", traceId(request)
+        ));
     }
 
     private static String traceId(HttpServletRequest request) {

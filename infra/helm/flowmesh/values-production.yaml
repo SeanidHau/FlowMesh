@@ -6,6 +6,16 @@ global:
 networkPolicy:
   enabled: true
 
+objectStorage:
+  endpoint: https://minio.internal.example.com
+  bucket: flowmesh-documents
+
+fileScan:
+  enabled: true
+  host: clamav.security.svc.cluster.local
+  port: 3310
+  timeout: 10s
+
 gateway:
   replicas: 2
   autoscaling:

@@ -15,6 +15,7 @@ interface ApiRequest {
   method?: 'GET' | 'POST';
   token?: string;
   body?: unknown;
+  file?: { name: string; type: string; data: ArrayBuffer };
   headers?: Record<string, string>;
 }
 
@@ -73,6 +74,12 @@ function parseRequest(value: unknown): ApiRequest {
   if (request.method && !['GET', 'POST'].includes(request.method)) {
     throw new Error('不支持的 HTTP 方法');
   }
+  if (request.file && request.body !== undefined) {
+    throw new Error('文件请求不能同时携带 JSON 请求体');
+  }
+  if (request.file && (!request.file.name || request.file.data.byteLength > 21 * 1024 * 1024)) {
+    throw new Error('文件请求不符合大小限制');
+  }
   return request as ApiRequest;
 }
 
@@ -99,11 +106,20 @@ async function requestApi(event: Electron.IpcMainInvokeEvent, value: unknown): P
     headers['Content-Type'] = 'application/json';
   }
 
+  let body: BodyInit | undefined;
+  if (request.file) {
+    const formData = new FormData();
+    formData.append('file', new Blob([request.file.data], { type: request.file.type }), request.file.name);
+    body = formData;
+  } else if (request.body !== undefined) {
+    body = JSON.stringify(request.body);
+  }
+
   try {
     const response = await fetch(url, {
       method: request.method ?? 'GET',
       headers,
-      body: request.body === undefined ? undefined : JSON.stringify(request.body),
+      body,
     });
     return { status: response.status, body: await response.text() };
   } catch (error) {

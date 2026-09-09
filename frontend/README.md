@@ -71,4 +71,5 @@ npm run package
 Gateway 的 `/api/{service}/api/v1/**` 路径，不再直接访问业务服务。
 
 本地通过 Compose 验证统一入口时可使用 `http://localhost:8080`；浏览器开发模式仍由
-Vite 代理直接转发到三个本地业务服务。
+Vite 代理直接转发到三个本地业务服务。申请详情页支持上传 PDF、PNG、JPG 和 DOCX 材料，
+下载使用后端签发的短期 URL。

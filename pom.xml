@@ -59,6 +59,8 @@
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
     <!-- 作用：统一 Spring Cloud Gateway 与 Spring Boot 3.5 的兼容版本。 -->
     <spring-cloud.version>2025.0.0</spring-cloud.version>
+    <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
+    <minio.version>8.5.17</minio.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

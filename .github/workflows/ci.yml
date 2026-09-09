@@ -52,19 +52,22 @@ jobs:
           HELM_TEST_IAM_PASSWORD: ci-only-iam-password
           HELM_TEST_SUPPLIER_PASSWORD: ci-only-supplier-password
           HELM_TEST_WORKFLOW_PASSWORD: ci-only-workflow-password
+          HELM_TEST_OBJECT_STORAGE_SECRET: ci-only-object-storage-secret
         run: |
           helm lint infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
             --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
-            --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD"
+            --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
           helm template flowmesh infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
             --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
-            --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" >/dev/null
+            --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET" >/dev/null
           if helm template flowmesh infra/helm/flowmesh >/dev/null 2>&1; then
             echo 'Chart must fail to render when runtime credentials are missing.' >&2
             exit 1

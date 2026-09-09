@@ -30,10 +30,10 @@ IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查�
 ## 文件访问
 
 - MinIO Bucket 必须保持私有。
-- 对象键格式为 `tenantId/applicationId/fileId`。
+- 对象键格式为 `tenantId/applicationId/randomObjectId.extension`，不使用用户原始文件名作为路径。
 - 后端只在验证租户、角色、申请状态、类型和大小后签发短时预签名 URL。
-- 首版接受 PDF、PNG、JPG，单文件最大 10 MB。
-- 病毒扫描作为后续异步事件能力；未实现前不得宣称文件已通过病毒扫描。
+- 当前接受 PDF、PNG、JPG 和 DOCX，单文件最大 20 MB；同时校验 MIME、文件头和 SHA-256。
+- 生产环境必须启用 ClamAV 同步扫描；扫描引擎不可用时拒绝上传，未启用扫描的本地开发文件会标记为 `SKIPPED`。
 
 ## Kubernetes 安全基线
 

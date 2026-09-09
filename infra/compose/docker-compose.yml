@@ -34,6 +34,50 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-flowmesh}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-02-21T16-00-00Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-flowmesh}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+      mc mb --ignore-existing local/flowmesh-documents
+    restart: "no"
+
+  clamav:
+    image: clamav/clamav:1.4.3
+    profiles: [documents]
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamavdata:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "printf 'PING\\n' | nc -w 2 localhost 3310 | grep PONG"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+
   rocketmq-namesrv:
     image: apache/rocketmq:5.3.2
     ports:
@@ -106,6 +150,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
       rocketmq-broker:
         condition: service_started
     environment:
@@ -118,6 +164,13 @@ services:
       FLOWMESH_OUTBOX_ENABLED: ${FLOWMESH_OUTBOX_ENABLED:-true}
       FLOWMESH_SUPPLIER_CONSUMER_ENABLED: ${FLOWMESH_SUPPLIER_CONSUMER_ENABLED:-true}
       FLOWMESH_WORKFLOW_BASE_URL: http://workflow-service:8083
+      FLOWMESH_OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      FLOWMESH_OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-flowmesh}
+      FLOWMESH_OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+      FLOWMESH_OBJECT_STORAGE_BUCKET: flowmesh-documents
+      FLOWMESH_FILE_SCAN_ENABLED: ${FLOWMESH_FILE_SCAN_ENABLED:-false}
+      FLOWMESH_CLAMAV_HOST: clamav
+      FLOWMESH_CLAMAV_PORT: 3310
     ports:
       - "8082:8082"
     read_only: true
@@ -203,6 +256,8 @@ services:
 volumes:
   pgdata:
   redisdata:
+  miniodata:
+  clamavdata:
   rocketmq-store:
   rocketmq-logs:
   prometheusdata:

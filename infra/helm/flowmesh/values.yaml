@@ -18,6 +18,18 @@ redis:
   host: redis
   port: 6379
 
+objectStorage:
+  endpoint: http://minio:9000
+  bucket: flowmesh-documents
+  accessKey: flowmesh
+  secretKey: ""
+
+fileScan:
+  enabled: false
+  host: clamav
+  port: 3310
+  timeout: 10s
+
 ingress:
   enabled: false
   className: nginx

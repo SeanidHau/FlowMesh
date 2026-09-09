@@ -6,6 +6,7 @@ import {
   taskOrder,
   taskRoles,
   type ApplicationResponse,
+  type SupplierDocumentResponse,
   type UserSession,
   type WorkflowInstanceResponse,
 } from './types';
@@ -17,6 +18,8 @@ const view = ref<View>('overview');
 const session = ref<UserSession | null>(null);
 const application = ref<ApplicationResponse | null>(null);
 const workflow = ref<WorkflowInstanceResponse | null>(null);
+const documents = ref<SupplierDocumentResponse[]>([]);
+const documentInput = ref<HTMLInputElement | null>(null);
 const applicationId = ref(localStorage.getItem('flowmesh.applicationId') ?? '');
 const isBusy = ref(false);
 const errorMessage = ref('');
@@ -108,6 +111,7 @@ async function logout(): Promise<void> {
     session.value = null;
     application.value = null;
     workflow.value = null;
+    documents.value = [];
     noticeMessage.value = '';
   } catch (error) {
     showError(error);
@@ -124,6 +128,7 @@ async function createApplication(): Promise<void> {
     localStorage.setItem('flowmesh.applicationId', created.id);
     application.value = created;
     workflow.value = null;
+    documents.value = [];
     applicationForm.supplierName = '';
     view.value = 'overview';
     noticeMessage.value = '申请已提交，正在等待审批流程创建';
@@ -141,6 +146,12 @@ async function loadState(): Promise<void> {
   try {
     application.value = await api.getApplication(applicationId.value);
     try {
+      documents.value = await api.listDocuments(applicationId.value);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      documents.value = [];
+    }
+    try {
       workflow.value = await api.getWorkflow(applicationId.value);
     } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) throw error;
@@ -152,6 +163,35 @@ async function loadState(): Promise<void> {
     showError(error);
   } finally {
     isBusy.value = false;
+  }
+}
+
+async function uploadDocument(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file || !applicationId.value || !session.value) return;
+  errorMessage.value = '';
+  isBusy.value = true;
+  try {
+    const uploaded = await api.uploadDocument(applicationId.value, file);
+    documents.value = [...documents.value, uploaded];
+    noticeMessage.value = `${file.name} 已上传并完成安全校验`;
+  } catch (error) {
+    showError(error);
+  } finally {
+    isBusy.value = false;
+  }
+}
+
+async function downloadDocument(document: SupplierDocumentResponse): Promise<void> {
+  if (!applicationId.value) return;
+  errorMessage.value = '';
+  try {
+    const result = await api.createDocumentDownloadUrl(applicationId.value, document.id);
+    window.open(result.url, '_blank', 'noopener,noreferrer');
+  } catch (error) {
+    showError(error);
   }
 }
 
@@ -323,6 +363,12 @@ onMounted(() => {
                   <div class="detail-title"><span class="supplier-avatar">{{ application.supplierName.slice(0, 1) }}</span><div><h3>{{ application.supplierName }}</h3><p>供应商准入申请</p></div></div>
                   <div class="detail-grid"><div><span>当前状态</span><strong>{{ displayStatus(application.status) }}</strong></div><div><span>审批进度</span><strong>{{ workflow ? '已开始' : '待开始' }}</strong></div><div><span>当前节点</span><strong>{{ workflow?.currentTask ? currentTaskLabel : '待提交' }}</strong></div></div>
                   <button class="text-button" type="button" @click="view = 'approval'">查看审批进度 <span>→</span></button>
+                  <div class="document-panel">
+                    <div class="document-panel-heading"><div><span class="section-overline">申请材料</span><h3>供应商文件</h3></div><label class="upload-button"><span>上传文件</span><input ref="documentInput" type="file" accept="application/pdf,image/png,image/jpeg,.docx" :disabled="isBusy" @change="uploadDocument" /></label></div>
+                    <p class="document-hint">支持 PDF、PNG、JPG 和 DOCX，单个文件不超过 20 MB。</p>
+                    <div v-if="documents.length" class="document-list"><div v-for="document in documents" :key="document.id" class="document-item"><span class="document-type">{{ document.contentType.split('/').pop()?.toUpperCase() }}</span><div><strong>{{ document.originalFilename }}</strong><small>{{ Math.ceil(document.sizeBytes / 1024) }} KB · {{ document.scanStatus === 'CLEAN' ? '已通过安全检查' : '未启用扫描' }}</small></div><button class="text-button" type="button" @click="downloadDocument(document)">下载</button></div></div>
+                    <p v-else class="document-empty">尚未上传申请材料。</p>
+                  </div>
                 </div>
               </article>
               <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">工作状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已就绪</span></div><div class="event-list"><div class="event-item"><span class="event-state success"></span><div><strong>已登录工作台</strong><small>身份验证完成</small></div><time>刚刚</time></div><div class="event-item"><span class="event-state info"></span><div><strong>工作区准备就绪</strong><small>可以提交或查看申请</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待新的申请</strong><small>创建申请后会显示在这里</small></div><time>等待</time></div></div></article>

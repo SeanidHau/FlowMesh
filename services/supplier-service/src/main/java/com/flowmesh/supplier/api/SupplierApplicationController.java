@@ -4,9 +4,13 @@ import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.supplier.api.dto.ApplicationResponse;
 import com.flowmesh.supplier.api.dto.CreateApplicationRequest;
+import com.flowmesh.supplier.api.dto.DocumentDownloadResponse;
+import com.flowmesh.supplier.api.dto.SupplierDocumentResponse;
 import com.flowmesh.supplier.application.SupplierApplicationService;
+import com.flowmesh.supplier.application.SupplierDocumentService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 供应商申请控制器。
@@ -30,14 +36,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class SupplierApplicationController {
 
     private final SupplierApplicationService applicationService;
+    private final SupplierDocumentService documentService;
 
     /**
      * 创建申请控制器。
      *
      * @param applicationService 申请服务
      */
-    public SupplierApplicationController(SupplierApplicationService applicationService) {
+    public SupplierApplicationController(
+        SupplierApplicationService applicationService,
+        SupplierDocumentService documentService
+    ) {
         this.applicationService = applicationService;
+        this.documentService = documentService;
     }
 
     /**
@@ -86,5 +97,54 @@ public class SupplierApplicationController {
         @PathVariable UUID applicationId
     ) {
         return applicationService.find(principal, applicationId);
+    }
+
+    /**
+     * 上传当前申请的供应商材料。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @param file Multipart 文件
+     * @return 材料元数据
+     */
+    @PostMapping(path = "/{applicationId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SupplierDocumentResponse> uploadDocument(
+        @AuthenticationPrincipal AuthPrincipal principal,
+        @PathVariable UUID applicationId,
+        @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.status(201).body(documentService.upload(principal, applicationId, file));
+    }
+
+    /**
+     * 查询当前申请的材料元数据。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @return 材料元数据
+     */
+    @GetMapping("/{applicationId}/documents")
+    public List<SupplierDocumentResponse> listDocuments(
+        @AuthenticationPrincipal AuthPrincipal principal,
+        @PathVariable UUID applicationId
+    ) {
+        return documentService.list(principal, applicationId);
+    }
+
+    /**
+     * 为材料生成短期下载地址。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @param documentId 材料标识
+     * @return 短期下载 URL
+     */
+    @GetMapping("/{applicationId}/documents/{documentId}/download-url")
+    public DocumentDownloadResponse createDocumentDownloadUrl(
+        @AuthenticationPrincipal AuthPrincipal principal,
+        @PathVariable UUID applicationId,
+        @PathVariable UUID documentId
+    ) {
+        return documentService.createDownloadUrl(principal, applicationId, documentId);
     }
 }

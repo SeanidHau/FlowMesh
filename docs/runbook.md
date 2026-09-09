@@ -44,7 +44,14 @@
    VITE_DEMO_MODE=true npm run dev
    ```
 
-Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者，Gateway 监听宿主机 `8080`。
+Compose 中的 Java 服务默认开启 Outbox 和 RocketMQ 消费者，Gateway 监听宿主机 `8080`，MinIO
+负责供应商材料对象存储。默认不开启 ClamAV；需要验证完整材料安全链路时执行：
+
+```bash
+docker compose --env-file .env -f infra/compose/docker-compose.yml --profile documents up -d --build
+```
+
+并将 `.env` 中的 `FLOWMESH_FILE_SCAN_ENABLED` 设置为 `true`。
 桌面端默认访问宿主机的
 `8081`、`8082` 和 `8083` 端口。
 

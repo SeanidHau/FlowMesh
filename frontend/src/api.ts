@@ -4,6 +4,8 @@ import type {
   TokenResponse,
   UserSession,
   WorkflowInstanceResponse,
+  DocumentDownloadResponse,
+  SupplierDocumentResponse,
 } from './types';
 
 interface RequestOptions {
@@ -83,6 +85,42 @@ export class FlowMeshApi {
     );
   }
 
+  async listDocuments(applicationId: string): Promise<SupplierDocumentResponse[]> {
+    return this.request<SupplierDocumentResponse[]>(
+      'supplier', `/api/v1/supplier-applications/${applicationId}/documents`, { authenticated: true },
+    );
+  }
+
+  async uploadDocument(applicationId: string, file: File): Promise<SupplierDocumentResponse> {
+    const request: FlowMeshApiRequest = {
+      service: 'supplier',
+      path: `/api/v1/supplier-applications/${applicationId}/documents`,
+      method: 'POST',
+      token: this.session?.accessToken,
+      file: {
+        name: file.name,
+        type: file.type,
+        data: await file.arrayBuffer(),
+      },
+      headers: { 'X-Trace-Id': crypto.randomUUID() },
+    };
+    const response = window.flowmesh
+      ? await window.flowmesh.request(request)
+      : await this.requestBrowserForm(request, file);
+    return this.parseResponse<SupplierDocumentResponse>(response);
+  }
+
+  async createDocumentDownloadUrl(
+    applicationId: string,
+    documentId: string,
+  ): Promise<DocumentDownloadResponse> {
+    return this.request<DocumentDownloadResponse>(
+      'supplier',
+      `/api/v1/supplier-applications/${applicationId}/documents/${documentId}/download-url`,
+      { authenticated: true },
+    );
+  }
+
   async getWorkflow(applicationId: string): Promise<WorkflowInstanceResponse> {
     return this.request<WorkflowInstanceResponse>(
       'workflow', `/api/v1/workflow-instances/${applicationId}`, { authenticated: true },
@@ -130,10 +168,31 @@ export class FlowMeshApi {
         status: browserResponse.status,
         body: await browserResponse.text(),
       }));
-    let body: Record<string, unknown> = {};
+    return this.parseResponse<T>(response);
+  }
+
+  private async requestBrowserForm(request: FlowMeshApiRequest, file: File): Promise<FlowMeshApiResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`/api/${request.service}${request.path}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(request.token ? { Authorization: `Bearer ${request.token}` } : {}),
+        ...(request.headers ?? {}),
+      },
+      body: formData,
+    }).then(async (browserResponse) => ({
+      status: browserResponse.status,
+      body: await browserResponse.text(),
+    }));
+  }
+
+  private parseResponse<T>(response: FlowMeshApiResponse): T {
+    let body: Record<string, unknown> | unknown[] = {};
     if (response.body) {
       try {
-        body = JSON.parse(response.body) as Record<string, unknown>;
+        body = JSON.parse(response.body) as Record<string, unknown> | unknown[];
       } catch {
         body = {};
       }
@@ -141,8 +200,10 @@ export class FlowMeshApi {
     if (response.status >= 400) {
       throw new ApiError(
         response.status,
-        typeof body.code === 'string' ? body.code : 'REQUEST_FAILED',
-        typeof body.message === 'string' ? body.message : `请求失败（${response.status}）`,
+        typeof body === 'object' && body !== null && !Array.isArray(body) && typeof body.code === 'string'
+          ? body.code : 'REQUEST_FAILED',
+        typeof body === 'object' && body !== null && !Array.isArray(body) && typeof body.message === 'string'
+          ? body.message : `请求失败（${response.status}）`,
       );
     }
     return body as T;

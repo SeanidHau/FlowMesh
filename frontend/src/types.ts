@@ -12,6 +12,21 @@ export interface ApplicationResponse {
   stateVersion: number;
 }
 
+export interface SupplierDocumentResponse {
+  id: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  scanStatus: string;
+  createdAt: string;
+}
+
+export interface DocumentDownloadResponse {
+  url: string;
+  expiresAt: string;
+}
+
 export interface WorkflowInstanceResponse {
   id: string;
   applicationId: string;

@@ -5,6 +5,11 @@ spring:
   application:
     name: supplier-service
 
+  servlet:
+    multipart:
+      max-file-size: ${FLOWMESH_DOCUMENT_MAX_FILE_SIZE:20MB}
+      max-request-size: ${FLOWMESH_DOCUMENT_MAX_REQUEST_SIZE:21MB}
+
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
@@ -34,8 +39,8 @@ server:
   shutdown: graceful
   tomcat:
     connection-timeout: 5s
-    max-http-form-post-size: 1MB
-    max-swallow-size: 2MB
+    max-http-form-post-size: 21MB
+    max-swallow-size: 22MB
 
 logging:
   pattern:
@@ -63,6 +68,18 @@ flowmesh:
     client:
       connect-timeout: ${FLOWMESH_WORKFLOW_CONNECT_TIMEOUT:2s}
       read-timeout: ${FLOWMESH_WORKFLOW_READ_TIMEOUT:3s}
+  object-storage:
+    endpoint: ${FLOWMESH_OBJECT_STORAGE_ENDPOINT:http://localhost:9000}
+    access-key: ${FLOWMESH_OBJECT_STORAGE_ACCESS_KEY:flowmesh}
+    secret-key: ${FLOWMESH_OBJECT_STORAGE_SECRET_KEY:change-me-minio}
+    bucket: ${FLOWMESH_OBJECT_STORAGE_BUCKET:flowmesh-documents}
+    presigned-url-expiry-seconds: ${FLOWMESH_OBJECT_STORAGE_PRESIGNED_URL_EXPIRY_SECONDS:300}
+    max-file-size-bytes: ${FLOWMESH_DOCUMENT_MAX_FILE_SIZE_BYTES:20971520}
+  file-scan:
+    enabled: ${FLOWMESH_FILE_SCAN_ENABLED:false}
+    host: ${FLOWMESH_CLAMAV_HOST:localhost}
+    port: ${FLOWMESH_CLAMAV_PORT:3310}
+    timeout: ${FLOWMESH_CLAMAV_TIMEOUT:10s}
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}

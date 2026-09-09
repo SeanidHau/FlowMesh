@@ -75,6 +75,28 @@ spec:
               value: "true"
             - name: FLOWMESH_WORKFLOW_BASE_URL
               value: "http://{{ include "flowmesh.fullname" . }}-workflow:{{ .Values.services.workflow.port }}"
+            - name: FLOWMESH_OBJECT_STORAGE_ENDPOINT
+              value: {{ .Values.objectStorage.endpoint | quote }}
+            - name: FLOWMESH_OBJECT_STORAGE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: OBJECT_STORAGE_ACCESS_KEY
+            - name: FLOWMESH_OBJECT_STORAGE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: OBJECT_STORAGE_SECRET_KEY
+            - name: FLOWMESH_OBJECT_STORAGE_BUCKET
+              value: {{ .Values.objectStorage.bucket | quote }}
+            - name: FLOWMESH_FILE_SCAN_ENABLED
+              value: {{ .Values.fileScan.enabled | quote }}
+            - name: FLOWMESH_CLAMAV_HOST
+              value: {{ .Values.fileScan.host | quote }}
+            - name: FLOWMESH_CLAMAV_PORT
+              value: {{ .Values.fileScan.port | quote }}
+            - name: FLOWMESH_CLAMAV_TIMEOUT
+              value: {{ .Values.fileScan.timeout | quote }}
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

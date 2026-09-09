@@ -90,6 +90,13 @@
       <artifactId>rocketmq-spring-boot-starter</artifactId>
     </dependency>
 
+    <!-- 作用：将供应商材料安全存储到 S3 兼容对象存储。 -->
+    <dependency>
+      <groupId>io.minio</groupId>
+      <artifactId>minio</artifactId>
+      <version>${minio.version}</version>
+    </dependency>
+
     <!-- 作用：JUnit、Mockito、Spring Boot 测试基础设施。 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

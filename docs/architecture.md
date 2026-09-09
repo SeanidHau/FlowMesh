@@ -14,6 +14,8 @@ flowchart LR
   GW --> WF[workflow-service]
   WF <--> CAM[Camunda 8]
   SUP --> RMQ[Apache RocketMQ]
+  SUP --> MINIO[MinIO]
+  SUP --> CLAMAV[ClamAV]
   SUP --> PG[(PostgreSQL)]
   IAM --> PG
   WF --> PG
