@@ -35,8 +35,11 @@
 ```
 
 该命令会启动 PostgreSQL Testcontainers，验证 Flyway、MyBatis、RLS、认证、Outbox 竞争和核心业务集成测试。
-真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL 和 RocketMQ，三个服务使用本机打包的 JAR 连接真实 Broker。
+真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL、Redis 和 RocketMQ，五个服务使用本机打包的 JAR 连接真实 Broker，并覆盖风控与通知审计链路。
 Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，不提交任何真实密钥。
+
+压测使用 `tests/k6/supplier-onboarding.js`，故障恢复使用
+`tests/fault-drills/verify-service-recovery.sh`；两者都要求在隔离环境记录吞吐、p95、恢复耗时和消息积压变化，不能把脚本存在当作演练结果。
 
 - Docker 只在 Testcontainers 或 Compose 验证期间启动。
 - 验证结束后停止本任务启动的 Compose 容器，并退出 Docker Desktop，避免后台持续占用资源。

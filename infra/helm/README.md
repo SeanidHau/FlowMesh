@@ -50,5 +50,7 @@ Seccomp 配置、资源请求/限制、启动/就绪/存活探针、拓扑分散
 `postgresql.host`、`redis.host`、`rocketmq.namesrvAddr`、镜像地址和端口均可在自定义 values
 文件中覆盖。需要对外提供 HTTP API 时，设置 `ingress.enabled=true`、域名、TLS Secret
 和 Ingress Controller 注解；Ingress 只转发到 gateway，业务服务仍保持 ClusterIP。
+生产覆盖值只部署应用服务，PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 必须由云托管服务或
+经过 HA 验证的独立集群提供；发布前执行 `bash scripts/validate-production-config.sh`。
 生产覆盖值还会启用 NetworkPolicy：IAM、Supplier 和 Workflow 只接受 Gateway 的入口流量，
 Workflow 额外接受 Supplier 的内部状态回写请求；启用前应确认集群 CNI 支持 NetworkPolicy。

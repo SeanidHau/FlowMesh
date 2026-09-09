@@ -1,4 +1,5 @@
 # 作用：生产环境覆盖值。凭据必须通过 external Secret 注入，不得写入本文件。
+# PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 均指向外部高可用平台；本文件不部署这些依赖。
 global:
   imagePullPolicy: IfNotPresent
   existingSecret: flowmesh-runtime-secrets

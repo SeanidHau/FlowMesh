@@ -128,6 +128,14 @@ export FLOWMESH_BACKUP_ROOT='./backups/postgres'
 ./scripts/backup-postgres.sh
 ```
 
+备份完成后必须在同一台具备 PostgreSQL 客户端工具的机器上校验归档目录：
+
+```bash
+./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>
+```
+
+该校验只读取备份文件，不连接数据库；正式恢复仍需在隔离目标库中执行并记录恢复耗时。
+
 恢复必须在隔离的目标数据库执行，并显式确认，避免误覆盖生产数据：
 
 ```bash

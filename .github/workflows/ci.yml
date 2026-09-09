@@ -37,7 +37,10 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh
+        run: bash -n scripts/*.sh tests/fault-drills/*.sh tests/rocketmq-e2e.sh
+
+      - name: Validate production deployment guardrails
+        run: bash scripts/validate-production-config.sh infra/helm/flowmesh/values-production.yaml
 
       # 使用非生产测试值校验 Chart 语法、合法凭据渲染和缺失凭据失败保护。
       - name: Set up Helm
