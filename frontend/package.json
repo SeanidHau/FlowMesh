@@ -21,7 +21,7 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.5.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "concurrently": "^10.0.5",
     "electron": "^44.0.0",
