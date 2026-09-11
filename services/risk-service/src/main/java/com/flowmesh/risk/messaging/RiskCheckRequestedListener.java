@@ -4,6 +4,7 @@ import com.flowmesh.risk.application.RiskEvaluationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.slf4j.MDC;
@@ -27,6 +28,7 @@ public class RiskCheckRequestedListener implements RocketMQListener<String> {
     private final ObjectMapper objectMapper;
     private final Counter successCounter;
     private final Counter failureCounter;
+    private final Timer processingTimer;
 
     /**
      * 创建风控请求监听器。
@@ -46,6 +48,11 @@ public class RiskCheckRequestedListener implements RocketMQListener<String> {
             .tag("consumer", "risk-check-requested").register(meterRegistry);
         this.failureCounter = Counter.builder("flowmesh.messaging.failed")
             .tag("consumer", "risk-check-requested").register(meterRegistry);
+        this.processingTimer = Timer.builder("flowmesh.messaging.processing")
+            .description("RocketMQ 消费消息处理耗时")
+            .tag("consumer", "risk-check-requested")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
     }
 
     /**
@@ -55,6 +62,7 @@ public class RiskCheckRequestedListener implements RocketMQListener<String> {
      */
     @Override
     public void onMessage(String message) {
+        Timer.Sample sample = Timer.start();
         try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
             try {
                 service.evaluate(message);
@@ -63,6 +71,8 @@ public class RiskCheckRequestedListener implements RocketMQListener<String> {
                 failureCounter.increment();
                 throw exception;
             }
+        } finally {
+            sample.stop(processingTimer);
         }
     }
 

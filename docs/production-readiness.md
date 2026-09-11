@@ -13,6 +13,7 @@
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
+- RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 - 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
@@ -55,6 +56,7 @@ helm lint infra/helm/flowmesh \
 ### 可观测性与恢复
 
 - 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信告警样例和本地 Grafana Dashboard；生产环境仍需接入托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端。
+- 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
 - PostgreSQL 备份定时化、异地保存、定期恢复验证和恢复时间目标记录。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 

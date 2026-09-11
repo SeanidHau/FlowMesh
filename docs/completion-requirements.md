@@ -15,10 +15,11 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 状态 | 内容 |
 | --- | --- |
 | 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
-| 当前迭代 | Redis 登录尝试限流已完成；本地 Redis 故障时认证链路降级放行并记录告警，生产 Helm 默认 fail-closed 并返回 `503`，不改变数据库权威性。 |
-| 当前迭代 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
-| 当前迭代 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
-| 当前迭代 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |
+| 已完成 | Redis 登录尝试限流已完成；本地 Redis 故障时认证链路降级放行并记录告警，生产 Helm 默认 fail-closed 并返回 `503`，不改变数据库权威性。 |
+| 已完成 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
+| 已完成 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
+| 已完成 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |
+| 已完成 | RocketMQ 消费者已暴露处理耗时直方图，Prometheus 已增加消费 P95 延迟告警；观测配置脚本会校验关键告警集合。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围
@@ -47,7 +48,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 编号 | 需求 | 验收标准 |
 | --- | --- | --- |
 | OBS-01 | 业务指标 | 已暴露申请创建、审批节点完成、重复事件、Outbox 待发送和死信数量指标。 |
-| OBS-02 | 消息指标 | 已暴露发布/消费成功失败、重试和死信计数，以及 Outbox 当前待发送/死信 Gauge。 |
+| OBS-02 | 消息指标 | 已暴露发布/消费成功失败、重试和死信计数、Outbox 当前待发送/死信 Gauge，以及按消费者区分的消费处理耗时直方图。 |
 | OBS-03 | 链路标识 | HTTP 入口生成/透传 `traceId`；事件信封携带 `traceId`、`eventId`、`tenantId`，日志不输出消息密文或 JWT。 |
 | OBS-04 | 健康检查 | Actuator 区分 liveness/readiness；readiness 纳入 PostgreSQL 和 RocketMQ NameServer TCP 检查。 |
 

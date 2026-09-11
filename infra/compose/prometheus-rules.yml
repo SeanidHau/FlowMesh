@@ -37,6 +37,14 @@ groups:
         annotations:
           summary: "FlowMesh 消费者持续失败"
           description: "消费者 {{ $labels.consumer }} 在过去五分钟持续失败。"
+      - alert: FlowMeshConsumerProcessingLatency
+        expr: histogram_quantile(0.95, sum by (consumer, le) (rate(flowmesh_messaging_processing_seconds_bucket[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FlowMesh 消费处理延迟升高"
+          description: "消费者 {{ $labels.consumer }} 的消息处理 P95 已连续五分钟超过 5 秒。"
       - alert: FlowMeshOutboxConfirmationFailures
         expr: sum by (service) (rate(flowmesh_outbox_confirmation_failed_total[5m])) > 0
         for: 2m

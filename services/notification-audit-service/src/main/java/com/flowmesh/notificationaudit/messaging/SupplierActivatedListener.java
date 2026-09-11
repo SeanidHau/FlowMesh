@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.notificationaudit.application.NotificationAuditService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.slf4j.MDC;
@@ -28,6 +29,7 @@ public class SupplierActivatedListener implements RocketMQListener<String> {
     private final ObjectMapper objectMapper;
     private final Counter successCounter;
     private final Counter failureCounter;
+    private final Timer processingTimer;
 
     /**
      * 创建供应商启用事件监听器。
@@ -47,6 +49,11 @@ public class SupplierActivatedListener implements RocketMQListener<String> {
             .tag("consumer", "supplier-activated-notification-audit").register(meterRegistry);
         this.failureCounter = Counter.builder("flowmesh.messaging.failed")
             .tag("consumer", "supplier-activated-notification-audit").register(meterRegistry);
+        this.processingTimer = Timer.builder("flowmesh.messaging.processing")
+            .description("RocketMQ 消费消息处理耗时")
+            .tag("consumer", "supplier-activated-notification-audit")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
     }
 
     /**
@@ -56,6 +63,7 @@ public class SupplierActivatedListener implements RocketMQListener<String> {
      */
     @Override
     public void onMessage(String message) {
+        Timer.Sample sample = Timer.start();
         try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
             try {
                 service.handleSupplierActivated(message);
@@ -64,6 +72,8 @@ public class SupplierActivatedListener implements RocketMQListener<String> {
                 failureCounter.increment();
                 throw exception;
             }
+        } finally {
+            sample.stop(processingTimer);
         }
     }
 

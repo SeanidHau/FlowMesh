@@ -15,11 +15,24 @@ scrape = YAML.load_file(ARGV.fetch(1))
 
 groups = rules.fetch("groups")
 abort "Prometheus 规则必须包含 groups" unless groups.is_a?(Array) && !groups.empty?
+alerts = []
 groups.each do |group|
   group.fetch("rules").each do |rule|
     %w[alert expr labels annotations].each { |key| rule.fetch(key) }
+    alerts << rule.fetch("alert")
   end
 end
+required_alerts = %w[
+  FlowMeshServiceDown
+  FlowMeshOutboxBacklog
+  FlowMeshDeadLetterEvents
+  FlowMeshConsumerFailures
+  FlowMeshConsumerProcessingLatency
+  FlowMeshOutboxConfirmationFailures
+  FlowMeshHttp5xxRate
+]
+missing_alerts = required_alerts - alerts
+abort "Prometheus 告警缺少：#{missing_alerts.join(', ')}" unless missing_alerts.empty?
 
 jobs = scrape.fetch("scrape_configs")
 abort "Prometheus 抓取配置不能为空" unless jobs.is_a?(Array) && !jobs.empty?

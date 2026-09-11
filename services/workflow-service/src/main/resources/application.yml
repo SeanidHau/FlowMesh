@@ -22,6 +22,7 @@ spring:
   flyway:
     schemas: workflow
     create-schemas: true
+    fail-on-missing-locations: true
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml

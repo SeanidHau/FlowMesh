@@ -30,6 +30,7 @@ class WorkflowTaskCompletedListenerTest {
     @Test
     void shouldRestoreTraceIdDuringMessageHandling() {
         WorkflowTaskCompletedService service = mock(WorkflowTaskCompletedService.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         AtomicReference<String> traceId = new AtomicReference<>();
         doAnswer(invocation -> {
             traceId.set(MDC.get("traceId"));
@@ -37,11 +38,13 @@ class WorkflowTaskCompletedListenerTest {
         }).when(service).apply(anyString());
 
         WorkflowTaskCompletedListener listener = new WorkflowTaskCompletedListener(
-            service, new ObjectMapper(), new SimpleMeterRegistry()
+            service, new ObjectMapper(), meterRegistry
         );
         listener.onMessage("{\"traceId\":\"trace-supplier-1\"}");
 
         assertThat(traceId).hasValue("trace-supplier-1");
         assertThat(MDC.get("traceId")).isNull();
+        assertThat(meterRegistry.get("flowmesh.messaging.processing")
+            .tag("consumer", "supplier-workflow-task-completed").timer().count()).isEqualTo(1);
     }
 }

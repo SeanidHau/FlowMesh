@@ -30,6 +30,7 @@ class ApplicationSubmittedListenerTest {
     @Test
     void shouldRestoreTraceIdDuringMessageHandling() {
         WorkflowEventProjectionService service = mock(WorkflowEventProjectionService.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         AtomicReference<String> traceId = new AtomicReference<>();
         doAnswer(invocation -> {
             traceId.set(MDC.get("traceId"));
@@ -37,11 +38,13 @@ class ApplicationSubmittedListenerTest {
         }).when(service).project(anyString());
 
         ApplicationSubmittedListener listener = new ApplicationSubmittedListener(
-            service, new ObjectMapper(), new SimpleMeterRegistry()
+            service, new ObjectMapper(), meterRegistry
         );
         listener.onMessage("{\"traceId\":\"trace-workflow-1\"}");
 
         assertThat(traceId).hasValue("trace-workflow-1");
         assertThat(MDC.get("traceId")).isNull();
+        assertThat(meterRegistry.get("flowmesh.messaging.processing")
+            .tag("consumer", "workflow-application-submitted").timer().count()).isEqualTo(1);
     }
 }

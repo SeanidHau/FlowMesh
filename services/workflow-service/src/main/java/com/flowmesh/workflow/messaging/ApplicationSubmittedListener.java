@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -31,6 +32,7 @@ public class ApplicationSubmittedListener implements RocketMQListener<String> {
     private final ObjectMapper objectMapper;
     private final Counter successCounter;
     private final Counter failureCounter;
+    private final Timer processingTimer;
 
     /**
      * 创建申请提交事件监听器。
@@ -48,6 +50,11 @@ public class ApplicationSubmittedListener implements RocketMQListener<String> {
             .tag("consumer", "workflow-application-submitted").register(meterRegistry);
         this.failureCounter = Counter.builder("flowmesh.messaging.failed")
             .tag("consumer", "workflow-application-submitted").register(meterRegistry);
+        this.processingTimer = Timer.builder("flowmesh.messaging.processing")
+            .description("RocketMQ 消费消息处理耗时")
+            .tag("consumer", "workflow-application-submitted")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
     }
 
     /**
@@ -57,6 +64,7 @@ public class ApplicationSubmittedListener implements RocketMQListener<String> {
      */
     @Override
     public void onMessage(String message) {
+        Timer.Sample sample = Timer.start();
         try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
             try {
                 projectionService.project(message);
@@ -67,6 +75,8 @@ public class ApplicationSubmittedListener implements RocketMQListener<String> {
                 log.warn("RocketMQ 消费失败，consumer=workflow-application-submitted，{}", eventContext(message), exception);
                 throw exception;
             }
+        } finally {
+            sample.stop(processingTimer);
         }
     }
 
