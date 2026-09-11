@@ -160,6 +160,34 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 至少需要配置以下 Secrets：`FLOWMESH_PG_PASSWORD`、`FLOWMESH_RETENTION_DB_PASSWORD` 和
 `FLOWMESH_REDIS_PASSWORD`。所有地址、密码和证书路径均由 Environment 注入，不要写入工作流文件或仓库。
 
+如果需要执行实际发布，使用仓库提供的生产发布入口。它会先校验八个镜像的 Cosign 签名、校验生产
+values，再执行 `helm upgrade --install --atomic --wait`，最后运行只读 Kubernetes smoke test。
+发布入口只引用预先创建的运行时 Secret，不接收数据库密码、JWT 密钥或对象存储密钥参数：
+以下地址均为文档占位值，执行前必须替换为目标环境真实地址；发布脚本会拒绝 `example.com`、本机和已知占位地址。
+
+```bash
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_INGRESS_HOST='api.example.com' \
+FLOWMESH_INGRESS_TLS_SECRET_NAME='flowmesh-gateway-tls' \
+FLOWMESH_POSTGRES_HOST='postgres-primary.database.svc' \
+FLOWMESH_REDIS_HOST='redis-primary.cache.svc' \
+FLOWMESH_ROCKETMQ_NAMESRV_ADDR='namesrv-0.messaging.svc:9876,namesrv-1.messaging.svc:9876' \
+FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
+FLOWMESH_CLAMAV_HOST='clamav.security.svc.cluster.local' \
+FLOWMESH_BACKUP_POSTGRES_HOST='postgres-primary.database.svc' \
+FLOWMESH_BACKUP_S3_URI='s3://flowmesh-production-backups' \
+FLOWMESH_BACKUP_SECRET_NAME='flowmesh-backup-credentials' \
+FLOWMESH_RETENTION_POSTGRES_HOST='postgres-primary.database.svc' \
+FLOWMESH_RETENTION_SECRET_NAME='flowmesh-retention-credentials' \
+FLOWMESH_NOTIFICATION_WEBHOOK_URL='https://notifications.example.com/webhooks/flowmesh' \
+FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS='10.20.0.0/16,10.30.0.0/16' \
+./scripts/deploy-production.sh
+```
+
+当目标集群没有 Prometheus Operator 时，显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`，并确保
+`FLOWMESH_PROMETHEUS_URL` 对应的观测平台已通过其他方式抓取六个服务和加载告警规则；该选项只影响
+Kubernetes CRD smoke 检查，不会关闭生产验收中的运行时观测后端检查。
+
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 
 ```bash

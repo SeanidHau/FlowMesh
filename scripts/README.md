@@ -14,6 +14,7 @@
 - `cleanup-flowmesh-retention.sh`：使用专用维护账号按白名单批量清理终态消息、死信、重放审计、Inbox 和幂等记录。
 - `validate-retention-role.sh`：只读核验生命周期维护账号的角色属性、RLS 能力和精确表/列权限。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
+- `deploy-production.sh`：校验镜像和生产参数后，以 `helm upgrade --install --atomic --wait` 发布，并执行发布后只读 smoke test。
 - `run-production-acceptance.sh`：串联生产发布后的只读验收并生成不可覆盖的证据报告。
 - `create-production-evidence-manifest.sh`：为目标平台已生成的证据报告创建不可覆盖的清单和 SHA-256 校验和。
 - `validate-production-evidence.sh`：只读校验目标环境证据包的必需报告、通过状态、校验和和敏感信息边界。
@@ -79,6 +80,9 @@ FLOWMESH_OBJECT_STORAGE_NONCURRENT_RETENTION_DAYS=7 \
 ```bash
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" ./scripts/verify-flowmesh-images.sh
 ```
+
+正式发布使用 `deploy-production.sh`，运行时凭据只放在预先创建的 Kubernetes Secret 中；脚本不会把
+JWT、数据库、Redis 或对象存储密钥作为 Helm 参数传递。完整环境变量示例见 [运行手册](../docs/runbook.md)。
 
 生命周期清理通过独立的 `flowmesh_retention` 账号执行。该账号不是超级用户，但必须具备
 `BYPASSRLS`，并由各服务迁移仅授予消息和幂等表的 `SELECT/DELETE` 权限，以及仅用于 `FOR UPDATE`

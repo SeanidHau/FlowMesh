@@ -60,6 +60,9 @@ jobs:
       - name: Validate production acceptance workflow contract
         run: bash tests/production-acceptance-workflow-contract.sh
 
+      - name: Validate production deployment contract
+        run: bash tests/production-deploy-contract.sh
+
       - name: Validate production evidence contract
         run: bash tests/production-evidence-contract.sh
 

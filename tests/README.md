@@ -101,6 +101,15 @@ Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 SL
 生产验收默认执行这些检查；非生产预检只有在显式设置对应 `FLOWMESH_REQUIRE_*` 变量为 `false` 时才会跳过，
 并通过 `scripts/validate-production-evidence.sh` 校验目标环境的完整证据包。
 
+生产发布入口的离线契约检查：
+
+```bash
+./tests/production-deploy-contract.sh
+```
+
+该检查确保发布脚本先验证镜像签名和生产配置，再使用 Helm 原子等待发布，并在发布后执行 Kubernetes smoke；
+同时拒绝通过命令行传递运行时 Secret。
+
 生产证据包离线契约检查：
 
 ```bash

@@ -18,6 +18,8 @@ grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
+grep -F -- 'expect_prometheus_rule:' "${workflow}" >/dev/null
+grep -F -- 'type: choice' "${workflow}" >/dev/null
 if grep -E '^[[:space:]]*(push|pull_request):' "${workflow}" >/dev/null; then
   echo '生产验收工作流只能通过 workflow_dispatch 触发。' >&2
   exit 1
