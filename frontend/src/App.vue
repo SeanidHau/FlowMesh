@@ -29,12 +29,16 @@ const noticeMessage = ref('');
 
 const loginForm = reactive({ tenantId: 'tenant-a', username: '', password: '' });
 const applicationForm = reactive({ supplierName: '' });
+const supplementForm = reactive({ comment: '' });
 const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
 const isLoggedIn = computed(() => session.value !== null);
 const progress = computed(() => {
   if (!workflow.value) return 0;
-  return Math.round(((workflow.value.completedTasks?.length ?? 0) / taskOrder.length) * 100);
+  if (workflow.value.status === 'COMPLETED') return 100;
+  const completedStandardTasks = (workflow.value.completedTasks ?? [])
+    .filter((task) => taskOrder.includes(task)).length;
+  return Math.min(99, Math.round((completedStandardTasks / taskOrder.length) * 100));
 });
 const availableTasks = computed(() => workflow.value?.availableTasks ?? (workflow.value?.currentTask ? [workflow.value.currentTask] : []));
 const actionTask = computed(() => {
@@ -72,12 +76,20 @@ const sessionRoleLabel = computed(() =>
   session.value?.roles.map((role) => roleLabels[role] ?? role).join(' / ') ?? '',
 );
 const requiredRoleLabel = computed(() => roleLabels[requiredRole.value] ?? requiredRole.value);
+const isApplicant = computed(() => session.value?.roles.includes('APPLICANT') ?? false);
+const visibleTaskOrder = computed(() => {
+  if (!workflow.value) return taskOrder;
+  const hasEscalation = [...(workflow.value.availableTasks ?? []), ...(workflow.value.completedTasks ?? [])]
+    .includes('OPERATIONS_ESCALATION');
+  return hasEscalation ? [...taskOrder.slice(0, 3), 'OPERATIONS_ESCALATION', taskOrder[3]] : taskOrder;
+});
 const tenantLabel = computed(() => session.value?.tenantId === 'tenant-b' ? '供应商方工作区' : '采购方工作区');
 
 function displayStatus(value?: string): string {
   const labels: Record<string, string> = {
     SUBMITTED: '已提交',
     IN_REVIEW: '审核中',
+    SUPPLEMENT_REQUIRED: '待补件',
     ENABLED: '已启用',
     RUNNING: '审批中',
     RISK_CHECKING: '风控检查中',
@@ -242,12 +254,51 @@ async function completeCurrentTask(): Promise<void> {
   errorMessage.value = '';
   isBusy.value = true;
   try {
-    workflow.value = await api.completeTask(applicationId.value, actionTask.value);
+    workflow.value = await api.completeTask(applicationId.value, actionTask.value, 'APPROVE');
     await refreshApplication();
     await loadNotifications();
     noticeMessage.value = workflow.value.status === 'COMPLETED'
       ? '审批链已完成，供应商已进入启用状态'
       : `${completedTaskLabel} 已完成，流程继续推进`;
+  } catch (error) {
+    showError(error);
+  } finally {
+    isBusy.value = false;
+  }
+}
+
+async function returnForSupplement(): Promise<void> {
+  if (!workflow.value?.currentTask || !applicationId.value || !canComplete.value
+    || !supplementForm.comment.trim()) return;
+  errorMessage.value = '';
+  isBusy.value = true;
+  try {
+    workflow.value = await api.completeTask(
+      applicationId.value,
+      actionTask.value,
+      'RETURN_FOR_SUPPLEMENT',
+      supplementForm.comment.trim(),
+    );
+    supplementForm.comment = '';
+    await refreshApplication();
+    await loadNotifications();
+    noticeMessage.value = '已退回补件，申请人补件后会重新进入采购初审';
+  } catch (error) {
+    showError(error);
+  } finally {
+    isBusy.value = false;
+  }
+}
+
+async function submitSupplement(): Promise<void> {
+  if (!applicationId.value || !supplementForm.comment.trim() || !isApplicant.value) return;
+  errorMessage.value = '';
+  isBusy.value = true;
+  try {
+    application.value = await api.submitSupplement(applicationId.value, supplementForm.comment.trim());
+    supplementForm.comment = '';
+    await loadNotifications();
+    noticeMessage.value = '补件已提交，流程将重新进入采购初审';
   } catch (error) {
     showError(error);
   } finally {
@@ -404,6 +455,7 @@ onMounted(() => {
                   <div class="id-line"><span>申请编号</span><code>{{ application.id }}</code></div>
                   <div class="detail-title"><span class="supplier-avatar">{{ application.supplierName.slice(0, 1) }}</span><div><h3>{{ application.supplierName }}</h3><p>供应商准入申请</p></div></div>
                   <div class="detail-grid"><div><span>当前状态</span><strong>{{ displayStatus(application.status) }}</strong></div><div><span>审批进度</span><strong>{{ workflow ? '已开始' : '待开始' }}</strong></div><div><span>当前节点</span><strong>{{ workflow?.status === 'RISK_CHECKING' ? '风控检查中' : workflow?.currentTask ? currentTaskLabel : '待提交' }}</strong></div></div>
+                  <div v-if="application.status === 'SUPPLEMENT_REQUIRED' && isApplicant" class="supplement-panel"><div><span class="section-overline">需要补件</span><h3>补充申请说明</h3><p>补件后会重新进入采购初审，当前已使用 {{ application.supplementCount }} / 2 次补件机会。</p></div><textarea v-model="supplementForm.comment" maxlength="2000" placeholder="请说明本次补充的材料或变更内容"></textarea><button class="primary-button" type="button" :disabled="isBusy || !supplementForm.comment.trim()" @click="submitSupplement"><span>提交补件</span><span class="button-arrow">→</span></button></div>
                   <button class="text-button" type="button" @click="view = 'approval'">查看审批进度 <span>→</span></button>
                   <div class="document-panel">
                     <div class="document-panel-heading"><div><span class="section-overline">申请材料</span><h3>供应商文件</h3></div><label class="upload-button"><span>上传文件</span><input ref="documentInput" type="file" accept="application/pdf,image/png,image/jpeg,.docx" :disabled="isBusy" @change="uploadDocument" /></label></div>
@@ -424,7 +476,7 @@ onMounted(() => {
 
           <template v-else>
             <section class="approval-summary"><div class="case-summary"><span class="supplier-avatar">{{ application?.supplierName?.slice(0, 1) ?? '?' }}</span><div><span>当前申请</span><strong>{{ application?.supplierName ?? '未选择申请' }}</strong><small>{{ application?.id ?? '请先从概览载入申请' }}</small></div></div><div class="summary-status"><span>申请状态</span><strong>{{ displayStatus(application?.status) }}</strong></div><div class="progress-block"><div><span>流程完成度</span><strong>{{ progress }}%</strong></div><div class="progress-track"><span :style="{ width: `${progress}%` }"></span></div></div></section>
-            <div class="approval-layout"><article class="surface lane-surface"><div class="surface-heading"><div><span class="section-overline">审批流程</span><h2>供应商准入轨道</h2></div><span class="workflow-id">{{ workflow?.status === 'RISK_CHECKING' ? '风控检查中' : workflow ? '审批中' : '待开始' }}</span></div><div v-if="!workflow" class="workflow-empty"><div class="empty-icon">⌁</div><h3>审批流程尚未开始</h3><p>提交申请后，审批流程会自动创建。稍等片刻再刷新。</p><button class="secondary-button" type="button" @click="loadState">重新检查</button></div><div v-else class="lane"><div v-for="(task, index) in taskOrder" :key="task" class="lane-step" :class="{ current: availableTasks.includes(task), done: (workflow.completedTasks ?? []).includes(task), last: index === taskOrder.length - 1 }"><div class="lane-rail"><span class="lane-node">{{ (workflow.completedTasks ?? []).includes(task) ? '✓' : String(index + 1).padStart(2, '0') }}</span></div><div class="lane-copy"><div class="lane-topline"><strong>{{ taskLabels[task] }}</strong><span>{{ roleLabels[taskRoles[task]] ?? taskRoles[task] }}</span></div><p>{{ (workflow.completedTasks ?? []).includes(task) ? '节点已完成' : availableTasks.includes(task) ? '等待当前角色处理' : '等待前置节点完成' }}</p></div><span v-if="availableTasks.includes(task)" class="current-tag">当前待办</span></div></div></article><aside class="surface action-surface"><span class="section-overline">下一步操作</span><h2>{{ actionTaskLabel }}</h2><p v-if="actionTask">当前身份为 <strong>{{ sessionRoleLabel }}</strong>。<br />此节点需要 <strong>{{ requiredRoleLabel }}</strong> 处理。</p><p v-else-if="workflow?.status === 'RISK_CHECKING'">系统正在完成供应商风险检查，通过后会自动进入采购初审。</p><p v-else-if="workflow?.status === 'REJECTED'">该申请未通过风险检查，流程已停止。</p><p v-else>流程完成后，供应商申请会进入最终启用状态。</p><div v-if="actionTask" class="action-decision" :class="{ allowed: canComplete }"><span class="decision-icon">{{ canComplete ? '✓' : '!' }}</span><div><strong>{{ canComplete ? '你可以处理此节点' : '等待对应角色' }}</strong><small>{{ canComplete ? '确认信息后提交审批结果' : `请使用${requiredRoleLabel}账号登录` }}</small></div></div><button v-if="actionTask" class="primary-button full-width" type="button" :disabled="isBusy || !canComplete" @click="completeCurrentTask"><span>{{ canComplete ? `完成${actionTaskLabel}` : '当前角色不可操作' }}</span><span class="button-arrow">→</span></button><div v-if="workflow?.status === 'COMPLETED'" class="completed-stamp"><span>✓</span><strong>供应商已启用</strong><small>审批链已完成</small></div><div class="action-meta"><div><span>审批状态</span><strong>{{ displayStatus(workflow?.status) }}</strong></div><div><span>当前节点</span><strong>{{ workflow?.status === 'RISK_CHECKING' ? '风控检查中' : workflow?.currentTask ? currentTaskLabel : '已完成' }}</strong></div><div><span>开始时间</span><strong>{{ formatTime(workflow?.createdAt) }}</strong></div></div></aside></div>
+            <div class="approval-layout"><article class="surface lane-surface"><div class="surface-heading"><div><span class="section-overline">审批流程</span><h2>供应商准入轨道</h2></div><span class="workflow-id">{{ workflow?.status === 'RISK_CHECKING' ? '风控检查中' : workflow?.status === 'SUPPLEMENT_REQUIRED' ? '等待补件' : workflow ? '审批中' : '待开始' }}</span></div><div v-if="!workflow" class="workflow-empty"><div class="empty-icon">⌁</div><h3>审批流程尚未开始</h3><p>提交申请后，审批流程会自动创建。稍等片刻再刷新。</p><button class="secondary-button" type="button" @click="loadState">重新检查</button></div><div v-else-if="workflow.status === 'SUPPLEMENT_REQUIRED'" class="workflow-empty"><div class="empty-icon">!</div><h3>等待申请人补件</h3><p>审批节点已记录退回原因，申请人提交补件后会开启新一轮采购初审。</p><button class="secondary-button" type="button" @click="loadState">刷新状态</button></div><div v-else class="lane"><div v-for="(task, index) in visibleTaskOrder" :key="task" class="lane-step" :class="{ current: availableTasks.includes(task), done: (workflow.completedTasks ?? []).includes(task), last: index === visibleTaskOrder.length - 1 }"><div class="lane-rail"><span class="lane-node">{{ (workflow.completedTasks ?? []).includes(task) ? '✓' : String(index + 1).padStart(2, '0') }}</span></div><div class="lane-copy"><div class="lane-topline"><strong>{{ taskLabels[task] }}</strong><span>{{ roleLabels[taskRoles[task]] ?? taskRoles[task] }}</span></div><p>{{ (workflow.completedTasks ?? []).includes(task) ? '节点已完成' : availableTasks.includes(task) ? '等待当前角色处理' : '等待前置节点完成' }}</p></div><span v-if="availableTasks.includes(task)" class="current-tag">当前待办</span></div></div></article><aside class="surface action-surface"><span class="section-overline">下一步操作</span><h2>{{ actionTaskLabel }}</h2><p v-if="actionTask">当前身份为 <strong>{{ sessionRoleLabel }}</strong>。<br />此节点需要 <strong>{{ requiredRoleLabel }}</strong> 处理。</p><p v-else-if="workflow?.status === 'SUPPLEMENT_REQUIRED'">申请人补件后，流程会自动重新进入采购初审。</p><p v-else-if="workflow?.status === 'RISK_CHECKING'">系统正在完成供应商风险检查，通过后会自动进入采购初审。</p><p v-else-if="workflow?.status === 'REJECTED'">该申请未通过风险检查，流程已停止。</p><p v-else>流程完成后，供应商申请会进入最终启用状态。</p><div v-if="actionTask" class="action-decision" :class="{ allowed: canComplete }"><span class="decision-icon">{{ canComplete ? '✓' : '!' }}</span><div><strong>{{ canComplete ? '你可以处理此节点' : '等待对应角色' }}</strong><small>{{ canComplete ? '确认信息后提交审批结果' : `请使用${requiredRoleLabel}账号登录` }}</small></div></div><textarea v-if="actionTask && canComplete && actionTask !== 'OPERATIONS_ACTIVATION' && actionTask !== 'OPERATIONS_ESCALATION'" v-model="supplementForm.comment" maxlength="2000" placeholder="如需退回补件，请填写原因"></textarea><div v-if="actionTask && canComplete" class="action-buttons"><button class="primary-button full-width" type="button" :disabled="isBusy" @click="completeCurrentTask"><span>通过{{ actionTaskLabel }}</span><span class="button-arrow">→</span></button><button v-if="actionTask !== 'OPERATIONS_ACTIVATION' && actionTask !== 'OPERATIONS_ESCALATION'" class="secondary-button full-width" type="button" :disabled="isBusy || !supplementForm.comment.trim()" @click="returnForSupplement">退回补件</button></div><div v-if="workflow?.status === 'COMPLETED'" class="completed-stamp"><span>✓</span><strong>供应商已启用</strong><small>审批链已完成</small></div><div class="action-meta"><div><span>审批状态</span><strong>{{ displayStatus(workflow?.status) }}</strong></div><div><span>当前节点</span><strong>{{ workflow?.status === 'RISK_CHECKING' ? '风控检查中' : workflow?.currentTask ? currentTaskLabel : workflow?.status === 'SUPPLEMENT_REQUIRED' ? '等待申请人补件' : '已完成' }}</strong></div><div><span>开始时间</span><strong>{{ formatTime(workflow?.createdAt) }}</strong></div></div></aside></div>
           </template>
         </div>
       </div>

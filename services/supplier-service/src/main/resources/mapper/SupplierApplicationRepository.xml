@@ -10,19 +10,21 @@
     <result property="supplierName" column="supplier_name" />
     <result property="status" column="status" />
     <result property="stateVersion" column="state_version" />
+    <result property="supplementCount" column="supplement_count" />
     <result property="createdAt" column="created_at" />
     <result property="updatedAt" column="updated_at" />
   </resultMap>
 
   <insert id="insert" parameterType="com.flowmesh.supplier.domain.SupplierApplication">
     INSERT INTO supplier_applications
-      (id, tenant_id, applicant_user_id, supplier_name, status, state_version, created_at, updated_at)
+      (id, tenant_id, applicant_user_id, supplier_name, status, state_version, supplement_count, created_at, updated_at)
     VALUES (#{id, jdbcType=OTHER}, #{tenantId}, #{applicantUserId, jdbcType=OTHER}, #{supplierName}, #{status},
-            #{stateVersion}, #{createdAt}, #{updatedAt})
+            #{stateVersion}, #{supplementCount}, #{createdAt}, #{updatedAt})
   </insert>
 
   <select id="findById" resultMap="applicationResult">
-    SELECT id, tenant_id, applicant_user_id, supplier_name, status, state_version, created_at, updated_at
+    SELECT id, tenant_id, applicant_user_id, supplier_name, status, state_version, supplement_count,
+           created_at, updated_at
     FROM supplier_applications
     WHERE id = #{id, jdbcType=OTHER}
   </select>

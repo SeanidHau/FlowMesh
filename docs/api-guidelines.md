@@ -28,7 +28,7 @@ workflow-service 提供以下最小审批接口：
 | `GET` | `/api/v1/workflow-instances/{applicationId}` | 查询当前租户可见的流程实例 |
 | `POST` | `/api/v1/workflow-instances/{applicationId}/tasks` | 完成当前角色任务并推进流程 |
 
-任务请求体使用待办任务键，例如 `{"taskKey":"PURCHASER_REVIEW"}`。服务端从 JWT
+任务请求体使用待办任务键，例如 `{"taskKey":"PURCHASER_REVIEW","decision":"APPROVE"}`。服务端从 JWT
 读取租户和角色；任务键不在响应的 `availableTasks` 中返回 `409`，角色不足返回 `403`。
 采购初审完成后，`LEGAL_REVIEW` 和 `FINANCE_REVIEW` 可以同时出现在 `availableTasks`；
 两个会签任务都完成后才生成 `OPERATIONS_ACTIVATION`。
@@ -46,6 +46,27 @@ workflow-service 提供以下最小审批接口：
 
 `currentTask` 是面向旧客户端和摘要展示的流程指针，不代表唯一可操作任务；客户端应使用
 `availableTasks` 决定当前角色可执行的任务，并使用 `completedTasks` 渲染历史进度。
+
+审批节点支持以下决定：
+
+| `decision` | 说明 |
+| --- | --- |
+| `APPROVE` | 完成当前审批节点；为空时兼容旧客户端，按通过处理。 |
+| `RETURN_FOR_SUPPLEMENT` | 退回申请人补件；法务/财务节点必须填写 `comment`，运营处置节点不可使用。 |
+
+申请人补件接口：
+
+```http
+POST /api/v1/supplier-applications/{applicationId}/supplements
+Authorization: Bearer <access-token>
+Idempotency-Key: supplement-round-1
+Content-Type: application/json
+
+{"comment":"已补充近三个月的合规证明"}
+```
+
+补件请求必须由原申请人发起，服务端最多允许两轮补件；成功后返回 `SUBMITTED`，并通过
+`SupplementSubmitted` 事件通知 workflow 开启下一轮采购初审。
 
 ## 站内通知
 

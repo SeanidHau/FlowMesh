@@ -8,6 +8,7 @@ set -e
 : "${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be provided}"
 : "${SUPPLIER_DB_PASSWORD:?SUPPLIER_DB_PASSWORD must be provided}"
 : "${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be provided}"
+: "${WORKFLOW_SLA_DB_PASSWORD:?WORKFLOW_SLA_DB_PASSWORD must be provided}"
 : "${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be provided}"
 : "${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be provided}"
 : "${RETENTION_DB_PASSWORD:?RETENTION_DB_PASSWORD must be provided}"
@@ -50,6 +51,15 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_workflow') THEN
       CREATE ROLE flowmesh_workflow LOGIN PASSWORD '${WORKFLOW_DB_PASSWORD}' NOSUPERUSER;
+    END IF;
+  END \$\$;
+
+  -- Workflow SLA 维护账号只访问任务、流程实例和 Outbox，并显式绕过 RLS 执行跨租户扫描。
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_workflow_sla') THEN
+      CREATE ROLE flowmesh_workflow_sla LOGIN PASSWORD '${WORKFLOW_SLA_DB_PASSWORD}'
+        NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
     END IF;
   END \$\$;
 

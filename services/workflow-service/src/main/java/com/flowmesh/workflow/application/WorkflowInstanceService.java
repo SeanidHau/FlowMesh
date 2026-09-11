@@ -6,6 +6,7 @@ import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowInstanceStatus;
 import com.flowmesh.workflow.domain.WorkflowTask;
+import com.flowmesh.workflow.domain.WorkflowTaskDecision;
 import com.flowmesh.workflow.domain.WorkflowTaskRecord;
 import com.flowmesh.workflow.domain.WorkflowOutboxEvent;
 import com.flowmesh.workflow.api.dto.WorkflowReconciliationSnapshot;
@@ -139,6 +140,29 @@ public class WorkflowInstanceService {
         String taskKey,
         String traceId
     ) {
+        return completeTask(principal, applicationId, taskKey, WorkflowTaskDecision.APPROVE.name(), null, traceId);
+    }
+
+    /**
+     * 校验角色并完成或退回当前审批节点。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @param taskKey 客户端提交的任务键
+     * @param decision 审批决定
+     * @param comment 审批意见
+     * @param traceId 链路追踪标识
+     * @return 推进后的流程实例
+     */
+    @Transactional
+    public WorkflowInstance completeTask(
+        AuthPrincipal principal,
+        UUID applicationId,
+        String taskKey,
+        String decision,
+        String comment,
+        String traceId
+    ) {
         String effectiveTraceId = traceId == null || traceId.isBlank() ? UUID.randomUUID().toString() : traceId;
         tenantRlsInitializer.initialize(principal.tenantId());
         WorkflowInstance instance = repository.findByApplicationId(applicationId)
@@ -151,6 +175,14 @@ public class WorkflowInstanceService {
             throw new WorkflowTaskConflictException();
         }
 
+        WorkflowTaskDecision taskDecision;
+        try {
+            taskDecision = decision == null || decision.isBlank()
+                ? WorkflowTaskDecision.APPROVE : WorkflowTaskDecision.valueOf(decision);
+        } catch (IllegalArgumentException exception) {
+            throw new WorkflowTaskConflictException();
+        }
+
         if (instance.getStatus() != WorkflowInstanceStatus.IN_PROGRESS
             || (instance.getCurrentTask() != task && !task.isParallelReview())) {
             throw new WorkflowTaskConflictException();
@@ -158,11 +190,54 @@ public class WorkflowInstanceService {
         if (!principal.roles().contains(task.getRequiredRole())) {
             throw new WorkflowTaskForbiddenException();
         }
+        if (taskDecision == WorkflowTaskDecision.RETURN_FOR_SUPPLEMENT
+            && (task.isSlaEscalation() || task == WorkflowTask.OPERATIONS_ACTIVATION)) {
+            throw new WorkflowTaskConflictException();
+        }
+        if (taskDecision == WorkflowTaskDecision.RETURN_FOR_SUPPLEMENT
+            && (comment == null || comment.isBlank())) {
+            throw new WorkflowTaskConflictException();
+        }
+        if (taskDecision == WorkflowTaskDecision.RETURN_FOR_SUPPLEMENT
+            && !instance.canRequestSupplement()) {
+            throw new WorkflowTaskConflictException();
+        }
 
         WorkflowTaskRecord taskRecord = taskRepository
-            .findPendingByInstanceIdAndTaskForUpdate(instance.getId(), task)
+            .findPendingByInstanceIdAndTaskForUpdate(instance.getId(), instance.getReviewRound(), task)
             .orElseThrow(WorkflowTaskConflictException::new);
-        if (taskRepository.markCompleted(taskRecord.getId(), principal.userId(), Instant.now()) != 1) {
+        Instant completedAt = Instant.now();
+        if (taskDecision == WorkflowTaskDecision.RETURN_FOR_SUPPLEMENT) {
+            if (taskRepository.markCompleted(
+                taskRecord.getId(),
+                com.flowmesh.workflow.domain.WorkflowTaskStatus.RETURNED,
+                taskDecision.name(),
+                comment,
+                principal.userId(),
+                completedAt
+            ) != 1) {
+                throw new WorkflowTaskConflictException();
+            }
+            taskRepository.cancelPendingByInstanceAndRound(instance.getId(), instance.getReviewRound());
+            instance.requestSupplement(task);
+            if (repository.updateState(instance) != 1) {
+                throw new OptimisticLockingFailureException("流程状态已被其他事务更新");
+            }
+            instance.incrementVersion();
+            saveSupplementRequestedEvent(
+                principal.tenantId(), applicationId, task, comment, instance.getReviewRound(), effectiveTraceId
+            );
+            return instance;
+        }
+
+        if (taskRepository.markCompleted(
+            taskRecord.getId(),
+            com.flowmesh.workflow.domain.WorkflowTaskStatus.COMPLETED,
+            taskDecision.name(),
+            comment,
+            principal.userId(),
+            completedAt
+        ) != 1) {
             throw new WorkflowTaskConflictException();
         }
 
@@ -171,7 +246,7 @@ public class WorkflowInstanceService {
             WorkflowTask otherTask = task == WorkflowTask.LEGAL_REVIEW
                 ? WorkflowTask.FINANCE_REVIEW : WorkflowTask.LEGAL_REVIEW;
             parallelReviewTaskPending = taskRepository
-                .existsPendingByInstanceIdAndTask(instance.getId(), otherTask);
+                .existsPendingByInstanceIdAndTask(instance.getId(), instance.getReviewRound(), otherTask);
         }
         instance.advanceAfterTask(task, parallelReviewTaskPending);
         if (repository.updateState(instance) != 1) {
@@ -181,14 +256,16 @@ public class WorkflowInstanceService {
 
         if (task == WorkflowTask.PURCHASER_REVIEW) {
             taskRepository.insert(new WorkflowTaskRecord(
-                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.LEGAL_REVIEW
+                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.LEGAL_REVIEW, instance.getReviewRound()
             ));
             taskRepository.insert(new WorkflowTaskRecord(
-                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.FINANCE_REVIEW
+                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.FINANCE_REVIEW, instance.getReviewRound()
             ));
-        } else if (task.isParallelReview() && !parallelReviewTaskPending) {
+        } else if ((task.isParallelReview() && !parallelReviewTaskPending)
+            || task == WorkflowTask.OPERATIONS_ESCALATION) {
             taskRepository.insert(new WorkflowTaskRecord(
-                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.OPERATIONS_ACTIVATION
+                instance.getId(), principal.tenantId(), applicationId,
+                WorkflowTask.OPERATIONS_ACTIVATION, instance.getReviewRound()
             ));
         }
         WorkflowInstance saved = instance;
@@ -207,11 +284,39 @@ public class WorkflowInstanceService {
                 applicationId,
                 Instant.now(),
                 effectiveTraceId,
-                new TaskCompletedPayload(task.name())
+                new TaskCompletedPayload(task.name(), taskDecision.name(), comment)
             ))
         ));
         taskCompletedCounter.increment();
         return saved;
+    }
+
+    private void saveSupplementRequestedEvent(
+        String tenantId,
+        UUID applicationId,
+        WorkflowTask task,
+        String comment,
+        int roundNo,
+        String traceId
+    ) {
+        UUID eventId = UUID.randomUUID();
+        outboxRepository.save(new WorkflowOutboxEvent(
+            eventId,
+            tenantId,
+            applicationId,
+            "workflow-events",
+            "SupplementRequested",
+            writeJson(new SupplementRequestedMessage(
+                eventId,
+                "SupplementRequested",
+                1,
+                tenantId,
+                applicationId,
+                Instant.now(),
+                traceId,
+                new SupplementRequestedPayload(task.name(), comment, roundNo)
+            ))
+        ));
     }
 
     private String writeJson(Object value) {
@@ -250,7 +355,43 @@ public class WorkflowInstanceService {
      * 审批完成事件载荷。
      *
      * @param taskKey 已完成的任务键
+     * @param decision 审批决定
+     * @param comment 审批意见
      */
-    private record TaskCompletedPayload(String taskKey) {
+    private record TaskCompletedPayload(String taskKey, String decision, String comment) {
+    }
+
+    /**
+     * 补件请求事件信封。
+     *
+     * @param eventId 事件标识
+     * @param eventType 事件类型
+     * @param schemaVersion 结构版本
+     * @param tenantId 租户标识
+     * @param aggregateId 申请标识
+     * @param occurredAt 发生时间
+     * @param traceId 链路标识
+     * @param payload 补件事件载荷
+     */
+    private record SupplementRequestedMessage(
+        UUID eventId,
+        String eventType,
+        int schemaVersion,
+        String tenantId,
+        UUID aggregateId,
+        Instant occurredAt,
+        String traceId,
+        SupplementRequestedPayload payload
+    ) {
+    }
+
+    /**
+     * 补件请求事件载荷。
+     *
+     * @param taskKey 退回任务
+     * @param comment 补件原因
+     * @param roundNo 审批轮次
+     */
+    private record SupplementRequestedPayload(String taskKey, String comment, int roundNo) {
     }
 }

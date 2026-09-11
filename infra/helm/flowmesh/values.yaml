@@ -15,6 +15,23 @@ postgresql:
   database: flowmesh
   sslMode: disable
 
+workflowSla:
+  # 生产环境启用独立 CronJob；本地默认关闭，避免不需要时消耗资源。
+  enabled: false
+  schedule: "*/5 * * * *"
+  timeZone: "Etc/UTC"
+  image: postgres
+  tag: "16"
+  dbUser: flowmesh_workflow_sla
+  dbPassword: ""
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 rocketmq:
   namesrvAddr: rocketmq-namesrv:9876
   # 本地 Compose 不启用认证和 TLS；生产覆盖值必须开启 TLS 并使用外部 Secret 凭据。

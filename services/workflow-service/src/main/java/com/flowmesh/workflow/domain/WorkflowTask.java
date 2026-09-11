@@ -9,7 +9,8 @@ public enum WorkflowTask {
     PURCHASER_REVIEW("PURCHASER"),
     LEGAL_REVIEW("LEGAL"),
     FINANCE_REVIEW("FINANCE"),
-    OPERATIONS_ACTIVATION("OPERATIONS");
+    OPERATIONS_ACTIVATION("OPERATIONS"),
+    OPERATIONS_ESCALATION("OPERATIONS");
 
     private final String requiredRole;
 
@@ -36,6 +37,15 @@ public enum WorkflowTask {
     }
 
     /**
+     * 判断任务是否属于 SLA 超时后的运营处置节点。
+     *
+     * @return 运营升级任务时为 {@code true}
+     */
+    public boolean isSlaEscalation() {
+        return this == OPERATIONS_ESCALATION;
+    }
+
+    /**
      * 获取完成当前节点后的下一个节点。
      *
      * @return 下一个节点；当前节点为末节点时返回 {@code null}
@@ -45,7 +55,7 @@ public enum WorkflowTask {
             case PURCHASER_REVIEW -> LEGAL_REVIEW;
             case LEGAL_REVIEW -> FINANCE_REVIEW;
             case FINANCE_REVIEW -> OPERATIONS_ACTIVATION;
-            case OPERATIONS_ACTIVATION -> null;
+            case OPERATIONS_ACTIVATION, OPERATIONS_ESCALATION -> null;
         };
     }
 }

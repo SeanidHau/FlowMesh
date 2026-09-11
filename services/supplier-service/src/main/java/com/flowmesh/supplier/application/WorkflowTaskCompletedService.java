@@ -77,7 +77,8 @@ public class WorkflowTaskCompletedService {
         JsonNode payload = EventEnvelopeValidator.validate(event, "WorkflowTaskCompleted");
         String taskKey = EventEnvelopeValidator.requiredText(payload, "taskKey");
         if (!Set.of(
-            "PURCHASER_REVIEW", "LEGAL_REVIEW", "FINANCE_REVIEW", "OPERATIONS_ACTIVATION"
+            "PURCHASER_REVIEW", "LEGAL_REVIEW", "FINANCE_REVIEW",
+            "OPERATIONS_ESCALATION", "OPERATIONS_ACTIVATION"
         ).contains(taskKey)) {
             throw new IllegalArgumentException("事件 taskKey 无效");
         }

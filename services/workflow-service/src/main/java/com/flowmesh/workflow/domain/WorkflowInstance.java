@@ -16,6 +16,8 @@ public class WorkflowInstance {
 
     private UUID applicationId;
 
+    private UUID applicantUserId;
+
     private UUID sourceEventId;
 
     private String tenantId;
@@ -27,6 +29,8 @@ public class WorkflowInstance {
     private WorkflowTask currentTask;
 
     private long version;
+
+    private int reviewRound;
 
     private Instant createdAt;
 
@@ -44,14 +48,33 @@ public class WorkflowInstance {
      * @param tenantId 租户标识
      */
     public WorkflowInstance(UUID applicationId, UUID sourceEventId, String tenantId) {
+        this(applicationId, sourceEventId, tenantId, null);
+    }
+
+    /**
+     * 创建带申请人的供应商准入流程投影。
+     *
+     * @param applicationId 供应商申请标识
+     * @param sourceEventId 触发流程的领域事件标识
+     * @param tenantId 租户标识
+     * @param applicantUserId 申请人用户标识
+     */
+    public WorkflowInstance(
+        UUID applicationId,
+        UUID sourceEventId,
+        String tenantId,
+        UUID applicantUserId
+    ) {
         this.id = UUID.randomUUID();
         this.applicationId = Objects.requireNonNull(applicationId);
         this.sourceEventId = Objects.requireNonNull(sourceEventId);
         this.tenantId = Objects.requireNonNull(tenantId);
+        this.applicantUserId = applicantUserId;
         this.processDefinitionKey = "supplier-onboarding";
         this.status = WorkflowInstanceStatus.RISK_CHECKING;
         this.currentTask = null;
         this.version = 0;
+        this.reviewRound = 1;
         this.createdAt = Instant.now();
     }
 
@@ -71,6 +94,15 @@ public class WorkflowInstance {
      */
     public UUID getApplicationId() {
         return applicationId;
+    }
+
+    /**
+     * 获取申请人用户标识。
+     *
+     * @return 申请人用户标识；历史迁移数据可能为空
+     */
+    public UUID getApplicantUserId() {
+        return applicantUserId;
     }
 
     /**
@@ -128,6 +160,15 @@ public class WorkflowInstance {
     }
 
     /**
+     * 获取当前审批轮次。
+     *
+     * @return 从 1 开始的审批轮次
+     */
+    public int getReviewRound() {
+        return reviewRound;
+    }
+
+    /**
      * 在 MyBatis 条件更新成功后同步内存中的版本号。
      */
     public void incrementVersion() {
@@ -162,7 +203,48 @@ public class WorkflowInstance {
             currentTask = null;
             return;
         }
+        if (completedTask == WorkflowTask.OPERATIONS_ESCALATION) {
+            currentTask = WorkflowTask.OPERATIONS_ACTIVATION;
+            return;
+        }
         throw new IllegalStateException("流程任务不受支持：" + completedTask);
+    }
+
+    /**
+     * 将当前流程退回补件，并清空流程摘要中的可操作节点。
+     *
+     * @param returnedTask 被退回的审批任务
+     */
+    public void requestSupplement(WorkflowTask returnedTask) {
+        if (status != WorkflowInstanceStatus.IN_PROGRESS || returnedTask == null || !canRequestSupplement()) {
+            throw new IllegalStateException("流程当前不允许退回补件");
+        }
+        status = WorkflowInstanceStatus.SUPPLEMENT_REQUIRED;
+        currentTask = null;
+    }
+
+    /**
+     * 判断当前轮次是否仍允许发起补件。
+     *
+     * <p>第 1 轮审批退回后产生第 1 次补件，第 2 轮审批退回后产生第 2 次补件；
+     * 第 3 轮不再允许继续退回，避免供应商状态和流程状态出现分歧。</p>
+     *
+     * @return 仍可补件时为 {@code true}
+     */
+    public boolean canRequestSupplement() {
+        return reviewRound < 3;
+    }
+
+    /**
+     * 接收申请人的补件提交，开启下一轮采购初审。
+     */
+    public void startSupplementReview() {
+        if (status != WorkflowInstanceStatus.SUPPLEMENT_REQUIRED || currentTask != null) {
+            throw new IllegalStateException("流程当前不允许重新开始补件审核");
+        }
+        reviewRound++;
+        status = WorkflowInstanceStatus.IN_PROGRESS;
+        currentTask = WorkflowTask.PURCHASER_REVIEW;
     }
 
     /**

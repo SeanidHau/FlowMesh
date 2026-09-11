@@ -72,7 +72,12 @@ public class WorkflowInstanceController {
         HttpServletRequest httpRequest
     ) {
         var instance = service.completeTask(
-            principal, applicationId, request.taskKey(), TraceIdFilter.currentTraceId(httpRequest)
+            principal,
+            applicationId,
+            request.taskKey(),
+            request.decision(),
+            request.comment(),
+            TraceIdFilter.currentTraceId(httpRequest)
         );
         return WorkflowInstanceResponse.from(
             instance,

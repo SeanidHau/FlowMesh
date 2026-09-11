@@ -6,8 +6,10 @@ import com.flowmesh.supplier.api.dto.ApplicationResponse;
 import com.flowmesh.supplier.api.dto.CreateApplicationRequest;
 import com.flowmesh.supplier.api.dto.DocumentDownloadResponse;
 import com.flowmesh.supplier.api.dto.SupplierDocumentResponse;
+import com.flowmesh.supplier.api.dto.SupplementSubmissionRequest;
 import com.flowmesh.supplier.application.SupplierApplicationService;
 import com.flowmesh.supplier.application.SupplierDocumentService;
+import com.flowmesh.supplier.application.SupplierSupplementService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -37,6 +39,7 @@ public class SupplierApplicationController {
 
     private final SupplierApplicationService applicationService;
     private final SupplierDocumentService documentService;
+    private final SupplierSupplementService supplementService;
 
     /**
      * 创建申请控制器。
@@ -45,10 +48,12 @@ public class SupplierApplicationController {
      */
     public SupplierApplicationController(
         SupplierApplicationService applicationService,
-        SupplierDocumentService documentService
+        SupplierDocumentService documentService,
+        SupplierSupplementService supplementService
     ) {
         this.applicationService = applicationService;
         this.documentService = documentService;
+        this.supplementService = supplementService;
     }
 
     /**
@@ -97,6 +102,42 @@ public class SupplierApplicationController {
         @PathVariable UUID applicationId
     ) {
         return applicationService.find(principal, applicationId);
+    }
+
+    /**
+     * 提交申请人补件，重新开启下一轮采购初审。
+     *
+     * @param principal 已认证主体
+     * @param applicationId 申请标识
+     * @param idempotencyKey 幂等键
+     * @param request 补件说明
+     * @param httpRequest HTTP 请求
+     * @return 状态响应或幂等回放响应
+     */
+    @PostMapping("/{applicationId}/supplements")
+    public ResponseEntity<String> submitSupplement(
+        @AuthenticationPrincipal AuthPrincipal principal,
+        @PathVariable UUID applicationId,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+        @Valid @RequestBody SupplementSubmissionRequest request,
+        HttpServletRequest httpRequest
+    ) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new MissingIdempotencyKeyException();
+        }
+        if (idempotencyKey.length() > 128) {
+            throw new InvalidIdempotencyKeyException();
+        }
+        var result = supplementService.submit(
+            principal,
+            applicationId,
+            idempotencyKey,
+            request,
+            TraceIdFilter.currentTraceId(httpRequest)
+        );
+        return ResponseEntity.status(result.status())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(result.body());
     }
 
     /**

@@ -23,6 +23,8 @@ public class SupplierApplication {
 
     private long stateVersion;
 
+    private int supplementCount;
+
     private Instant createdAt;
 
     private Instant updatedAt;
@@ -48,6 +50,7 @@ public class SupplierApplication {
         this.supplierName = Objects.requireNonNull(supplierName);
         this.status = ApplicationStatus.SUBMITTED;
         this.stateVersion = 0;
+        this.supplementCount = 0;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -73,6 +76,15 @@ public class SupplierApplication {
     }
 
     /**
+     * 获取已使用的补件次数。
+     *
+     * @return 补件次数
+     */
+    public int getSupplementCount() {
+        return supplementCount;
+    }
+
+    /**
      * 应用 workflow 审批结果，推进供应商申请状态。
      *
      * @param taskKey 已完成的 workflow 任务键
@@ -85,9 +97,33 @@ public class SupplierApplication {
         if (status == ApplicationStatus.SUBMITTED && !"PURCHASER_REVIEW".equals(taskKey)) {
             throw new IllegalStateException("申请尚未完成采购初审");
         }
+        if (status == ApplicationStatus.SUPPLEMENT_REQUIRED) {
+            throw new IllegalStateException("申请仍等待补件");
+        }
         status = "OPERATIONS_ACTIVATION".equals(taskKey)
             ? ApplicationStatus.ENABLED
             : ApplicationStatus.IN_REVIEW;
+    }
+
+    /**
+     * 将申请标记为等待补件。
+     */
+    public void requestSupplement() {
+        if (status != ApplicationStatus.IN_REVIEW || supplementCount >= 2) {
+            throw new IllegalStateException("申请当前不允许补件或补件次数已达上限");
+        }
+        status = ApplicationStatus.SUPPLEMENT_REQUIRED;
+    }
+
+    /**
+     * 提交一轮补件并重新进入采购初审等待状态。
+     */
+    public void submitSupplement() {
+        if (status != ApplicationStatus.SUPPLEMENT_REQUIRED || supplementCount >= 2) {
+            throw new IllegalStateException("申请当前不允许提交补件");
+        }
+        supplementCount++;
+        status = ApplicationStatus.SUBMITTED;
     }
 
     public long getStateVersion() {

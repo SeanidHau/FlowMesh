@@ -33,6 +33,8 @@
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
 - Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟和确认失败告警；生产环境仍需配置 Alertmanager 路由和值班通知。
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
+- 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
+- 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
 
 验证命令：
 
@@ -69,6 +71,7 @@ helm lint infra/helm/flowmesh \
 
 - 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard 和本地 Alertmanager 路由基线；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
+- SLA CronJob 已提供独立维护账号、最小表权限、`SKIP LOCKED` 和 Outbox 事件；目标平台仍需轮换 `WORKFLOW_SLA_DB_PASSWORD`、验证数据库连接 TLS，并完成审批超时告警和值班演练。
 - PostgreSQL 备份已经提供 Helm CronJob、S3 上传、服务端加密、失败重试和 CI 恢复回归；目标平台仍需配置对象存储跨故障域复制、生命周期、定期恢复验证和实际 RTO/RPO 记录。
 - PostgreSQL 消息与幂等记录的保留策略已提供 Helm CronJob、角色权限预检和 CI/E2E 验证；目标平台仍需预置 `flowmesh_retention` 角色、轮换 Secret，并按实际合规要求调整 90/30 天窗口。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。

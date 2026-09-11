@@ -9,30 +9,42 @@
     <result property="tenantId" column="tenant_id" />
     <result property="applicationId" column="application_id" />
     <result property="taskKey" column="task_key" />
+    <result property="roundNo" column="round_no" />
     <result property="status" column="status" />
+    <result property="decision" column="decision" />
+    <result property="comment" column="comment" />
     <result property="completedBy" column="completed_by" />
     <result property="completedAt" column="completed_at" />
     <result property="createdAt" column="created_at" />
+    <result property="reminderAt" column="reminder_at" />
+    <result property="remindedAt" column="reminded_at" />
+    <result property="dueAt" column="due_at" />
+    <result property="escalatedAt" column="escalated_at" />
   </resultMap>
 
   <select id="findPendingByInstanceId" resultMap="taskResult">
-    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
-           completed_by, completed_at, created_at
-    FROM workflow_tasks
-    WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
-      AND status = 'PENDING'
-    ORDER BY CASE task_key
+    SELECT t.id, t.workflow_instance_id, t.tenant_id, t.application_id, t.task_key,
+           t.round_no, t.status, t.decision, t.comment, t.completed_by, t.completed_at,
+           t.created_at, t.reminder_at, t.reminded_at, t.due_at, t.escalated_at
+    FROM workflow_tasks t
+    JOIN workflow_instances i ON i.id = t.workflow_instance_id
+    WHERE t.workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND t.round_no = i.review_round
+      AND t.status = 'PENDING'
+    ORDER BY CASE t.task_key
       WHEN 'PURCHASER_REVIEW' THEN 1
       WHEN 'LEGAL_REVIEW' THEN 2
       WHEN 'FINANCE_REVIEW' THEN 3
-      WHEN 'OPERATIONS_ACTIVATION' THEN 4
+      WHEN 'OPERATIONS_ESCALATION' THEN 4
+      WHEN 'OPERATIONS_ACTIVATION' THEN 5
       ELSE 99
     END
   </select>
 
   <select id="findCompletedByInstanceId" resultMap="taskResult">
-    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
-           completed_by, completed_at, created_at
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status,
+           decision, comment, completed_by, completed_at, created_at, reminder_at,
+           reminded_at, due_at, escalated_at
     FROM workflow_tasks
     WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
       AND status = 'COMPLETED'
@@ -40,10 +52,12 @@
   </select>
 
   <select id="findPendingByInstanceIdAndTaskForUpdate" resultMap="taskResult">
-    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
-           completed_by, completed_at, created_at
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status,
+           decision, comment, completed_by, completed_at, created_at, reminder_at,
+           reminded_at, due_at, escalated_at
     FROM workflow_tasks
     WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND round_no = #{roundNo}
       AND task_key = #{taskKey}
       AND status = 'PENDING'
     FOR UPDATE
@@ -54,6 +68,7 @@
       SELECT 1
       FROM workflow_tasks
       WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+        AND round_no = #{roundNo}
         AND task_key = #{taskKey}
         AND status = 'PENDING'
     )
@@ -61,16 +76,61 @@
 
   <insert id="insert" parameterType="com.flowmesh.workflow.domain.WorkflowTaskRecord">
     INSERT INTO workflow_tasks
-      (id, workflow_instance_id, tenant_id, application_id, task_key, status,
-       completed_by, completed_at, created_at)
+      (id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status,
+       decision, comment, completed_by, completed_at, created_at, reminder_at, reminded_at,
+       due_at, escalated_at)
     VALUES (#{id, jdbcType=OTHER}, #{workflowInstanceId, jdbcType=OTHER}, #{tenantId},
-            #{applicationId, jdbcType=OTHER}, #{taskKey}, #{status},
-            #{completedBy, jdbcType=OTHER}, #{completedAt}, #{createdAt})
+            #{applicationId, jdbcType=OTHER}, #{taskKey}, #{roundNo}, #{status},
+            #{decision}, #{comment}, #{completedBy, jdbcType=OTHER}, #{completedAt},
+            #{createdAt}, #{reminderAt}, #{remindedAt}, #{dueAt}, #{escalatedAt})
   </insert>
 
   <update id="markCompleted">
     UPDATE workflow_tasks
-    SET status = 'COMPLETED', completed_by = #{completedBy, jdbcType=OTHER}, completed_at = #{completedAt}
+    SET status = #{status}, decision = #{decision}, comment = #{comment},
+        completed_by = #{completedBy, jdbcType=OTHER}, completed_at = #{completedAt}
     WHERE id = #{id, jdbcType=OTHER} AND status = 'PENDING'
+  </update>
+
+  <select id="findPendingForReminder" resultMap="taskResult">
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status,
+           decision, comment, completed_by, completed_at, created_at, reminder_at,
+           reminded_at, due_at, escalated_at
+    FROM workflow_tasks
+    WHERE status = 'PENDING' AND reminder_at &lt;= #{now} AND reminded_at IS NULL
+    ORDER BY reminder_at
+    LIMIT 100
+    FOR UPDATE SKIP LOCKED
+  </select>
+
+  <select id="findPendingForEscalation" resultMap="taskResult">
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status,
+           decision, comment, completed_by, completed_at, created_at, reminder_at,
+           reminded_at, due_at, escalated_at
+    FROM workflow_tasks
+    WHERE status = 'PENDING' AND due_at &lt;= #{now} AND escalated_at IS NULL
+      AND task_key IN ('PURCHASER_REVIEW', 'LEGAL_REVIEW', 'FINANCE_REVIEW')
+    ORDER BY due_at
+    LIMIT 100
+    FOR UPDATE SKIP LOCKED
+  </select>
+
+  <update id="markReminderSent">
+    UPDATE workflow_tasks
+    SET reminded_at = #{remindedAt}
+    WHERE id = #{id, jdbcType=OTHER} AND status = 'PENDING' AND reminded_at IS NULL
+  </update>
+
+  <update id="markEscalated">
+    UPDATE workflow_tasks
+    SET status = 'ESCALATED', escalated_at = #{escalatedAt}
+    WHERE id = #{id, jdbcType=OTHER} AND status = 'PENDING' AND escalated_at IS NULL
+  </update>
+
+  <update id="cancelPendingByInstanceAndRound">
+    UPDATE workflow_tasks
+    SET status = 'CANCELLED'
+    WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND round_no = #{roundNo} AND status = 'PENDING'
   </update>
 </mapper>

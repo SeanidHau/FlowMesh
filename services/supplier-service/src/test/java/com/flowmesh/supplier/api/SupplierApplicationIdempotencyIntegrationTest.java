@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.JwtService;
 import com.flowmesh.supplier.repository.OutboxEventRepository;
+import com.flowmesh.supplier.application.SupplierSupplementService;
+import com.flowmesh.supplier.application.WorkflowTaskCompletedService;
 import com.flowmesh.supplier.support.PostgresIntegrationTest;
 import java.util.Set;
 import java.util.UUID;
@@ -40,9 +42,21 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
     @Autowired
     private OutboxEventRepository outboxEventRepository;
 
+    @Autowired
+    private SupplierSupplementService supplementService;
+
+    @Autowired
+    private WorkflowTaskCompletedService workflowTaskCompletedService;
+
+    private static final UUID APPLICANT_ID = UUID.fromString("00000000-0000-0000-0000-0000000000aa");
+
     private String applicantToken() {
+        return applicantToken(APPLICANT_ID);
+    }
+
+    private String applicantToken(UUID userId) {
         AuthPrincipal principal = new AuthPrincipal(
-            UUID.randomUUID(), "applicant-a", "tenant-a", Set.of("APPLICANT")
+            userId, "applicant-a", "tenant-a", Set.of("APPLICANT")
         );
         return jwtService.issueAccessToken(principal, java.time.Instant.now());
     }
@@ -145,5 +159,65 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
                 .content("{\"supplierName\":\"测试供应商\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MISSING_IDEMPOTENCY_KEY"));
+    }
+
+    /**
+     * 验证补件请求、申请人提交补件、幂等回放和补件 Outbox 在同一业务闭环内生效。
+     *
+     * @throws Exception 当请求执行失败时抛出
+     */
+    @Test
+    void shouldSubmitSupplementWithReplayProtection() throws Exception {
+        MvcResult created = mockMvc.perform(post("/api/v1/supplier-applications")
+                .header("Authorization", "Bearer " + applicantToken(APPLICANT_ID))
+                .header("Idempotency-Key", "supplement-create-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"supplierName\":\"补件供应商\"}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+        UUID applicationId = UUID.fromString(
+            objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText()
+        );
+
+        workflowTaskCompletedService.apply("""
+            {
+              "eventId":"%s","eventType":"WorkflowTaskCompleted","schemaVersion":1,
+              "aggregateId":"%s","tenantId":"tenant-a","occurredAt":"2026-09-11T00:00:00Z",
+              "traceId":"trace-workflow","payload":{"taskKey":"PURCHASER_REVIEW"}
+            }
+            """.formatted(UUID.randomUUID(), applicationId));
+
+        supplementService.handleSupplementRequested("""
+            {
+              "eventId":"%s","eventType":"SupplementRequested","schemaVersion":1,
+              "aggregateId":"%s","tenantId":"tenant-a","occurredAt":"2026-09-11T00:00:00Z",
+              "traceId":"trace-supplement","payload":{"taskKey":"LEGAL_REVIEW",
+              "comment":"请补充合规证明","roundNo":1}
+            }
+            """.formatted(UUID.randomUUID(), applicationId, applicationId));
+
+        String supplementBody = "{\"comment\":\"已补充合规证明\"}";
+        MvcResult first = mockMvc.perform(post("/api/v1/supplier-applications/{id}/supplements", applicationId)
+                .header("Authorization", "Bearer " + applicantToken(APPLICANT_ID))
+                .header("Idempotency-Key", "supplement-submit-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(supplementBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUBMITTED"))
+            .andExpect(jsonPath("$.supplementCount").value(1))
+            .andReturn();
+
+        mockMvc.perform(post("/api/v1/supplier-applications/{id}/supplements", applicationId)
+                .header("Authorization", "Bearer " + applicantToken(APPLICANT_ID))
+                .header("Idempotency-Key", "supplement-submit-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(supplementBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.supplementCount").value(1))
+            .andExpect(jsonPath("$.id").value(objectMapper.readTree(
+                first.getResponse().getContentAsString()).get("id").asText()));
+
+        assertThat(outboxEventRepository.findByAggregateIdAndTag(applicationId, "SupplementSubmitted"))
+            .isPresent();
     }
 }

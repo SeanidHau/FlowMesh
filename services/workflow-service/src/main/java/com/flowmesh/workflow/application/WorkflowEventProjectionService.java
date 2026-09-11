@@ -65,7 +65,7 @@ public class WorkflowEventProjectionService {
         String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
         JsonNode payload = EventEnvelopeValidator.validate(event, "ApplicationSubmitted");
         UUID payloadApplicationId = EventEnvelopeValidator.requiredUuid(payload, "applicationId");
-        EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
+        UUID applicantUserId = EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
         String supplierName = EventEnvelopeValidator.requiredText(payload, "supplierName");
         if (!applicationId.equals(payloadApplicationId)) {
             throw new IllegalArgumentException("事件 aggregateId 与 payload.applicationId 不一致");
@@ -76,7 +76,7 @@ public class WorkflowEventProjectionService {
             return;
         }
 
-        workflowInstanceRepository.save(new WorkflowInstance(applicationId, eventId, tenantId));
+        workflowInstanceRepository.save(new WorkflowInstance(applicationId, eventId, tenantId, applicantUserId));
         UUID riskEventId = UUID.randomUUID();
         outboxRepository.save(new WorkflowOutboxEvent(
             riskEventId,

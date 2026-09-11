@@ -10,6 +10,7 @@ export interface ApplicationResponse {
   supplierName: string;
   status: string;
   stateVersion: number;
+  supplementCount: number;
 }
 
 export interface SupplierDocumentResponse {
@@ -62,6 +63,7 @@ export const taskLabels: Record<string, string> = {
   LEGAL_REVIEW: '法务会签',
   FINANCE_REVIEW: '财务会签',
   OPERATIONS_ACTIVATION: '运营启用',
+  OPERATIONS_ESCALATION: '运营升级处置',
 };
 
 export const taskRoles: Record<string, string> = {
@@ -69,11 +71,13 @@ export const taskRoles: Record<string, string> = {
   LEGAL_REVIEW: 'LEGAL',
   FINANCE_REVIEW: 'FINANCE',
   OPERATIONS_ACTIVATION: 'OPERATIONS',
+  OPERATIONS_ESCALATION: 'OPERATIONS',
 };
 
 export const taskOrder = [
   'PURCHASER_REVIEW',
   'LEGAL_REVIEW',
   'FINANCE_REVIEW',
+  'OPERATIONS_ESCALATION',
   'OPERATIONS_ACTIVATION',
 ];

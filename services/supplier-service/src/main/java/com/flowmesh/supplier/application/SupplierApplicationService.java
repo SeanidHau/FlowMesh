@@ -141,7 +141,8 @@ public class SupplierApplicationService {
             application.getId(),
             application.getSupplierName(),
             application.getStatus().name(),
-            application.getStateVersion()
+            application.getStateVersion(),
+            application.getSupplementCount()
         );
 
         String responseJson = writeJson(response);
@@ -208,7 +209,8 @@ public class SupplierApplicationService {
             application.getId(),
             application.getSupplierName(),
             application.getStatus().name(),
-            application.getStateVersion()
+            application.getStateVersion(),
+            application.getSupplementCount()
         );
     }
 

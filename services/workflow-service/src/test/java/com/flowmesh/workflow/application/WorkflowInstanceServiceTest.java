@@ -10,6 +10,7 @@ import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowTask;
 import com.flowmesh.workflow.domain.WorkflowTaskRecord;
+import com.flowmesh.workflow.domain.WorkflowTaskStatus;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.repository.WorkflowTaskRepository;
@@ -57,9 +58,11 @@ class WorkflowInstanceServiceTest {
             instance.getId(), "tenant-a", applicationId, WorkflowTask.PURCHASER_REVIEW
         );
         when(taskRepository.findPendingByInstanceIdAndTaskForUpdate(
-            instance.getId(), WorkflowTask.PURCHASER_REVIEW
+            instance.getId(), instance.getReviewRound(), WorkflowTask.PURCHASER_REVIEW
         )).thenReturn(Optional.of(taskRecord));
-        when(taskRepository.markCompleted(any(), any(), any())).thenReturn(1);
+        when(taskRepository.markCompleted(
+            any(), any(WorkflowTaskStatus.class), any(), any(), any(), any()
+        )).thenReturn(1);
 
         WorkflowInstanceService service = new WorkflowInstanceService(
             repository,

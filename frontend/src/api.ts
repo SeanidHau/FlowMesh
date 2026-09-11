@@ -154,13 +154,38 @@ export class FlowMeshApi {
     );
   }
 
-  async completeTask(applicationId: string, taskKey: string): Promise<WorkflowInstanceResponse> {
+  async completeTask(
+    applicationId: string,
+    taskKey: string,
+    decision: 'APPROVE' | 'RETURN_FOR_SUPPLEMENT' = 'APPROVE',
+    comment?: string,
+  ): Promise<WorkflowInstanceResponse> {
     return this.request<WorkflowInstanceResponse>(
       'workflow', `/api/v1/workflow-instances/${applicationId}/tasks`, {
         method: 'POST',
-        body: { taskKey },
+        body: { taskKey, decision, comment },
         authenticated: true,
         headers: { 'X-Trace-Id': crypto.randomUUID() },
+      },
+    );
+  }
+
+  /**
+   * 提交申请人补件，并以幂等键保护重复点击和网络重试。
+   *
+   * @param applicationId 申请标识
+   * @param comment 补件说明
+   */
+  async submitSupplement(applicationId: string, comment: string): Promise<ApplicationResponse> {
+    return this.request<ApplicationResponse>(
+      'supplier', `/api/v1/supplier-applications/${applicationId}/supplements`, {
+        method: 'POST',
+        body: { comment },
+        authenticated: true,
+        headers: {
+          'Idempotency-Key': crypto.randomUUID(),
+          'X-Trace-Id': crypto.randomUUID(),
+        },
       },
     );
   }

@@ -10,6 +10,7 @@ import com.flowmesh.notificationaudit.repository.NotificationRepository;
 import com.flowmesh.notificationaudit.rls.TenantRlsInitializer;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +83,49 @@ public class NotificationAuditService {
     }
 
     /**
+     * 处理审批 SLA 催办或超时升级事件。
+     *
+     * @param message Workflow SLA 事件信封
+     */
+    @Transactional
+    public void handleWorkflowTaskSla(String message) {
+        JsonNode event = readSlaEvent(message);
+        UUID eventId = EventEnvelopeValidator.requiredUuid(event, "eventId");
+        UUID aggregateId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
+        String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
+        Instant occurredAt = Instant.parse(EventEnvelopeValidator.requiredText(event, "occurredAt"));
+        String traceId = EventEnvelopeValidator.requiredText(event, "traceId");
+        String eventType = EventEnvelopeValidator.requiredText(event, "eventType");
+        if (!Set.of("WorkflowTaskSlaReminderRequested", "WorkflowTaskSlaEscalated").contains(eventType)) {
+            throw new IllegalArgumentException("不支持的 Workflow SLA 事件类型");
+        }
+        JsonNode payload = EventEnvelopeValidator.validate(event, eventType);
+        UUID applicantUserId = EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
+        String taskKey = EventEnvelopeValidator.requiredText(payload, "taskKey");
+
+        tenantRlsInitializer.initialize(tenantId);
+        if (auditEventRepository.existsByEventId(eventId)) {
+            return;
+        }
+        boolean escalated = "WorkflowTaskSlaEscalated".equals(eventType);
+        String title = escalated ? "审批任务已升级" : "审批任务即将超时";
+        String content = escalated
+            ? "供应商申请的 " + taskKey + " 已超过 SLA，系统已转运营处置。"
+            : "供应商申请的 " + taskKey + " 即将达到 SLA，请尽快处理。";
+        auditEventRepository.insert(
+            UUID.randomUUID(), eventId, tenantId, aggregateId, eventType, traceId,
+            message, occurredAt
+        );
+        notificationRepository.insert(Notification.unread(
+            eventId, tenantId, applicantUserId,
+            escalated ? "WORKFLOW_TASK_ESCALATED" : "WORKFLOW_TASK_REMINDER",
+            title,
+            content
+        ));
+        auditEventRepository.insertInbox(eventId, tenantId, aggregateId);
+    }
+
+    /**
      * 查询用户的站内通知。
      *
      * @param tenantId 租户标识
@@ -111,13 +155,21 @@ public class NotificationAuditService {
         }
     }
 
-    private JsonNode readEvent(String message) {
+    private JsonNode readSlaEvent(String message) {
         try {
             JsonNode event = objectMapper.readTree(message);
             EventEnvelopeValidator.validate(event, "SupplierActivated");
             return event;
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("供应商启用事件 JSON 无效", exception);
+        }
+    }
+
+    private JsonNode readEvent(String message) {
+        try {
+            return objectMapper.readTree(message);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException("Workflow SLA 事件 JSON 无效", exception);
         }
     }
 }

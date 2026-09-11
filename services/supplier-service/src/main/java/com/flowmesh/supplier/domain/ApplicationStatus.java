@@ -6,5 +6,6 @@ package com.flowmesh.supplier.domain;
 public enum ApplicationStatus {
     SUBMITTED,
     IN_REVIEW,
+    SUPPLEMENT_REQUIRED,
     ENABLED
 }

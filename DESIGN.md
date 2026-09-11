@@ -69,9 +69,9 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 ```
 
 - 申请状态仅由 `supplier-service` 的受控命令转换，并维护 `stateVersion`。
-- 补件最多两次；超过次数进入 `TERMINATED`。
+- 补件最多两次；超过次数拒绝再次提交，申请保持待补件状态并由运营处置。
 - 所有历史审批意见保留快照，补件不能覆盖历史记录。
-- 审批 SLA 为 24 小时：第 20 小时催办，24 小时转 `OPERATIONS`。当前由应用层任务与运维脚本承载，接入 Camunda 后可迁移为 Timer。
+- 审批 SLA 为 24 小时：第 20 小时催办，24 小时创建 `OPERATIONS_ESCALATION` 任务。当前由独立维护角色、CronJob 和 Outbox 承载，接入 Camunda 后可迁移为 Timer。
 
 ## 3. 服务边界
 
@@ -109,7 +109,8 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 | Topic | 示例 Tag |
 | --- | --- |
-| `supplier-events` | `ApplicationSubmitted`、`SupplierActivated`、`SupplementRequested` |
+| `supplier-events` | `ApplicationSubmitted`、`SupplierActivated`、`SupplementSubmitted` |
+| `workflow-events` | `WorkflowTaskCompleted`、`SupplementRequested`、`WorkflowTaskSlaReminderRequested`、`WorkflowTaskSlaEscalated` |
 | `risk-events` | `RiskCheckRequested`、`RiskCheckCompleted`、`RiskCheckFailed` |
 | `notification-events` | `SupplierActivationNotificationRequested` |
 | `audit-events` | `AuditRecorded`、`ReplayRequested` |
@@ -188,7 +189,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ### 9.0 当前实现边界
 
-本设计蓝图包含后续演进目标。当前可运行基线提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、risk、notification-audit、Vue 3、Electron、Redis 登录限流、MinIO 材料存储、Outbox 运维、跨服务对账和基础指标；Camunda、Redis 缓存、完整 Prometheus/Grafana/OpenTelemetry 平台以及生产级高可用仍在后续生产化路线中。当前 workflow 使用内部状态机作为可运行流程实现，后续可替换为 Camunda 但不改变事件契约。部署和面试说明必须以 README 与 `docs/production-readiness.md` 为准。
+本设计蓝图包含后续演进目标。当前可运行基线提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、risk、notification-audit、Vue 3、Electron、Redis 登录限流、MinIO 材料存储、Outbox 运维、跨服务对账、补件重审、审批 SLA 和基础指标；Camunda、Redis 缓存、完整 Prometheus/Grafana/OpenTelemetry 平台以及生产级高可用仍在后续生产化路线中。当前 workflow 使用内部状态机作为可运行流程实现，后续可替换为 Camunda 但不改变事件契约。部署和面试说明必须以 README 与 `docs/production-readiness.md` 为准。
 
 ### 技术栈
 

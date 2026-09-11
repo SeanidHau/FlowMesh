@@ -6,6 +6,7 @@ package com.flowmesh.workflow.domain;
 public enum WorkflowInstanceStatus {
     RISK_CHECKING,
     IN_PROGRESS,
+    SUPPLEMENT_REQUIRED,
     REJECTED,
     COMPLETED
 }

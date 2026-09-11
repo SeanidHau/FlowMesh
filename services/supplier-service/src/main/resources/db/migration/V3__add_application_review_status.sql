@@ -4,7 +4,7 @@ ALTER TABLE supplier_applications
 
 ALTER TABLE supplier_applications
     ADD CONSTRAINT ck_supplier_applications_status
-        CHECK (status IN ('SUBMITTED', 'IN_REVIEW', 'ENABLED'));
+        CHECK (status IN ('SUBMITTED', 'IN_REVIEW', 'SUPPLEMENT_REQUIRED', 'ENABLED'));
 
 CREATE TABLE supplier_workflow_event_inbox (
     event_id UUID PRIMARY KEY,

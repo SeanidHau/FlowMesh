@@ -14,7 +14,10 @@
 | `supplier-events` | `ApplicationSubmitted` | `supplier-service` | `workflow-service` | 触发流程启动 |
 | `workflow-events` | `WorkflowTaskCompleted` | `workflow-service` | `supplier-service` | 回写审批结果 |
 | `supplier-events` | `SupplierActivated` | `supplier-service` | `notification-audit-service` | 请求发送启用通知 |
-| `supplier-events` | `SupplementRequested` | `supplier-service` | `workflow-service` | 驱动补件分支 |
+| `workflow-events` | `SupplementRequested` | `workflow-service` | `supplier-service` | 驱动申请进入待补件 |
+| `supplier-events` | `SupplementSubmitted` | `supplier-service` | `workflow-service` | 驱动下一轮采购初审 |
+| `workflow-events` | `WorkflowTaskSlaReminderRequested` | SLA CronJob | `notification-audit-service` | 审批节点 20 小时催办 |
+| `workflow-events` | `WorkflowTaskSlaEscalated` | SLA CronJob | `notification-audit-service` | 审批节点 24 小时超时通知 |
 | `risk-events` | `RiskCheckRequested` | `workflow-service` | `risk-service` | 请求风险校验 |
 | `risk-events` | `RiskCheckCompleted` | `risk-service` | `workflow-service` | 返回业务风险结果 |
 | `risk-events` | `RiskCheckFailed` | `risk-service` | `workflow-service` | 记录技术失败和重试 |
@@ -60,6 +63,14 @@
 Outbox；supplier-service 以事件 Inbox 去重、更新申请状态，完成运营节点后再写入
 `SupplierActivated` Outbox；notification-audit-service 以事件 Inbox 去重，并将该事件写入
 审计表和申请人站内通知表。邮件、短信等外部通道不在当前版本的事务边界内。
+
+会签退回时，workflow-service 在同一事务中记录带 `decision`/`comment` 的 `RETURNED` 任务、取消同轮待办、
+更新流程为 `SUPPLEMENT_REQUIRED` 并写入 `SupplementRequested`。supplier-service 幂等消费后更新申请状态；
+申请人补件事务同时写入补件历史、申请状态、幂等响应和 `SupplementSubmitted` Outbox，workflow-service 再以
+Inbox 幂等创建下一轮 `PURCHASER_REVIEW`。
+
+SLA CronJob 使用独立的 `flowmesh_workflow_sla` 非超级用户维护账号，在固定批量和 `SKIP LOCKED` 约束下扫描待办，
+将催办/升级事件写入 workflow Outbox；业务账号不具备跨租户扫描权限。
 
 1. 业务事务提交时，同时写入 Outbox 记录。
 2. Publisher 发送事件。只有收到 Broker ACK 后，才能标记 Outbox 已投递。

@@ -9,11 +9,13 @@ import java.util.UUID;
  * @param supplierName 供应商名称
  * @param status 申请状态
  * @param stateVersion 状态版本
+ * @param supplementCount 已使用的补件次数
  */
 public record ApplicationResponse(
     UUID id,
     String supplierName,
     String status,
-    long stateVersion
+    long stateVersion,
+    int supplementCount
 ) {
 }

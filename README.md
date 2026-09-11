@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档、补件重审和审批 SLA 处置，以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -11,7 +11,8 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | API Gateway | 已实现 | 统一路由到 IAM、Supplier 和 Workflow，业务服务保持内网入口。 |
 | Gateway Redis 分布式限流 | 已实现 | Redis Lua 令牌桶按客户端地址限流；额度耗尽返回 429，Redis 故障 fail-closed 返回 503。 |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出、安全审计，以及多副本安全的失效令牌定期清理。 |
-| 供应商申请与审批投影 | 已实现 | 支持采购初审、法务/财务并行会签、运营启用、幂等和 PostgreSQL RLS。 |
+| 供应商申请与审批投影 | 已实现 | 支持采购初审、法务/财务并行会签、审批意见、退回补件、最多两轮重审、运营启用、幂等和 PostgreSQL RLS。 |
+| 审批 SLA 与运营处置 | 已实现 | 第 20 小时催办、第 24 小时自动转运营升级；独立维护角色和 CronJob 扫描任务并写入 Outbox。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描、短期下载 URL 和可执行生命周期策略。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
@@ -99,7 +100,7 @@ Gateway 默认端口为 8080，IAM 默认端口为 8081，supplier 默认端口�
 `FLOWMESH_RISK_OUTBOX_ENABLED` 设为 `true`，再启动 supplier、workflow 和 risk 服务。
 
 完整链路为：supplier 创建申请并写入 Outbox → workflow 创建风控中的流程实例 → risk-service
-返回 PASS/REJECT → 通过后角色完成审批 →
+返回 PASS/REJECT → 通过后角色完成审批或退回补件 → 申请人补件后重新初审 →
 workflow 写入审批完成 Outbox → supplier 更新申请状态；运营节点完成后状态为 `ENABLED`，
 并生成 `SupplierActivated` 通知事件。
 
@@ -108,12 +109,13 @@ workflow 写入审批完成 Outbox → supplier 更新申请状态；运营节�
 ```text
 GET  http://localhost:8083/api/v1/workflow-instances/{applicationId}
 POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
-     {"taskKey":"PURCHASER_REVIEW"}
+     {"taskKey":"PURCHASER_REVIEW","decision":"APPROVE"}
 ```
 
 采购初审完成后，`LEGAL_REVIEW` 和 `FINANCE_REVIEW` 会同时进入待办；两者都完成后才进入
-`OPERATIONS_ACTIVATION`。响应中的 `availableTasks` 表示当前可处理任务，`completedTasks`
-表示已完成任务。Token 中缺少目标任务对应角色时返回 `403`。
+`OPERATIONS_ACTIVATION`。法务或财务可以使用 `RETURN_FOR_SUPPLEMENT` 并填写 `comment` 退回补件；申请人通过
+`POST /api/v1/supplier-applications/{applicationId}/supplements` 提交补件，最多两次。响应中的
+`availableTasks` 表示当前可处理任务，`completedTasks` 表示已完成任务。Token 中缺少目标任务对应角色时返回 `403`。
 
 根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
 
