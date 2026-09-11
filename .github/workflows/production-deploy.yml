@@ -1,0 +1,97 @@
+name: Production deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '待发布的 40 位提交 SHA 镜像标签'
+        required: true
+        type: string
+      namespace:
+        description: 'FlowMesh Kubernetes 命名空间'
+        required: true
+        default: flowmesh
+        type: string
+      release:
+        description: 'FlowMesh Helm Release 名称'
+        required: true
+        default: flowmesh
+        type: string
+      expect_prometheus_rule:
+        description: '目标集群是否使用 Prometheus Operator ServiceMonitor/PrometheusRule'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flowmesh-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Guarded production deployment
+    runs-on: [self-hosted, linux, flowmesh-production]
+    environment: production
+    timeout-minutes: 45
+    steps:
+      # 生产环境通过 GitHub Environment protection rules 审批后才允许进入此 Job。
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Check runner prerequisites
+        run: |
+          set -Eeuo pipefail
+          for command_name in bash helm kubectl cosign; do
+            command -v "${command_name}" >/dev/null || {
+              echo "生产发布 Runner 缺少命令：${command_name}" >&2
+              exit 127
+            }
+          done
+
+      - name: Deploy immutable image
+        env:
+          FLOWMESH_IMAGE_TAG: ${{ inputs.image_tag }}
+          FLOWMESH_K8S_NAMESPACE: ${{ inputs.namespace }}
+          FLOWMESH_HELM_RELEASE: ${{ inputs.release }}
+          FLOWMESH_EXPECT_PROMETHEUS_RULE: ${{ inputs.expect_prometheus_rule }}
+          FLOWMESH_RUNTIME_SECRET_NAME: ${{ vars.FLOWMESH_RUNTIME_SECRET_NAME }}
+          FLOWMESH_INGRESS_NAMESPACE: ${{ vars.FLOWMESH_INGRESS_NAMESPACE }}
+          FLOWMESH_MONITORING_NAMESPACE: ${{ vars.FLOWMESH_MONITORING_NAMESPACE }}
+          FLOWMESH_PROMETHEUS_RELEASE: ${{ vars.FLOWMESH_PROMETHEUS_RELEASE }}
+          FLOWMESH_INGRESS_HOST: ${{ vars.FLOWMESH_INGRESS_HOST }}
+          FLOWMESH_INGRESS_TLS_SECRET_NAME: ${{ vars.FLOWMESH_INGRESS_TLS_SECRET_NAME }}
+          FLOWMESH_POSTGRES_HOST: ${{ vars.FLOWMESH_POSTGRES_HOST }}
+          FLOWMESH_REDIS_HOST: ${{ vars.FLOWMESH_REDIS_HOST }}
+          FLOWMESH_ROCKETMQ_NAMESRV_ADDR: ${{ vars.FLOWMESH_ROCKETMQ_NAMESRV_ADDR }}
+          FLOWMESH_OBJECT_STORAGE_ENDPOINT: ${{ vars.FLOWMESH_OBJECT_STORAGE_ENDPOINT }}
+          FLOWMESH_CLAMAV_HOST: ${{ vars.FLOWMESH_CLAMAV_HOST }}
+          FLOWMESH_BACKUP_POSTGRES_HOST: ${{ vars.FLOWMESH_BACKUP_POSTGRES_HOST }}
+          FLOWMESH_BACKUP_S3_URI: ${{ vars.FLOWMESH_BACKUP_S3_URI }}
+          FLOWMESH_BACKUP_SECRET_NAME: ${{ vars.FLOWMESH_BACKUP_SECRET_NAME }}
+          FLOWMESH_RETENTION_POSTGRES_HOST: ${{ vars.FLOWMESH_RETENTION_POSTGRES_HOST }}
+          FLOWMESH_RETENTION_SECRET_NAME: ${{ vars.FLOWMESH_RETENTION_SECRET_NAME }}
+          FLOWMESH_NOTIFICATION_WEBHOOK_URL: ${{ vars.FLOWMESH_NOTIFICATION_WEBHOOK_URL }}
+          FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS: ${{ vars.FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS }}
+          DEPLOYMENT_LOG: ${{ runner.temp }}/flowmesh-production-deploy.log
+        run: |
+          set -Eeuo pipefail
+          set +e
+          ./scripts/deploy-production.sh 2>&1 | tee "${DEPLOYMENT_LOG}"
+          deploy_status=${PIPESTATUS[0]}
+          set -e
+          exit "${deploy_status}"
+
+      - name: Upload deployment log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowmesh-production-deployment
+          path: ${{ runner.temp }}/flowmesh-production-deploy.log
+          if-no-files-found: warn
+          retention-days: 30
