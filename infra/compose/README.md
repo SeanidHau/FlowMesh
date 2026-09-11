@@ -1,7 +1,7 @@
 # Docker Compose 本地环境
 
 本目录保存 FlowMesh 的本地基础设施与服务编排文件。当前 Compose 提供 PostgreSQL、Redis、MinIO、
-RocketMQ 单节点拓扑和五个 Java 服务，并在首次启动 PostgreSQL 时创建各应用服务使用的独立
+RocketMQ 单节点拓扑和六个 Java 应用服务，并在首次启动 PostgreSQL 时创建各应用服务使用的独立
 Schema 与 NOSUPERUSER 账号。Prometheus 和 Grafana 通过 `observability` profile 按需启动。
 
 本地环境使用仓库根目录的 `.env`。先复制 `.env.example`，再填写本地凭据。不要提交 `.env`。
