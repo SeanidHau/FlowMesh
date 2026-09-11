@@ -20,8 +20,13 @@ abort "Prometheus 规则必须包含 groups" unless groups.is_a?(Array) && !grou
 alerts = []
 groups.each do |group|
   group.fetch("rules").each do |rule|
-    %w[alert expr labels annotations].each { |key| rule.fetch(key) }
-    alerts << rule.fetch("alert")
+    rule.fetch("expr")
+    if rule.key?("alert")
+      %w[labels annotations].each { |key| rule.fetch(key) }
+      alerts << rule.fetch("alert")
+    elsif !rule.key?("record")
+      abort "Prometheus 规则必须包含 alert 或 record"
+    end
   end
 end
 required_alerts = %w[
@@ -37,9 +42,23 @@ required_alerts = %w[
   FlowMeshHttp5xxRate
   FlowMeshGatewayRateLimitRedisErrors
   FlowMeshGatewayRateLimitDenied
+  FlowMeshHttpAvailabilitySloViolation
+  FlowMeshHttpLatencySloViolation
 ]
 missing_alerts = required_alerts - alerts
 abort "Prometheus 告警缺少：#{missing_alerts.join(', ')}" unless missing_alerts.empty?
+
+recording_rule_names = groups.flat_map { |group| group.fetch("rules") }
+  .select { |rule| rule.key?("record") }
+  .map { |rule| rule.fetch("record") }
+required_recording_rules = %w[
+  flowmesh:slo:http_requests_total:rate5m
+  flowmesh:slo:http_requests_5xx:rate5m
+  flowmesh:slo:http_availability_ratio:5m
+  flowmesh:slo:http_latency_p95_seconds:5m
+]
+missing_recording_rules = required_recording_rules - recording_rule_names
+abort "Prometheus recording rule 缺少：#{missing_recording_rules.join(', ')}" unless missing_recording_rules.empty?
 
 jobs = scrape.fetch("scrape_configs")
 abort "Prometheus 抓取配置不能为空" unless jobs.is_a?(Array) && !jobs.empty?

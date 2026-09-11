@@ -112,6 +112,34 @@ spec:
             summary: FlowMesh 外部通知持续失败
             description: 外部通知 Webhook 最近五分钟持续投递失败。
 
+    # 作用：将服务级可用性和延迟目标转换为可查询的 recording rule，供告警和看板复用。
+    - name: flowmesh-slo
+      rules:
+        - record: flowmesh:slo:http_requests_total:rate5m
+          expr: 'sum(rate(http_server_requests_seconds_count{job=~"gateway|iam|supplier|workflow|risk|notification-audit"}[5m]))'
+        - record: flowmesh:slo:http_requests_5xx:rate5m
+          expr: 'sum(rate(http_server_requests_seconds_count{job=~"gateway|iam|supplier|workflow|risk|notification-audit",status=~"5.."}[5m]))'
+        - record: flowmesh:slo:http_availability_ratio:5m
+          expr: '1 - (flowmesh:slo:http_requests_5xx:rate5m / flowmesh:slo:http_requests_total:rate5m)'
+        - record: flowmesh:slo:http_latency_p95_seconds:5m
+          expr: 'histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=~"gateway|iam|supplier|workflow|risk|notification-audit"}[5m])))'
+        - alert: FlowMeshHttpAvailabilitySloViolation
+          expr: 'flowmesh:slo:http_availability_ratio:5m < 0.999'
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh HTTP 可用性低于 SLO
+            description: 最近五分钟 HTTP 可用性低于 99.9%，已持续十分钟。
+        - alert: FlowMeshHttpLatencySloViolation
+          expr: 'flowmesh:slo:http_latency_p95_seconds:5m > 1'
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh HTTP 延迟超过 SLO
+            description: 最近五分钟 HTTP P95 延迟超过 1 秒，已持续十分钟。
+
     # 这些规则依赖 kube-state-metrics 提供的 CronJob 状态指标；没有该组件时应在目标平台补齐，
     # 否则 Prometheus 无法判断维护任务是否长期没有成功执行。
     - name: flowmesh-scheduled-jobs

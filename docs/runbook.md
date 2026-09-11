@@ -90,6 +90,25 @@ OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector.observability:4318/v1/t
 
 `FLOWMESH_TRACING_SAMPLING_PROBABILITY` 使用 `0.0` 到 `1.0` 的采样比例。先在非生产环境验证 Collector 接收、Trace 查询和出口 NetworkPolicy，再在生产环境启用。Collector 不可用时，不要把导出失败误判为业务请求失败；应根据平台的丢弃、重试和告警策略处置。
 
+## HTTP SLO 与错误预算
+
+Prometheus 已定义两个服务级目标：HTTP 可用性不低于 `99.9%`，HTTP 请求 P95 延迟不高于 `1s`。
+目标使用 `flowmesh:slo:http_availability_ratio:5m` 和
+`flowmesh:slo:http_latency_p95_seconds:5m` 记录；对应告警为
+`FlowMeshHttpAvailabilitySloViolation` 和 `FlowMeshHttpLatencySloViolation`。
+
+发生 SLO 告警时，先执行以下只读查询，确认影响范围：
+
+```promql
+flowmesh:slo:http_availability_ratio:5m
+flowmesh:slo:http_latency_p95_seconds:5m
+sum by (job, status) (rate(http_server_requests_seconds_count{job=~"flowmesh-.*"}[5m]))
+```
+
+如果可用性下降，继续检查 `FlowMeshServiceDown`、`FlowMeshHttp5xxRate`、数据库/Redis 就绪状态和
+RocketMQ Outbox 积压。如果延迟升高，继续检查各服务 CPU、连接池等待、消息消费 P95 和外部依赖响应时间。
+告警恢复前不要扩大流量或关闭 SLO 告警；需要调整目标时，应同步修改 Prometheus 规则、看板和生产验收记录。
+
 ## Refresh Token 生命周期维护
 
 IAM 默认每小时清理已过期或已撤销超过 30 天的 Refresh Token，每次最多处理 1000 条；清理指标为
