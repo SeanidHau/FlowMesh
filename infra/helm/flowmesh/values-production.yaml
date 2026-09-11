@@ -18,6 +18,15 @@ postgresql:
   database: flowmesh
   sslMode: require
 
+workflowSla:
+  # 生产环境必须启用独立 SLA 维护任务；密码由 global.existingSecret 提供。
+  enabled: true
+  image: postgres
+  # 固定 PostgreSQL 客户端镜像版本，避免 CronJob 使用可变的 major-only 标签。
+  tag: "16.15"
+  dbUser: flowmesh_workflow_sla
+  dbPassword: ""
+
 redis:
   host: redis.internal.example.com
   port: 6379

@@ -42,6 +42,8 @@ done
 
 grep -F -- 'concurrencyPolicy=Forbid' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_PG_SSLMODE' "${smoke_test}" >/dev/null
+grep -F -- 'workflow_sla_cronjob' "${smoke_test}" >/dev/null
+grep -F -- 'WORKFLOW_SLA_DB_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'automountServiceAccountToken' "${smoke_test}" >/dev/null
 
 echo 'Kubernetes production smoke contract passed.'

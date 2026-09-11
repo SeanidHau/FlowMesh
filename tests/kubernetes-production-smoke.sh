@@ -15,6 +15,7 @@ expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-false}"
 deployment_selector="app.kubernetes.io/instance=${release}"
 backup_cronjob="${release}-flowmesh-postgres-backup"
 retention_cronjob="${release}-flowmesh-retention"
+workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
 
 if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
@@ -170,6 +171,25 @@ env = container.fetch("env").to_h { |entry| [entry.fetch("name"), entry.fetch("v
 raise "生命周期清理必须使用 YES 确认值" unless env.fetch("FLOWMESH_RETENTION_CONFIRM") == "YES"
 raise "生命周期清理必须使用 PostgreSQL TLS" unless env.fetch("FLOWMESH_PG_SSLMODE") == "require"
 puts "生命周期清理 CronJob 参数校验通过。"
+'
+
+workflow_sla_cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${workflow_sla_cronjob}" -o json)"
+WORKFLOW_SLA_CRONJOB_JSON="${workflow_sla_cronjob_json}" ruby -e '
+require "json"
+cronjob = JSON.parse(ENV.fetch("WORKFLOW_SLA_CRONJOB_JSON"))
+spec = cronjob.fetch("spec")
+raise "Workflow SLA CronJob 未设置 concurrencyPolicy=Forbid" unless spec.fetch("concurrencyPolicy") == "Forbid"
+job_spec = spec.fetch("jobTemplate").fetch("spec")
+raise "Workflow SLA CronJob 未设置 activeDeadlineSeconds" unless job_spec.fetch("activeDeadlineSeconds", 0).to_i > 0
+pod = job_spec.fetch("template").fetch("spec")
+raise "Workflow SLA CronJob 不得自动挂载 ServiceAccount Token" unless pod.fetch("automountServiceAccountToken") == false
+container = pod.fetch("containers").first
+env = container.fetch("env")
+ssl_mode = env.find { |entry| entry.fetch("name") == "PGSSLMODE" }
+raise "Workflow SLA CronJob 未设置 PostgreSQL TLS" unless ssl_mode && ssl_mode.fetch("value") == "require"
+password = env.find { |entry| entry.fetch("name") == "PGPASSWORD" }
+raise "Workflow SLA CronJob 未引用 SLA 数据库密码 Secret" unless password && password.fetch("valueFrom").fetch("secretKeyRef").fetch("key") == "WORKFLOW_SLA_DB_PASSWORD"
+puts "Workflow SLA CronJob 参数校验通过。"
 '
 
 if [[ "${expect_prometheus_rule}" == "true" ]]; then

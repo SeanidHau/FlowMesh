@@ -1,5 +1,5 @@
 {{- if .Values.workflowSla.enabled }}
-{{- if and .Values.global.production (not .Values.workflowSla.dbPassword) }}
+{{- if and .Values.global.production (not .Values.global.existingSecret) (not .Values.workflowSla.dbPassword) }}
 {{- fail "workflowSla.dbPassword is required when SLA CronJob is enabled in production mode" }}
 {{- end }}
 apiVersion: batch/v1

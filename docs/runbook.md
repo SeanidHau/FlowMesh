@@ -123,8 +123,9 @@ FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
 如果使用私有 CA，为 RocketMQ TLS 预检设置 `FLOWMESH_ROCKETMQ_CA_FILE`；预检通过不代表已经完成多副本
 故障切换、备份恢复或 RTO/RPO 验收，这些仍需按目标平台剧本执行并留存结果。
 
-默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS、PostgreSQL TLS 和 PostgreSQL
-备份 CronJob、生命周期清理 Secret 和 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
+默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret（包括
+`WORKFLOW_SLA_DB_PASSWORD`）、RocketMQ ACL/TLS、PostgreSQL TLS、PostgreSQL 备份 CronJob、Workflow SLA CronJob、
+生命周期清理 Secret 和 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
 
 ```bash
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \

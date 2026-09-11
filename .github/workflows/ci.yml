@@ -171,6 +171,11 @@ jobs:
             echo 'PostgreSQL backup CronJob must use an encrypted connection.' >&2
             exit 1
           fi
+          if ! printf '%s\n' "$rendered_production" | grep -q 'app.kubernetes.io/component: workflow-sla' || \
+             ! printf '%s\n' "$rendered_production" | grep -q 'key: WORKFLOW_SLA_DB_PASSWORD'; then
+            echo 'Production chart must render the Workflow SLA CronJob with its dedicated Secret key.' >&2
+            exit 1
+          fi
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \

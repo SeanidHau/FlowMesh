@@ -32,7 +32,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set objectStorage.secretKey="$OBJECT_STORAGE_SECRET_KEY"
 ```
 
-生产环境应使用生产覆盖值，并让 `global.existingSecret` 指向外部 Secret：
+生产环境应使用生产覆盖值，并让 `global.existingSecret` 指向外部 Secret。生产覆盖值会启用审批 SLA CronJob，
+该任务使用 `WORKFLOW_SLA_DB_PASSWORD` 连接独立维护账号：
 
 ```bash
 helm upgrade --install flowmesh infra/helm/flowmesh \
@@ -78,7 +79,7 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY`、
 `OBJECT_STORAGE_SECRET_KEY`、`ROCKETMQ_PRODUCER_ACCESS_KEY`、`ROCKETMQ_PRODUCER_SECRET_KEY`、
-`ROCKETMQ_CONSUMER_ACCESS_KEY` 和 `ROCKETMQ_CONSUMER_SECRET_KEY` 的 Secret，然后设置
+`ROCKETMQ_CONSUMER_ACCESS_KEY`、`ROCKETMQ_CONSUMER_SECRET_KEY` 和 `WORKFLOW_SLA_DB_PASSWORD` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
 
 生产覆盖值默认启用 RocketMQ Producer 和 Consumer 的 TLS，并将访问通道设为 `CLOUD`；如果使用自建
