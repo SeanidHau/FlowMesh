@@ -13,6 +13,10 @@ grep -F 'FOR UPDATE OF t, i SKIP LOCKED' "${cronjob}" >/dev/null
 grep -F 'WorkflowTaskSlaReminderRequested' "${sla_script}" >/dev/null
 grep -F 'WorkflowTaskSlaEscalated' "${sla_script}" >/dev/null
 grep -F 'PGUSER 必须是 flowmesh_workflow_sla' "${sla_script}" >/dev/null
+grep -F 'EXCEPTION WHEN OTHERS' "${sla_script}" >/dev/null
+grep -F 'EXCEPTION WHEN OTHERS' "${cronjob}" >/dev/null
+grep -F 'optimistic update failed' "${sla_script}" >/dev/null
+grep -F 'optimistic update failed' "${cronjob}" >/dev/null
 
 grep -F 'BYPASSRLS' "${migration}" >/dev/null
 grep -F 'GRANT SELECT ON workflow.workflow_instances' "${migration}" >/dev/null

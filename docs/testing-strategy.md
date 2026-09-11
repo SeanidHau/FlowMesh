@@ -35,7 +35,7 @@
 ```
 
 该命令会启动 PostgreSQL Testcontainers，验证 Flyway、MyBatis、RLS、认证、Outbox 竞争和核心业务集成测试。
-真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL、Redis 和 RocketMQ，六个 Java 服务使用本机打包的 JAR；业务 API 通过 Gateway 访问，并覆盖正常启用、风控拒绝（`workflow REJECTED -> supplier REJECTED -> 申请人通知`）、通知审计、死信查询、受控重放和跨服务对账链路。备份恢复场景使用 `./tests/postgres-backup-e2e.sh`，在临时 PostgreSQL 容器中验证归档校验和隔离数据库恢复。生命周期场景使用 `./tests/postgres-retention-e2e.sh`，在临时 PostgreSQL 容器中验证终态判断、90/30 天窗口和强制 RLS 表清理。Workflow SLA 场景使用 `./tests/workflow-sla-e2e.sh`，在临时 PostgreSQL 容器中验证并行审批实例锁定、任务状态收敛和 Outbox 写入。Java RLS 集成测试使用 Testcontainers；本机未启动 Docker 时由 `@Testcontainers(disabledWithoutDocker = true)` 明确跳过，CI 或本地启动 Docker 后执行。观测配置校验还会验证 Prometheus 已连接本地 Alertmanager 且默认 receiver 可解析。
+真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL、Redis 和 RocketMQ，六个 Java 服务使用本机打包的 JAR；业务 API 通过 Gateway 访问，并覆盖正常启用、风控拒绝（`workflow REJECTED -> supplier REJECTED -> 申请人通知`）、通知审计、死信查询、受控重放和跨服务对账链路。备份恢复场景使用 `./tests/postgres-backup-e2e.sh`，在临时 PostgreSQL 容器中验证归档校验和隔离数据库恢复。生命周期场景使用 `./tests/postgres-retention-e2e.sh`，在临时 PostgreSQL 容器中验证终态判断、90/30 天窗口和强制 RLS 表清理。Workflow SLA 场景使用 `./tests/workflow-sla-e2e.sh`，在临时 PostgreSQL 容器中验证并行审批实例锁定、任务状态收敛、Outbox 写入以及乐观锁失败后的子事务回滚。Java RLS 集成测试使用 Testcontainers；本机未启动 Docker 时由 `@Testcontainers(disabledWithoutDocker = true)` 明确跳过，CI 或本地启动 Docker 后执行。观测配置校验还会验证 Prometheus 已连接本地 Alertmanager 且默认 receiver 可解析。
 Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，并验证生产备份目标、加密算法和缺失参数门禁，不提交任何真实密钥。
 `tests/postgres-backup-upload-contract.sh` 使用本地替身命令验证 S3 上传参数、`_SUCCESS` 完成标记和失败清理，不访问真实云账号。
 

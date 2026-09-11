@@ -103,32 +103,41 @@ spec:
                         AND t.task_key IN ('PURCHASER_REVIEW', 'LEGAL_REVIEW', 'FINANCE_REVIEW')
                       ORDER BY t.due_at LIMIT 100 FOR UPDATE OF t, i SKIP LOCKED
                     LOOP
-                      UPDATE workflow.workflow_tasks SET status = 'ESCALATED', escalated_at = CURRENT_TIMESTAMP
-                        WHERE id = r.id AND status = 'PENDING';
-                      IF NOT FOUND THEN CONTINUE; END IF;
-                      UPDATE workflow.workflow_tasks SET status = 'CANCELLED'
-                        WHERE workflow_instance_id = r.workflow_instance_id AND round_no = r.round_no
-                          AND status = 'PENDING';
-                      UPDATE workflow.workflow_instances SET current_task = 'OPERATIONS_ESCALATION', version = version + 1
-                        WHERE id = r.workflow_instance_id AND tenant_id = r.tenant_id
-                          AND status = 'IN_PROGRESS' AND version = r.instance_version;
-                      IF NOT FOUND THEN CONTINUE; END IF;
-                      escalation_id := gen_random_uuid();
-                      INSERT INTO workflow.workflow_tasks
-                        (id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status, created_at)
-                        VALUES (escalation_id, r.workflow_instance_id, r.tenant_id, r.application_id,
-                          'OPERATIONS_ESCALATION', r.round_no, 'PENDING', CURRENT_TIMESTAMP);
-                      event_id := gen_random_uuid();
-                      INSERT INTO workflow.workflow_outbox_events
-                        (id, tenant_id, aggregate_id, topic, tag, payload, created_at)
-                        VALUES (event_id, r.tenant_id, r.application_id, 'workflow-events',
-                          'WorkflowTaskSlaEscalated',
-                          jsonb_build_object('eventId', event_id, 'eventType', 'WorkflowTaskSlaEscalated',
-                            'schemaVersion', 1, 'tenantId', r.tenant_id, 'aggregateId', r.application_id,
-                            'occurredAt', CURRENT_TIMESTAMP, 'traceId', 'workflow-sla-cronjob',
-                            'payload', jsonb_build_object('applicantUserId', r.applicant_user_id,
-                              'taskKey', r.task_key, 'dueAt', r.due_at,
-                              'escalationTaskKey', 'OPERATIONS_ESCALATION')), CURRENT_TIMESTAMP);
+                      -- 每个实例使用子事务，保证乐观锁失败或插入异常不会留下半完成升级。
+                      BEGIN
+                        UPDATE workflow.workflow_tasks SET status = 'ESCALATED', escalated_at = CURRENT_TIMESTAMP
+                          WHERE id = r.id AND status = 'PENDING';
+                        IF NOT FOUND THEN CONTINUE; END IF;
+                        UPDATE workflow.workflow_tasks SET status = 'CANCELLED'
+                          WHERE workflow_instance_id = r.workflow_instance_id AND round_no = r.round_no
+                            AND status = 'PENDING';
+                        UPDATE workflow.workflow_instances SET current_task = 'OPERATIONS_ESCALATION', version = version + 1
+                          WHERE id = r.workflow_instance_id AND tenant_id = r.tenant_id
+                            AND status = 'IN_PROGRESS' AND version = r.instance_version;
+                        IF NOT FOUND THEN
+                          RAISE EXCEPTION 'workflow instance optimistic update failed: %', r.workflow_instance_id;
+                        END IF;
+                        escalation_id := gen_random_uuid();
+                        INSERT INTO workflow.workflow_tasks
+                          (id, workflow_instance_id, tenant_id, application_id, task_key, round_no, status, created_at)
+                          VALUES (escalation_id, r.workflow_instance_id, r.tenant_id, r.application_id,
+                            'OPERATIONS_ESCALATION', r.round_no, 'PENDING', CURRENT_TIMESTAMP);
+                        event_id := gen_random_uuid();
+                        INSERT INTO workflow.workflow_outbox_events
+                          (id, tenant_id, aggregate_id, topic, tag, payload, created_at)
+                          VALUES (event_id, r.tenant_id, r.application_id, 'workflow-events',
+                            'WorkflowTaskSlaEscalated',
+                            jsonb_build_object('eventId', event_id, 'eventType', 'WorkflowTaskSlaEscalated',
+                              'schemaVersion', 1, 'tenantId', r.tenant_id, 'aggregateId', r.application_id,
+                              'occurredAt', CURRENT_TIMESTAMP, 'traceId', 'workflow-sla-cronjob',
+                              'payload', jsonb_build_object('applicantUserId', r.applicant_user_id,
+                                'taskKey', r.task_key, 'dueAt', r.due_at,
+                                'escalationTaskKey', 'OPERATIONS_ESCALATION')), CURRENT_TIMESTAMP);
+                      EXCEPTION WHEN OTHERS THEN
+                        -- 异常块回滚当前实例的子事务，再继续处理其他实例。
+                        RAISE WARNING 'Workflow SLA escalation rolled back for instance %, reason: %',
+                          r.workflow_instance_id, SQLERRM;
+                      END;
                     END LOOP;
                   END $$;
                   COMMIT;

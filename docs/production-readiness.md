@@ -38,6 +38,7 @@
 - 提供只读生产证据包校验和清单生成工具：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告；生成器只创建清单与 SHA-256 校验和，不伪造演练报告，校验器还要求每类报告包含对应检查命令、证据摘要和关键结果，并通过清单与校验和防止缺项或篡改。生产验收默认强制执行该门禁，非生产预检必须显式设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false` 才能跳过。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
+- SLA 升级使用 PostgreSQL 行锁和每个流程实例的 PL/pgSQL 子事务；乐观锁失败或 Outbox/任务插入异常时，任务状态、并行任务取消和流程状态会整体回滚，避免留下半完成升级。
 - 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。
 - 外部通知投递已落地：站内通知与投递队列同事务提交，Webhook 使用 HTTPS、HMAC 签名、幂等键、租约认领、指数退避和死信；队列通过专用 `flowmesh_audit_delivery` `BYPASSRLS` 角色的安全函数跨租户调度，业务账号不直接读取投递队列。
 

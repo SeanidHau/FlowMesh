@@ -81,7 +81,9 @@ INSERT INTO workflow.workflow_instances
   (id, tenant_id, applicant_user_id, status, current_task, version)
 VALUES
   ('10000000-0000-0000-0000-000000000001', 'tenant-a',
-   '20000000-0000-0000-0000-000000000001', 'IN_PROGRESS', 'PURCHASER_REVIEW', 0);
+   '20000000-0000-0000-0000-000000000001', 'IN_PROGRESS', 'PURCHASER_REVIEW', 0),
+  ('10000000-0000-0000-0000-000000000002', 'tenant-a',
+   '20000000-0000-0000-0000-000000000002', 'COMPLETED', NULL, 0);
 
 INSERT INTO workflow.workflow_tasks
   (id, workflow_instance_id, tenant_id, application_id, task_key, round_no,
@@ -98,7 +100,11 @@ VALUES
   ('30000000-0000-0000-0000-000000000003',
    '10000000-0000-0000-0000-000000000001', 'tenant-a',
    '40000000-0000-0000-0000-000000000001', 'FINANCE_REVIEW', 1, 'PENDING',
-   now(), now() - interval '1 minute', now() - interval '1 minute');
+   now(), now() - interval '1 minute', now() - interval '1 minute'),
+  ('30000000-0000-0000-0000-000000000004',
+   '10000000-0000-0000-0000-000000000002', 'tenant-a',
+   '40000000-0000-0000-0000-000000000002', 'PURCHASER_REVIEW', 1, 'PENDING',
+   now(), now() - interval '1 minute', NULL);
 SQL
 
 docker exec \
@@ -119,11 +125,14 @@ escalation_events="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh
   -c "SELECT count(*) FROM workflow.workflow_outbox_events WHERE tag = 'WorkflowTaskSlaEscalated'")"
 reminder_events="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh \
   -c "SELECT count(*) FROM workflow.workflow_outbox_events WHERE tag = 'WorkflowTaskSlaReminderRequested'")"
+rolled_back_task="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh \
+  -c "SELECT status || ':' || COALESCE(escalated_at::text, 'NULL') FROM workflow.workflow_tasks WHERE id = '30000000-0000-0000-0000-000000000004'")"
 
 [[ "${instance_state}" == "OPERATIONS_ESCALATION:1" ]]
-[[ "${task_states}" == "CANCELLED,CANCELLED,ESCALATED,PENDING" ]]
+[[ "${task_states}" == "CANCELLED,CANCELLED,ESCALATED,PENDING,PENDING" ]]
 [[ "${operations_count}" == "1" ]]
 [[ "${escalation_events}" == "1" ]]
 [[ "${reminder_events}" == "3" ]]
+[[ "${rolled_back_task}" == "PENDING:NULL" ]]
 
 echo 'Workflow SLA PostgreSQL E2E passed.'
