@@ -160,6 +160,17 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 至少需要配置以下 Secrets：`FLOWMESH_PG_PASSWORD`、`FLOWMESH_RETENTION_DB_PASSWORD` 和
 `FLOWMESH_REDIS_PASSWORD`。所有地址、密码和证书路径均由 Environment 注入，不要写入工作流文件或仓库。
 
+新增的 `Production deploy` 工作流同样只允许手动触发，并绑定 `production` Environment 的审批规则。
+它复用 `scripts/deploy-production.sh`，会先校验镜像签名和生产配置，再执行原子 Helm 发布及发布后 smoke；同一时间只允许一个生产发布，部署日志会归档 30 天。
+除上面验收工作流使用的变量外，发布工作流至少需要配置以下 Environment Variables：
+`FLOWMESH_RUNTIME_SECRET_NAME`、`FLOWMESH_INGRESS_NAMESPACE`、`FLOWMESH_MONITORING_NAMESPACE`、
+`FLOWMESH_PROMETHEUS_RELEASE`、`FLOWMESH_INGRESS_HOST`、`FLOWMESH_INGRESS_TLS_SECRET_NAME`、
+`FLOWMESH_POSTGRES_HOST`、`FLOWMESH_REDIS_HOST`、`FLOWMESH_ROCKETMQ_NAMESRV_ADDR`、
+`FLOWMESH_OBJECT_STORAGE_ENDPOINT`、`FLOWMESH_CLAMAV_HOST`、`FLOWMESH_BACKUP_POSTGRES_HOST`、
+`FLOWMESH_BACKUP_S3_URI`、`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_POSTGRES_HOST`、
+`FLOWMESH_RETENTION_SECRET_NAME`、`FLOWMESH_NOTIFICATION_WEBHOOK_URL` 和
+`FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS`。这些变量只描述目标平台地址、名称或网络范围，不包含数据库密码、JWT 密钥或对象存储密钥。
+
 如果需要执行实际发布，使用仓库提供的生产发布入口。它会先校验八个镜像的 Cosign 签名、校验生产
 values，再执行 `helm upgrade --install --atomic --wait`，最后运行只读 Kubernetes smoke test。
 发布入口只引用预先创建的运行时 Secret，不接收数据库密码、JWT 密钥或对象存储密钥参数：
