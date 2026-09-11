@@ -2,6 +2,7 @@ package com.flowmesh.gateway;
 
 import java.util.List;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,7 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
     private final ReactiveStringRedisTemplate redisTemplate;
     private final RedisScript<List<Long>> rateLimitScript;
     private final GatewayClientIpKeyResolver keyResolver;
+    private final MeterRegistry meterRegistry;
     private final int replenishRate;
     private final int burstCapacity;
     private final int requestedTokens;
@@ -52,6 +54,7 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
      * @param redisTemplate 响应式 Redis 客户端
      * @param rateLimitScript 原子令牌桶脚本
      * @param keyResolver 客户端地址 key 解析器
+     * @param meterRegistry Micrometer 指标注册器
      * @param replenishRate 每秒补充的令牌数
      * @param burstCapacity 令牌桶容量
      * @param requestedTokens 单个请求消耗的令牌数
@@ -60,6 +63,7 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
         ReactiveStringRedisTemplate redisTemplate,
         RedisScript<List<Long>> rateLimitScript,
         GatewayClientIpKeyResolver keyResolver,
+        MeterRegistry meterRegistry,
         @Value("${flowmesh.gateway.rate-limit.replenish-rate:100}") int replenishRate,
         @Value("${flowmesh.gateway.rate-limit.burst-capacity:200}") int burstCapacity,
         @Value("${flowmesh.gateway.rate-limit.requested-tokens:1}") int requestedTokens
@@ -67,6 +71,7 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
         this.redisTemplate = redisTemplate;
         this.rateLimitScript = rateLimitScript;
         this.keyResolver = keyResolver;
+        this.meterRegistry = meterRegistry;
         this.replenishRate = requirePositive("replenishRate", replenishRate);
         this.burstCapacity = requirePositive("burstCapacity", burstCapacity);
         this.requestedTokens = requirePositive("requestedTokens", requestedTokens);
@@ -90,12 +95,15 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
             .flatMap(clientKey -> executeRateLimit(routeId, clientKey))
             .flatMap(result -> {
                 if (result.isAllowed()) {
+                    recordOutcome(routeId, "allowed");
                     addRateLimitHeaders(exchange.getResponse(), result.remainingTokens());
                     return chain.filter(exchange);
                 }
+                recordOutcome(routeId, "denied");
                 return reject(exchange.getResponse(), HttpStatus.TOO_MANY_REQUESTS, result.remainingTokens());
             })
             .onErrorResume(error -> {
+                recordOutcome(routeId, "redis_error");
                 log.error("Gateway Redis rate limiter unavailable; rejecting request", error);
                 return reject(exchange.getResponse(), HttpStatus.SERVICE_UNAVAILABLE, -1L);
             });
@@ -170,6 +178,20 @@ public final class GatewayRedisRateLimitGlobalFilter implements GlobalFilter, Or
             throw new IllegalArgumentException(name + " must be positive");
         }
         return value;
+    }
+
+    /**
+     * 记录限流结果，供 Prometheus 监控入口拒绝量和 Redis 故障。
+     *
+     * @param routeId Gateway 路由标识
+     * @param outcome allowed、denied 或 redis_error
+     */
+    private void recordOutcome(String routeId, String outcome) {
+        meterRegistry.counter(
+            "flowmesh.gateway.rate.limit.requests",
+            "route", routeId,
+            "outcome", outcome
+        ).increment();
     }
 
     private record RateLimitResult(boolean isAllowed, long remainingTokens) {

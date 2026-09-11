@@ -69,6 +69,16 @@
       ],
       "title": "Server errors and outbox confirmation failures",
       "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "flowmesh-prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "color": {"mode": "palette-classic"}}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+      "id": 7,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "sum by (route, outcome) (rate(flowmesh_gateway_rate_limit_requests_total[5m]))", "legendFormat": "{{route}} {{outcome}}", "refId": "A"}],
+      "title": "Gateway rate-limit outcomes",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 39,

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -37,8 +38,9 @@ class GatewayRedisRateLimitGlobalFilterTest {
         when(redisTemplate.execute(eq(script), anyList(), anyList()))
             .thenReturn(Flux.just(List.of(1L, 199L)));
         GatewayClientIpKeyResolver keyResolver = new GatewayClientIpKeyResolver("X-Real-IP");
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         GatewayRedisRateLimitGlobalFilter filter = new GatewayRedisRateLimitGlobalFilter(
-            redisTemplate, script, keyResolver, 100, 200, 1
+            redisTemplate, script, keyResolver, meterRegistry, 100, 200, 1
         );
         MockServerWebExchange exchange = exchange();
         GatewayFilterChain chain = nextExchange -> Mono.empty();
@@ -48,6 +50,9 @@ class GatewayRedisRateLimitGlobalFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isNull();
         assertThat(exchange.getResponse().getHeaders().getFirst("X-RateLimit-Remaining"))
             .isEqualTo("199");
+        assertThat(meterRegistry.get("flowmesh.gateway.rate.limit.requests")
+            .tag("route", "unmatched").tag("outcome", "allowed").counter().count())
+            .isEqualTo(1.0);
     }
 
     /**
@@ -60,8 +65,10 @@ class GatewayRedisRateLimitGlobalFilterTest {
         RedisScript<List<Long>> script = mock(RedisScript.class);
         when(redisTemplate.execute(eq(script), anyList(), anyList()))
             .thenReturn(Flux.just(List.of(0L, 0L)));
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         GatewayRedisRateLimitGlobalFilter filter = new GatewayRedisRateLimitGlobalFilter(
-            redisTemplate, script, new GatewayClientIpKeyResolver("X-Real-IP"), 100, 200, 1
+            redisTemplate, script, new GatewayClientIpKeyResolver("X-Real-IP"),
+            meterRegistry, 100, 200, 1
         );
         MockServerWebExchange exchange = exchange();
         GatewayFilterChain chain = mock(GatewayFilterChain.class);
@@ -70,6 +77,9 @@ class GatewayRedisRateLimitGlobalFilterTest {
 
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(exchange.getResponse().getHeaders().getFirst("Retry-After")).isEqualTo("1");
+        assertThat(meterRegistry.get("flowmesh.gateway.rate.limit.requests")
+            .tag("route", "unmatched").tag("outcome", "denied").counter().count())
+            .isEqualTo(1.0);
         verify(chain, never()).filter(exchange);
     }
 
@@ -83,8 +93,10 @@ class GatewayRedisRateLimitGlobalFilterTest {
         RedisScript<List<Long>> script = mock(RedisScript.class);
         when(redisTemplate.execute(eq(script), anyList(), anyList()))
             .thenReturn(Flux.error(new IllegalStateException("redis unavailable")));
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         GatewayRedisRateLimitGlobalFilter filter = new GatewayRedisRateLimitGlobalFilter(
-            redisTemplate, script, new GatewayClientIpKeyResolver("X-Real-IP"), 100, 200, 1
+            redisTemplate, script, new GatewayClientIpKeyResolver("X-Real-IP"),
+            meterRegistry, 100, 200, 1
         );
         MockServerWebExchange exchange = exchange();
         GatewayFilterChain chain = mock(GatewayFilterChain.class);
@@ -92,6 +104,9 @@ class GatewayRedisRateLimitGlobalFilterTest {
         filter.filter(exchange, chain).block();
 
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(meterRegistry.get("flowmesh.gateway.rate.limit.requests")
+            .tag("route", "unmatched").tag("outcome", "redis_error").counter().count())
+            .isEqualTo(1.0);
         verify(chain, never()).filter(exchange);
     }
 

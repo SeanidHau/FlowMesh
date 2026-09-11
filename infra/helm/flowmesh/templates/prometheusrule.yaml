@@ -28,6 +28,22 @@ spec:
           annotations:
             summary: FlowMesh HTTP 5xx 增加
             description: FlowMesh 最近五分钟的 HTTP 5xx 速率超过 0.1 req/s。
+        - alert: FlowMeshGatewayRateLimitRedisErrors
+          expr: 'sum by (route) (rate(flowmesh_gateway_rate_limit_requests_total{outcome="redis_error"}[5m])) > 0'
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh Gateway 限流 Redis 不可用
+            description: 'Gateway 路由 {{ "{{ $labels.route }}" }} 的 Redis 限流连续两分钟执行失败。'
+        - alert: FlowMeshGatewayRateLimitDenied
+          expr: 'sum by (route) (rate(flowmesh_gateway_rate_limit_requests_total{outcome="denied"}[5m])) > 10'
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh Gateway 限流拒绝量升高
+            description: 'Gateway 路由 {{ "{{ $labels.route }}" }} 最近五分钟限流拒绝速率超过 10 req/s。'
 
     - name: flowmesh-messaging
       rules:

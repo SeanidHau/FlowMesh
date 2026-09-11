@@ -30,6 +30,8 @@ required_alerts = %w[
   FlowMeshConsumerProcessingLatency
   FlowMeshOutboxConfirmationFailures
   FlowMeshHttp5xxRate
+  FlowMeshGatewayRateLimitRedisErrors
+  FlowMeshGatewayRateLimitDenied
 ]
 missing_alerts = required_alerts - alerts
 abort "Prometheus 告警缺少：#{missing_alerts.join(', ')}" unless missing_alerts.empty?
