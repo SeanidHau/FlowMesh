@@ -1,9 +1,11 @@
 package com.flowmesh.workflow.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.flowmesh.workflow.support.PostgresIntegrationTest;
 import java.util.UUID;
+import org.springframework.dao.DataAccessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -107,6 +109,21 @@ class WorkflowRlsIntegrationTest extends PostgresIntegrationTest {
         inTransaction("tenant-a", () -> jdbcTemplate.update(
             "DELETE FROM workflow.workflow_instances WHERE id = ?", instanceId
         ));
+    }
+
+    /**
+     * 验证当前租户上下文无法向其他租户写入流程实例。
+     */
+    @Test
+    void shouldRejectCrossTenantWorkflowInstanceWrite() {
+        assertThatThrownBy(() -> inTransaction("tenant-a", () -> jdbcTemplate.update(
+            "INSERT INTO workflow.workflow_instances "
+                + "(id, application_id, source_event_id, tenant_id, process_definition_key, "
+                + "status, current_task, version, created_at, review_round) "
+                + "VALUES (?, ?, ?, 'tenant-b', 'supplier-onboarding', 'IN_PROGRESS', "
+                + "'PURCHASER_REVIEW', 0, now(), 1)",
+            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()
+        ))).isInstanceOf(DataAccessException.class);
     }
 
     private void assertRls(String tableName) {

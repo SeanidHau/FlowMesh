@@ -1,11 +1,13 @@
 package com.flowmesh.supplier.rls;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.flowmesh.supplier.support.PostgresIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,6 +94,20 @@ class SupplierRlsIsolationIntegrationTest extends PostgresIntegrationTest {
         // 清理
         setTenantContext("tenant-a");
         jdbcTemplate.update("DELETE FROM supplier_applications WHERE id = ?", tenantAAppId);
+    }
+
+    /**
+     * 验证当前租户上下文无法向其他租户写入供应商申请。
+     */
+    @Test
+    void shouldRejectCrossTenantApplicationWrite() {
+        setTenantContext("tenant-a");
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO supplier_applications "
+                    + "(id, tenant_id, applicant_user_id, supplier_name, status, state_version, created_at, updated_at) "
+                    + "VALUES (?, 'tenant-b', ?, '越权供应商', 'SUBMITTED', 0, now(), now())",
+                UUID.randomUUID(), UUID.randomUUID()
+        )).isInstanceOf(DataAccessException.class);
     }
 
     private void setTenantContext(String tenantId) {
