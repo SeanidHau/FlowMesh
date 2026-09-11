@@ -1,0 +1,74 @@
+{{- if .Values.observability.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "flowmesh.fullname" . }}
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    {{- with .Values.observability.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: flowmesh-availability
+      rules:
+        - alert: FlowMeshServiceDown
+          expr: 'up{job=~"gateway|iam|supplier|workflow|risk|notification-audit"} == 0'
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh 服务不可用
+            description: '{{ "{{ $labels.job }}" }} 已连续两分钟无法抓取。'
+        - alert: FlowMeshHttp5xxRate
+          expr: 'sum(rate(http_server_requests_seconds_count{job=~"gateway|iam|supplier|workflow|risk|notification-audit",status=~"5.."}[5m])) > 0.1'
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh HTTP 5xx 增加
+            description: FlowMesh 最近五分钟的 HTTP 5xx 速率超过 0.1 req/s。
+
+    - name: flowmesh-messaging
+      rules:
+        - alert: FlowMeshOutboxBacklog
+          expr: 'flowmesh_outbox_pending > 100'
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh Outbox 持续积压
+            description: '{{ "{{ $labels.instance }}" }} 的 Outbox 待投递数量超过 100。'
+        - alert: FlowMeshDeadLetterEvents
+          expr: 'flowmesh_outbox_dead_lettered_current > 0'
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh 出现死信事件
+            description: '{{ "{{ $labels.instance }}" }} 存在待处置死信事件。'
+        - alert: FlowMeshConsumerFailures
+          expr: 'sum by (consumer) (rate(flowmesh_messaging_failed_total[5m])) > 0'
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh 消费者持续失败
+            description: '消费者 {{ "{{ $labels.consumer }}" }} 在过去五分钟持续失败。'
+        - alert: FlowMeshConsumerProcessingLatency
+          expr: 'histogram_quantile(0.95, sum by (consumer, le) (rate(flowmesh_messaging_processing_seconds_bucket[5m]))) > 5'
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh 消费处理延迟升高
+            description: '消费者 {{ "{{ $labels.consumer }}" }} 的消息处理 P95 已连续五分钟超过 5 秒。'
+        - alert: FlowMeshOutboxConfirmationFailures
+          expr: 'sum by (service) (rate(flowmesh_outbox_confirmation_failed_total[5m])) > 0'
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh Outbox 确认失败
+            description: '服务 {{ "{{ $labels.service }}" }} 已发送消息但未完成本地确认。'
+{{- end }}

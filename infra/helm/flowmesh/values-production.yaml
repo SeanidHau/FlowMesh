@@ -63,6 +63,9 @@ observability:
     samplingProbability: "0.1"
     connectTimeout: 2s
     exportTimeout: 5s
+  prometheusRule:
+    enabled: false
+    labels: {}
 
 # 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
 ingress:
