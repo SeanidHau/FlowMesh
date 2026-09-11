@@ -25,6 +25,7 @@ grep -F -- 'scripts/validate-runtime-observability.sh' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_DEPENDENCY_HA' "${script}" >/dev/null
 grep -F -- 'scripts/validate-production-ha.sh' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT' "${script}" >/dev/null
 grep -F -- 'scripts/validate-production-evidence.sh' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-true' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_DEPENDENCY_HA:-true' "${script}" >/dev/null
