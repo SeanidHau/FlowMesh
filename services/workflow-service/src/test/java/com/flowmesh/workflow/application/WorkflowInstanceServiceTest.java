@@ -1,6 +1,7 @@
 package com.flowmesh.workflow.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,8 +9,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowTask;
+import com.flowmesh.workflow.domain.WorkflowTaskRecord;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
+import com.flowmesh.workflow.repository.WorkflowTaskRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +36,9 @@ class WorkflowInstanceServiceTest {
     private WorkflowOutboxEventRepository outboxRepository;
 
     @Mock
+    private WorkflowTaskRepository taskRepository;
+
+    @Mock
     private TenantRlsInitializer tenantRlsInitializer;
 
     /**
@@ -47,13 +53,21 @@ class WorkflowInstanceServiceTest {
         instance.startProcurementReview();
         when(repository.findByApplicationId(applicationId)).thenReturn(Optional.of(instance));
         when(repository.updateState(instance)).thenReturn(1);
+        WorkflowTaskRecord taskRecord = new WorkflowTaskRecord(
+            instance.getId(), "tenant-a", applicationId, WorkflowTask.PURCHASER_REVIEW
+        );
+        when(taskRepository.findPendingByInstanceIdAndTaskForUpdate(
+            instance.getId(), WorkflowTask.PURCHASER_REVIEW
+        )).thenReturn(Optional.of(taskRecord));
+        when(taskRepository.markCompleted(any(), any(), any())).thenReturn(1);
 
         WorkflowInstanceService service = new WorkflowInstanceService(
             repository,
             outboxRepository,
             tenantRlsInitializer,
             new ObjectMapper().registerModule(new JavaTimeModule()),
-            new SimpleMeterRegistry()
+            new SimpleMeterRegistry(),
+            taskRepository
         );
         AuthPrincipal principal = new AuthPrincipal(
             UUID.randomUUID(), "purchaser-a", "tenant-a", Set.of("PURCHASER")

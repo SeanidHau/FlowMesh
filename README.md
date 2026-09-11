@@ -11,7 +11,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | API Gateway | 已实现 | 统一路由到 IAM、Supplier 和 Workflow，业务服务保持内网入口。 |
 | Gateway Redis 分布式限流 | 已实现 | Redis Lua 令牌桶按客户端地址限流；额度耗尽返回 429，Redis 故障 fail-closed 返回 503。 |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出、安全审计，以及多副本安全的失效令牌定期清理。 |
-| 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
+| 供应商申请与审批投影 | 已实现 | 支持采购初审、法务/财务并行会签、运营启用、幂等和 PostgreSQL RLS。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描、短期下载 URL 和可执行生命周期策略。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
@@ -111,8 +111,9 @@ POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
      {"taskKey":"PURCHASER_REVIEW"}
 ```
 
-任务按 `PURCHASER_REVIEW`、`LEGAL_REVIEW`、`FINANCE_REVIEW`、
-`OPERATIONS_ACTIVATION` 顺序推进，Token 中缺少对应角色时返回 `403`。
+采购初审完成后，`LEGAL_REVIEW` 和 `FINANCE_REVIEW` 会同时进入待办；两者都完成后才进入
+`OPERATIONS_ACTIVATION`。响应中的 `availableTasks` 表示当前可处理任务，`completedTasks`
+表示已完成任务。Token 中缺少目标任务对应角色时返回 `403`。
 
 根工程会校验 Java 21 与 Maven 3.9.x；不满足时构建会在开始阶段失败。
 

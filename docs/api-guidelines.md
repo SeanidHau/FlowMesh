@@ -28,8 +28,24 @@ workflow-service 提供以下最小审批接口：
 | `GET` | `/api/v1/workflow-instances/{applicationId}` | 查询当前租户可见的流程实例 |
 | `POST` | `/api/v1/workflow-instances/{applicationId}/tasks` | 完成当前角色任务并推进流程 |
 
-任务请求体使用当前任务键，例如 `{"taskKey":"PURCHASER_REVIEW"}`。服务端从 JWT
-读取租户和角色；任务键不匹配当前节点返回 `409`，角色不足返回 `403`。
+任务请求体使用待办任务键，例如 `{"taskKey":"PURCHASER_REVIEW"}`。服务端从 JWT
+读取租户和角色；任务键不在响应的 `availableTasks` 中返回 `409`，角色不足返回 `403`。
+采购初审完成后，`LEGAL_REVIEW` 和 `FINANCE_REVIEW` 可以同时出现在 `availableTasks`；
+两个会签任务都完成后才生成 `OPERATIONS_ACTIVATION`。
+
+流程响应至少包含以下状态字段：
+
+```json
+{
+  "status": "IN_PROGRESS",
+  "currentTask": "LEGAL_REVIEW",
+  "availableTasks": ["LEGAL_REVIEW", "FINANCE_REVIEW"],
+  "completedTasks": ["PURCHASER_REVIEW"]
+}
+```
+
+`currentTask` 是面向旧客户端和摘要展示的流程指针，不代表唯一可操作任务；客户端应使用
+`availableTasks` 决定当前角色可执行的任务，并使用 `completedTasks` 渲染历史进度。
 
 ## 站内通知
 

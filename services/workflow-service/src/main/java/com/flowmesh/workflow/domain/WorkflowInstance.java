@@ -135,16 +135,34 @@ public class WorkflowInstance {
     }
 
     /**
-     * 完成当前审批节点并推进流程。
+     * 根据持久化任务状态推进流程摘要。
+     *
+     * <p>法务和财务是并行任务。一个任务完成后，摘要指向另一个仍待处理的任务；两个任务
+     * 都完成后才进入运营启用。</p>
+     *
+     * @param completedTask 已完成任务
+     * @param parallelReviewTaskPending 另一个并行会签任务是否仍待处理
      */
-    public void completeCurrentTask() {
-        WorkflowTask next = Objects.requireNonNull(currentTask).next();
-        if (next == null) {
+    public void advanceAfterTask(WorkflowTask completedTask, boolean parallelReviewTaskPending) {
+        if (completedTask == WorkflowTask.PURCHASER_REVIEW) {
+            currentTask = WorkflowTask.LEGAL_REVIEW;
+            return;
+        }
+        if (completedTask.isParallelReview()) {
+            if (parallelReviewTaskPending) {
+                currentTask = completedTask == WorkflowTask.LEGAL_REVIEW
+                    ? WorkflowTask.FINANCE_REVIEW : WorkflowTask.LEGAL_REVIEW;
+            } else {
+                currentTask = WorkflowTask.OPERATIONS_ACTIVATION;
+            }
+            return;
+        }
+        if (completedTask == WorkflowTask.OPERATIONS_ACTIVATION) {
             status = WorkflowInstanceStatus.COMPLETED;
             currentTask = null;
             return;
         }
-        currentTask = next;
+        throw new IllegalStateException("流程任务不受支持：" + completedTask);
     }
 
     /**

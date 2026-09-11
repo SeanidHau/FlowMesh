@@ -80,7 +80,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 | `gateway-service` | 认证入口、限流、路由、受信租户上下文透传 | 无业务数据 |
 | `iam-service` | 用户、角色、组织、JWT / Refresh Token | IAM Schema |
 | `supplier-service` | 申请、材料元数据、供应商主数据、状态机、审批快照、Outbox | Supplier Schema；启用供应商 Worker |
-| `workflow-service` | 流程实例投影、当前任务查询与完成、审批推进和流程查询 | Workflow Schema；当前由内部状态机承载 |
+| `workflow-service` | 流程实例投影、持久化待办任务查询与完成、审批推进和流程查询 | Workflow Schema；当前由内部状态机承载 |
 | `risk-service` | 模拟风险校验、异步回调与受控故障注入 | Risk Schema；风险校验 Worker |
 | `notification-audit-service` | 通知、审计查询、DLQ 重放、事件对账 | Audit Schema；通知 Worker |
 
@@ -91,7 +91,8 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 - `supplier-service` 是申请、供应商状态与审批快照的业务权威。
 - 当前 `workflow-service` 是节点、用户任务和流程推进的编排权威；未来接入 Camunda 后再由流程引擎承接该职责。
 - 两者用 `applicationId + workflowInstanceId` 关联，并由对账任务检测 Supplier 与 Workflow 投影差异。
-- Electron 桌面工作台经 `workflow-service` 查询和完成当前任务；未来接入 Camunda 时仍保持该 API 边界，不让客户端直接依赖引擎。
+- Electron 桌面工作台经 `workflow-service` 查询和完成待办任务；`availableTasks` 支持法务与财务并行会签，
+  `currentTask` 仅作为兼容旧客户端的流程摘要。未来接入 Camunda 时仍保持该 API 边界，不让客户端直接依赖引擎。
 
 ### 跨系统动作
 

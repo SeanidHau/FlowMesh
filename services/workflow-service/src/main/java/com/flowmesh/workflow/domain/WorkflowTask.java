@@ -1,7 +1,9 @@
 package com.flowmesh.workflow.domain;
 
 /**
- * 供应商准入 MVP 的审批节点顺序。
+ * 供应商准入流程的审批任务键和角色映射。
+ *
+ * <p>采购初审完成后，法务和财务任务同时创建。二者都完成后才创建运营启用任务。</p>
  */
 public enum WorkflowTask {
     PURCHASER_REVIEW("PURCHASER"),
@@ -22,6 +24,15 @@ public enum WorkflowTask {
      */
     public String getRequiredRole() {
         return requiredRole;
+    }
+
+    /**
+     * 判断任务是否属于并行会签阶段。
+     *
+     * @return 法务或财务任务时为 {@code true}
+     */
+    public boolean isParallelReview() {
+        return this == LEGAL_REVIEW || this == FINANCE_REVIEW;
     }
 
     /**

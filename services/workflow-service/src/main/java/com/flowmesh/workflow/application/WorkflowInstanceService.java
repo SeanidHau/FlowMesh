@@ -6,10 +6,12 @@ import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.workflow.domain.WorkflowInstance;
 import com.flowmesh.workflow.domain.WorkflowInstanceStatus;
 import com.flowmesh.workflow.domain.WorkflowTask;
+import com.flowmesh.workflow.domain.WorkflowTaskRecord;
 import com.flowmesh.workflow.domain.WorkflowOutboxEvent;
 import com.flowmesh.workflow.api.dto.WorkflowReconciliationSnapshot;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
+import com.flowmesh.workflow.repository.WorkflowTaskRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.time.Instant;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class WorkflowInstanceService {
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
     private final Counter taskCompletedCounter;
+    private final WorkflowTaskRepository taskRepository;
 
     /**
      * 创建流程实例应用服务。
@@ -39,18 +42,21 @@ public class WorkflowInstanceService {
      * @param tenantRlsInitializer 租户 RLS 初始化器
      * @param objectMapper JSON 序列化器
      * @param meterRegistry Micrometer 指标注册器
+     * @param taskRepository 审批任务仓储
      */
     public WorkflowInstanceService(
         WorkflowInstanceRepository repository,
         WorkflowOutboxEventRepository outboxRepository,
         TenantRlsInitializer tenantRlsInitializer,
         ObjectMapper objectMapper,
-        MeterRegistry meterRegistry
+        MeterRegistry meterRegistry,
+        WorkflowTaskRepository taskRepository
     ) {
         this.repository = repository;
         this.outboxRepository = outboxRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.taskRepository = taskRepository;
         this.taskCompletedCounter = Counter.builder("flowmesh.workflow.task.completed")
             .description("workflow 审批节点完成次数")
             .register(meterRegistry);
@@ -68,6 +74,35 @@ public class WorkflowInstanceService {
         tenantRlsInitializer.initialize(tenantId);
         return repository.findByApplicationId(applicationId)
             .orElseThrow(WorkflowInstanceNotFoundException::new);
+    }
+
+    /**
+     * 查询流程实例的当前待办任务。
+     *
+     * @param instance 流程实例
+     * @return 当前待办任务，按业务顺序排列
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<WorkflowTask> pendingTasks(String tenantId, WorkflowInstance instance) {
+        tenantRlsInitializer.initialize(tenantId);
+        return taskRepository.findPendingByInstanceId(instance.getId()).stream()
+            .map(WorkflowTaskRecord::getTaskKey)
+            .toList();
+    }
+
+    /**
+     * 查询流程实例已完成的任务。
+     *
+     * @param tenantId 租户标识
+     * @param instance 流程实例
+     * @return 已完成任务，按完成时间排序
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<WorkflowTask> completedTasks(String tenantId, WorkflowInstance instance) {
+        tenantRlsInitializer.initialize(tenantId);
+        return taskRepository.findCompletedByInstanceId(instance.getId()).stream()
+            .map(WorkflowTaskRecord::getTaskKey)
+            .toList();
     }
 
     /**
@@ -117,18 +152,45 @@ public class WorkflowInstanceService {
         }
 
         if (instance.getStatus() != WorkflowInstanceStatus.IN_PROGRESS
-            || instance.getCurrentTask() != task) {
+            || (instance.getCurrentTask() != task && !task.isParallelReview())) {
             throw new WorkflowTaskConflictException();
         }
         if (!principal.roles().contains(task.getRequiredRole())) {
             throw new WorkflowTaskForbiddenException();
         }
 
-        instance.completeCurrentTask();
+        WorkflowTaskRecord taskRecord = taskRepository
+            .findPendingByInstanceIdAndTaskForUpdate(instance.getId(), task)
+            .orElseThrow(WorkflowTaskConflictException::new);
+        if (taskRepository.markCompleted(taskRecord.getId(), principal.userId(), Instant.now()) != 1) {
+            throw new WorkflowTaskConflictException();
+        }
+
+        boolean parallelReviewTaskPending = false;
+        if (task.isParallelReview()) {
+            WorkflowTask otherTask = task == WorkflowTask.LEGAL_REVIEW
+                ? WorkflowTask.FINANCE_REVIEW : WorkflowTask.LEGAL_REVIEW;
+            parallelReviewTaskPending = taskRepository
+                .existsPendingByInstanceIdAndTask(instance.getId(), otherTask);
+        }
+        instance.advanceAfterTask(task, parallelReviewTaskPending);
         if (repository.updateState(instance) != 1) {
             throw new OptimisticLockingFailureException("流程状态已被其他事务更新");
         }
         instance.incrementVersion();
+
+        if (task == WorkflowTask.PURCHASER_REVIEW) {
+            taskRepository.insert(new WorkflowTaskRecord(
+                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.LEGAL_REVIEW
+            ));
+            taskRepository.insert(new WorkflowTaskRecord(
+                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.FINANCE_REVIEW
+            ));
+        } else if (task.isParallelReview() && !parallelReviewTaskPending) {
+            taskRepository.insert(new WorkflowTaskRecord(
+                instance.getId(), principal.tenantId(), applicationId, WorkflowTask.OPERATIONS_ACTIVATION
+            ));
+        }
         WorkflowInstance saved = instance;
         UUID eventId = UUID.randomUUID();
         outboxRepository.save(new WorkflowOutboxEvent(

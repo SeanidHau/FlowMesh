@@ -43,6 +43,8 @@ export interface WorkflowInstanceResponse {
   processDefinitionKey: string;
   status: string;
   currentTask: string | null;
+  availableTasks: string[];
+  completedTasks: string[];
   version: number;
   createdAt: string;
 }

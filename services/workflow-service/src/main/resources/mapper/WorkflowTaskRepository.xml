@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.workflow.repository.WorkflowTaskRepository">
+  <resultMap id="taskResult" type="com.flowmesh.workflow.domain.WorkflowTaskRecord">
+    <id property="id" column="id" />
+    <result property="workflowInstanceId" column="workflow_instance_id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="applicationId" column="application_id" />
+    <result property="taskKey" column="task_key" />
+    <result property="status" column="status" />
+    <result property="completedBy" column="completed_by" />
+    <result property="completedAt" column="completed_at" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <select id="findPendingByInstanceId" resultMap="taskResult">
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
+           completed_by, completed_at, created_at
+    FROM workflow_tasks
+    WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND status = 'PENDING'
+    ORDER BY CASE task_key
+      WHEN 'PURCHASER_REVIEW' THEN 1
+      WHEN 'LEGAL_REVIEW' THEN 2
+      WHEN 'FINANCE_REVIEW' THEN 3
+      WHEN 'OPERATIONS_ACTIVATION' THEN 4
+      ELSE 99
+    END
+  </select>
+
+  <select id="findCompletedByInstanceId" resultMap="taskResult">
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
+           completed_by, completed_at, created_at
+    FROM workflow_tasks
+    WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND status = 'COMPLETED'
+    ORDER BY completed_at ASC
+  </select>
+
+  <select id="findPendingByInstanceIdAndTaskForUpdate" resultMap="taskResult">
+    SELECT id, workflow_instance_id, tenant_id, application_id, task_key, status,
+           completed_by, completed_at, created_at
+    FROM workflow_tasks
+    WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+      AND task_key = #{taskKey}
+      AND status = 'PENDING'
+    FOR UPDATE
+  </select>
+
+  <select id="existsPendingByInstanceIdAndTask" resultType="boolean">
+    SELECT EXISTS (
+      SELECT 1
+      FROM workflow_tasks
+      WHERE workflow_instance_id = #{workflowInstanceId, jdbcType=OTHER}
+        AND task_key = #{taskKey}
+        AND status = 'PENDING'
+    )
+  </select>
+
+  <insert id="insert" parameterType="com.flowmesh.workflow.domain.WorkflowTaskRecord">
+    INSERT INTO workflow_tasks
+      (id, workflow_instance_id, tenant_id, application_id, task_key, status,
+       completed_by, completed_at, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{workflowInstanceId, jdbcType=OTHER}, #{tenantId},
+            #{applicationId, jdbcType=OTHER}, #{taskKey}, #{status},
+            #{completedBy, jdbcType=OTHER}, #{completedAt}, #{createdAt})
+  </insert>
+
+  <update id="markCompleted">
+    UPDATE workflow_tasks
+    SET status = 'COMPLETED', completed_by = #{completedBy, jdbcType=OTHER}, completed_at = #{completedAt}
+    WHERE id = #{id, jdbcType=OTHER} AND status = 'PENDING'
+  </update>
+</mapper>

@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.messaging.EventEnvelopeValidator;
 import com.flowmesh.workflow.domain.WorkflowInstance;
+import com.flowmesh.workflow.domain.WorkflowTask;
+import com.flowmesh.workflow.domain.WorkflowTaskRecord;
 import com.flowmesh.workflow.repository.RiskEventInboxRepository;
 import com.flowmesh.workflow.repository.WorkflowInstanceRepository;
+import com.flowmesh.workflow.repository.WorkflowTaskRepository;
 import com.flowmesh.workflow.rls.TenantRlsInitializer;
 import java.util.UUID;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -23,6 +26,7 @@ public class RiskCheckResultService {
     private final RiskEventInboxRepository riskEventInboxRepository;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final WorkflowTaskRepository workflowTaskRepository;
 
     /**
      * 创建风控结果服务。
@@ -36,12 +40,14 @@ public class RiskCheckResultService {
         WorkflowInstanceRepository workflowInstanceRepository,
         RiskEventInboxRepository riskEventInboxRepository,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        WorkflowTaskRepository workflowTaskRepository
     ) {
         this.workflowInstanceRepository = workflowInstanceRepository;
         this.riskEventInboxRepository = riskEventInboxRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.workflowTaskRepository = workflowTaskRepository;
     }
 
     /**
@@ -78,6 +84,11 @@ public class RiskCheckResultService {
         }
         if (workflowInstanceRepository.updateState(instance) != 1) {
             throw new OptimisticLockingFailureException("风控结果更新时流程版本发生冲突");
+        }
+        if ("PASS".equals(decision)) {
+            workflowTaskRepository.insert(new WorkflowTaskRecord(
+                instance.getId(), tenantId, applicationId, WorkflowTask.PURCHASER_REVIEW
+            ));
         }
         riskEventInboxRepository.insert(eventId, tenantId, applicationId);
     }

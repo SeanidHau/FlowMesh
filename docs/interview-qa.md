@@ -37,9 +37,12 @@ Q: Workflow 服务暂时不可用时，Supplier 创建申请会失败吗？
 A: 不应该失败。Supplier 只需要在本地事务中提交申请和 Outbox 事件，Workflow 恢复后由发布器和消费者继续处理。用户可以看到申请已创建但审批流程处于“处理中”或“待同步”状态，这正是最终一致性系统需要明确呈现的业务状态。
 
 Q: 一次供应商申请的完整链路是什么？
-A: 用户先通过 IAM 登录获取 JWT。Supplier 校验 JWT 后，在一个本地事务中创建供应商申请和 `ApplicationSubmitted` Outbox 事件。Outbox 发布器将事件发送到 RocketMQ，Workflow 消费后创建对应的流程实例和当前任务。
+A: 用户先通过 IAM 登录获取 JWT。Supplier 校验 JWT 后，在一个本地事务中创建供应商申请和 `ApplicationSubmitted` Outbox 事件。Outbox 发布器将事件发送到 RocketMQ，Workflow 消费后创建对应的流程实例和持久化待办任务。
 
-采购、法务、财务和运营角色依次完成审批。Workflow 在任务完成后写入 `WorkflowTaskCompleted` Outbox 事件，Supplier 消费该事件并更新申请状态。整个链路不依赖跨服务分布式事务，而是通过本地事务、可靠消息和幂等消费实现最终一致性。
+采购初审完成后，法务和财务任务同时进入待办，两个会签任务都完成后才进入运营启用。Workflow 每次完成任务都在同一事务中更新任务、流程摘要并写入 `WorkflowTaskCompleted` Outbox 事件，Supplier 消费该事件并更新申请状态。整个链路不依赖跨服务分布式事务，而是通过本地事务、可靠消息和幂等消费实现最终一致性。
+
+Q: 为什么同时保留 `currentTask` 和 `availableTasks`？
+A: `currentTask` 是兼容旧客户端和列表摘要的单值指针，在并行会签阶段指向仍待处理的其中一个任务；真正决定客户端可操作范围的是持久化任务模型返回的 `availableTasks`。`completedTasks` 用于展示历史进度。任务完成时先锁定对应任务行，再用流程实例乐观锁裁决并发更新，避免两个角色重复完成或覆盖流程状态。
 
 Q: 创建申请时，哪些操作必须在同一个事务中？
 A: 供应商申请、Outbox 事件和首次幂等响应快照必须在同一个 Supplier 数据库事务中提交。RocketMQ 网络发送不能放在这个事务里，否则会长时间占用数据库连接，也无法把外部 Broker 真正纳入本地事务。

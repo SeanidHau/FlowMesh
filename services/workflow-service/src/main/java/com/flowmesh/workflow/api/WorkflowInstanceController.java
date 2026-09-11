@@ -47,7 +47,12 @@ public class WorkflowInstanceController {
         @AuthenticationPrincipal AuthPrincipal principal,
         @PathVariable UUID applicationId
     ) {
-        return WorkflowInstanceResponse.from(service.find(principal.tenantId(), applicationId));
+        var instance = service.find(principal.tenantId(), applicationId);
+        return WorkflowInstanceResponse.from(
+            instance,
+            service.pendingTasks(principal.tenantId(), instance),
+            service.completedTasks(principal.tenantId(), instance)
+        );
     }
 
     /**
@@ -66,10 +71,13 @@ public class WorkflowInstanceController {
         @Valid @RequestBody CompleteTaskRequest request,
         HttpServletRequest httpRequest
     ) {
+        var instance = service.completeTask(
+            principal, applicationId, request.taskKey(), TraceIdFilter.currentTraceId(httpRequest)
+        );
         return WorkflowInstanceResponse.from(
-            service.completeTask(
-                principal, applicationId, request.taskKey(), TraceIdFilter.currentTraceId(httpRequest)
-            )
+            instance,
+            service.pendingTasks(principal.tenantId(), instance),
+            service.completedTasks(principal.tenantId(), instance)
         );
     }
 }
