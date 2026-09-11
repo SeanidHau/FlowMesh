@@ -176,7 +176,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 未安装 Prometheus Operator 时保持该选项关闭，并使用目标平台的 Service Discovery 或静态抓取配置。
 
 如果需要同时加载 FlowMesh 告警规则，可在同一发布中启用 `PrometheusRule`。该资源覆盖服务不可用、
-HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟和 Outbox 确认失败；目标平台仍需配置
+HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、Outbox 确认失败，以及 PostgreSQL 备份、生命周期清理和
+Workflow SLA CronJob 长时间未成功执行的告警。CronJob 告警依赖目标集群安装 kube-state-metrics；目标平台仍需配置
 Alertmanager 路由、通知渠道和明确的值班责任：
 
 ```bash

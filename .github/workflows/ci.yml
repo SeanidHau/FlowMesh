@@ -176,6 +176,23 @@ jobs:
             echo 'Production chart must render the Workflow SLA CronJob with its dedicated Secret key.' >&2
             exit 1
           fi
+          rendered_alerts="$(helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" \
+            --set observability.prometheusRule.enabled=true \
+            --set observability.prometheusRule.labels.release=kube-prometheus-stack)"
+          for alert in FlowMeshWorkflowSlaCronJobStale FlowMeshPostgresBackupCronJobStale FlowMeshPostgresRetentionCronJobStale; do
+            if ! printf '%s\n' "$rendered_alerts" | grep -q "alert: $alert"; then
+              echo "PrometheusRule must render scheduled-job alert: $alert" >&2
+              exit 1
+            fi
+          done
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \

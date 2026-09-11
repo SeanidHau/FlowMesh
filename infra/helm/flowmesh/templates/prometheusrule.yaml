@@ -87,4 +87,33 @@ spec:
           annotations:
             summary: FlowMesh Outbox 确认失败
             description: '服务 {{ "{{ $labels.service }}" }} 已发送消息但未完成本地确认。'
+
+    # 这些规则依赖 kube-state-metrics 提供的 CronJob 状态指标；没有该组件时应在目标平台补齐，
+    # 否则 Prometheus 无法判断维护任务是否长期没有成功执行。
+    - name: flowmesh-scheduled-jobs
+      rules:
+        - alert: FlowMeshWorkflowSlaCronJobStale
+          expr: '(time() - kube_cronjob_status_last_successful_time{namespace="{{ .Release.Namespace }}", cronjob="{{ include "flowmesh.fullname" . }}-workflow-sla"}) > 900'
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh Workflow SLA 任务未按时成功
+            description: Workflow SLA CronJob 已超过 15 分钟没有成功执行，审批超时催办和升级可能停止。
+        - alert: FlowMeshPostgresBackupCronJobStale
+          expr: '(time() - kube_cronjob_status_last_successful_time{namespace="{{ .Release.Namespace }}", cronjob="{{ include "flowmesh.fullname" . }}-postgres-backup"}) > 93600'
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: FlowMesh PostgreSQL 备份任务未按时成功
+            description: PostgreSQL 备份 CronJob 已超过 26 小时没有成功执行，请立即检查备份归档和对象存储上传。
+        - alert: FlowMeshPostgresRetentionCronJobStale
+          expr: '(time() - kube_cronjob_status_last_successful_time{namespace="{{ .Release.Namespace }}", cronjob="{{ include "flowmesh.fullname" . }}-postgres-retention"}) > 93600'
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: FlowMesh 生命周期清理任务未按时成功
+            description: PostgreSQL 生命周期清理 CronJob 已超过 26 小时没有成功执行，消息和幂等数据可能持续增长。
 {{- end }}
