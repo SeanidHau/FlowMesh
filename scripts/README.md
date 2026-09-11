@@ -15,6 +15,7 @@
 - `validate-retention-role.sh`：只读核验生命周期维护账号的角色属性、RLS 能力和精确表/列权限。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
 - `run-production-acceptance.sh`：串联生产发布后的只读验收并生成不可覆盖的证据报告。
+- `create-production-evidence-manifest.sh`：为目标平台已生成的证据报告创建不可覆盖的清单和 SHA-256 校验和。
 - `validate-production-evidence.sh`：只读校验目标环境证据包的必需报告、通过状态、校验和和敏感信息边界。
 - `validate-runtime-observability.sh`：只读检查目标 Prometheus、Alertmanager、FlowMesh targets 和关键告警规则。
 - `validate-production-ha.sh`：只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的生产 HA 拓扑证据。
@@ -44,6 +45,17 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 并校验目标环境证据包中的 Kubernetes、依赖 HA、运行时观测、恢复、备份恢复、压测、跨租户安全回归和告警路由报告，
 再将每项结果写入不可覆盖的 Markdown 报告。非生产预检只有在显式设置对应 `FLOWMESH_REQUIRE_*` 变量为 `false` 时才会跳过检查。
 该脚本只读，不执行集群写操作或故障切换；具体变量和示例见 [运行手册](../docs/runbook.md)。
+
+目标平台完成各项演练后，使用 `create-production-evidence-manifest.sh` 为已有报告生成
+`manifest.md` 和 `checksums.sha256`；该工具不会创建或修改任何演练报告，且会在报告校验失败时删除本次生成的清单与校验和：
+
+```bash
+FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
+FLOWMESH_EVIDENCE_ENVIRONMENT='production-cn-shanghai' \
+FLOWMESH_EVIDENCE_OPERATOR='oncall@example.invalid' \
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+./scripts/create-production-evidence-manifest.sh
+```
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境使用 Helm `CronJob` 定时执行备份。备份镜像
 通过 `FLOWMESH_PG_SSLMODE` 控制 PostgreSQL 传输加密；生产覆盖值默认使用 `require`，目标平台提供 CA 后可改为

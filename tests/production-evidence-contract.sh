@@ -5,10 +5,12 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 script="${repo_root}/scripts/validate-production-evidence.sh"
+manifest_generator="${repo_root}/scripts/create-production-evidence-manifest.sh"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-evidence-contract.XXXXXX")"
 trap 'rm -rf -- "${temporary_directory}"' EXIT
 
 bash -n "${script}"
+bash -n "${manifest_generator}"
 
 required_files=(
   kubernetes-smoke.md
@@ -74,28 +76,19 @@ cat >> "${temporary_directory}/alert-routing.md" <<'EOF'
 - 通知：告警触发和恢复通知均已收到。
 EOF
 
-cat > "${temporary_directory}/manifest.md" <<'EOF'
-# FlowMesh 生产证据清单
+FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+FLOWMESH_EVIDENCE_ENVIRONMENT=contract-test \
+FLOWMESH_EVIDENCE_OPERATOR=contract-test \
+FLOWMESH_IMAGE_TAG=flowmesh-test-image \
+  "${manifest_generator}" >/dev/null
 
-- 环境标识：`contract-test`
-- 执行人：`contract-test`
-- 开始时间（UTC）：`2026-01-01T00:00:00Z`
-- 完成时间（UTC）：`2026-01-01T00:01:00Z`
-- 总结果：`PASS`
-- kubernetes-smoke.md
-- dependency-ha.md
-- runtime-observability.md
-- service-recovery.md
-- backup-restore.md
-- load-test.md
-- security-regression.md
-- alert-routing.md
-EOF
-
-(
-  cd "${temporary_directory}"
-  shasum -a 256 "${required_files[@]}" manifest.md > checksums.sha256
-)
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT=contract-test \
+  FLOWMESH_EVIDENCE_OPERATOR=contract-test \
+  "${manifest_generator}" >/dev/null 2>&1; then
+  echo '证据清单生成器不得覆盖已有清单。' >&2
+  exit 1
+fi
 
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null
 

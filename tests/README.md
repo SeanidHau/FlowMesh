@@ -108,7 +108,8 @@ Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 SL
 ```
 
 证据包必须包含目标 Kubernetes、依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，
-每份报告明确记录 `PASS`，并由 `checksums.sha256` 校验；证据清单还必须记录环境、执行人和起止时间。
+每份报告明确记录 `PASS`；先由 `scripts/create-production-evidence-manifest.sh` 生成清单和
+`checksums.sha256`，再执行完整性校验。生成器不会创建报告，也不会替代真实目标环境演练。
 
 不连接集群的 smoke test 契约检查：
 

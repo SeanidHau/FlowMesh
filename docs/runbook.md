@@ -129,6 +129,17 @@ HA 报告必须包含 PostgreSQL、Redis、RocketMQ 和对象存储，观测报�
 非生产预检如果确实没有对应平台证据，必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false`、
 `FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 或 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false`；这些选项不应出现在生产发布命令中。
 
+在执行生产验收编排前，先为已经完成的八份目标环境报告生成清单和校验和。生成器只创建
+`manifest.md` 与 `checksums.sha256`，不会补写或修改任何演练结果；如果报告缺失、关键内容不完整或包含敏感凭据，生成会失败：
+
+```bash
+FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
+FLOWMESH_EVIDENCE_ENVIRONMENT='production-cn-shanghai' \
+FLOWMESH_EVIDENCE_OPERATOR='oncall@example.invalid' \
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+./scripts/create-production-evidence-manifest.sh
+```
+
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 
 ```bash
