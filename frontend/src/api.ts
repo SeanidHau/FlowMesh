@@ -10,7 +10,7 @@ import type {
 } from './types';
 
 interface RequestOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PUT';
   body?: unknown;
   authenticated?: boolean;
   headers?: Record<string, string>;
@@ -137,6 +137,20 @@ export class FlowMeshApi {
   async listNotifications(limit = 10): Promise<NotificationResponse[]> {
     return this.request<NotificationResponse[]>(
       'notification', `/api/v1/notifications?limit=${limit}`, { authenticated: true },
+    );
+  }
+
+  /**
+   * 将当前用户的站内通知标记为已读。
+   *
+   * @param notificationId 通知标识
+   */
+  async markNotificationRead(notificationId: string): Promise<void> {
+    await this.request<void>(
+      'notification', `/api/v1/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        authenticated: true,
+      },
     );
   }
 

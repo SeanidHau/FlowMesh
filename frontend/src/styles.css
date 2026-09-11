@@ -205,6 +205,10 @@ select { appearance: auto; }
 .event-item strong { display: block; color: var(--ink); font-size: 12px; }
 .event-item small { display: block; margin-top: 6px; color: var(--ink-muted); font-size: 10px; }
 .event-item time { color: var(--ink-muted); font: 10px var(--mono); }
+.event-meta { display: grid; justify-items: end; gap: 8px; }
+.read-button { padding: 0; color: var(--accent); background: transparent; font-size: 10px; font-weight: 750; }
+.read-button:hover { color: var(--accent-dark); text-decoration: underline; }
+.event-item.unread strong { color: var(--accent-dark); }
 .application-selector { display: flex; align-items: flex-end; gap: 12px; margin-top: 16px; }
 .application-selector label { flex: 1; }
 

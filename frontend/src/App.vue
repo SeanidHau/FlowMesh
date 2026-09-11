@@ -191,6 +191,17 @@ async function loadNotifications(): Promise<void> {
   }
 }
 
+async function markNotificationRead(notification: NotificationResponse): Promise<void> {
+  if (notification.status === 'READ') return;
+  errorMessage.value = '';
+  try {
+    await api.markNotificationRead(notification.id);
+    notification.status = 'READ';
+  } catch (error) {
+    showError(error);
+  }
+}
+
 async function uploadDocument(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -397,7 +408,7 @@ onMounted(() => {
                   </div>
                 </div>
               </article>
-              <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">工作状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已就绪</span></div><div class="event-list"><template v-if="notifications.length"><div v-for="notification in notifications" :key="notification.id" class="event-item"><span class="event-state success"></span><div><strong>{{ notification.title }}</strong><small>{{ notification.content }}</small></div><time>{{ formatTime(notification.createdAt) }}</time></div></template><template v-else><div class="event-item"><span class="event-state success"></span><div><strong>工作区准备就绪</strong><small>当前暂无新的站内通知</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待新的申请</strong><small>创建申请后会显示在这里</small></div><time>等待</time></div></template></div></article>
+              <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">工作状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已就绪</span></div><div class="event-list"><template v-if="notifications.length"><div v-for="notification in notifications" :key="notification.id" class="event-item" :class="{ unread: notification.status === 'UNREAD' }"><span class="event-state" :class="notification.status === 'UNREAD' ? 'info' : 'success'"></span><div><strong>{{ notification.title }}</strong><small>{{ notification.content }}</small></div><div class="event-meta"><time>{{ formatTime(notification.createdAt) }}</time><button v-if="notification.status === 'UNREAD'" class="read-button" type="button" @click="markNotificationRead(notification)">标记已读</button></div></div></template><template v-else><div class="event-item"><span class="event-state success"></span><div><strong>工作区准备就绪</strong><small>当前暂无新的站内通知</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待新的申请</strong><small>创建申请后会显示在这里</small></div><time>等待</time></div></template></div></article>
             </div>
             <div class="application-selector"><label><span>载入已有申请</span><input v-model="applicationId" placeholder="粘贴申请编号后回车" @keyup.enter="selectApplication" /></label><button class="secondary-button" type="button" @click="selectApplication">载入申请</button></div>
           </template>

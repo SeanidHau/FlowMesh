@@ -95,6 +95,22 @@ public class NotificationAuditService {
         return notificationRepository.findForUser(tenantId, userId, Math.min(Math.max(limit, 1), 100));
     }
 
+    /**
+     * 将当前用户可访问的通知标记为已读，并保持操作幂等。
+     *
+     * @param tenantId 租户标识
+     * @param userId 当前用户标识
+     * @param notificationId 通知标识
+     * @throws NotificationNotFoundException 通知不存在或不属于当前用户
+     */
+    @Transactional
+    public void markNotificationAsRead(String tenantId, UUID userId, UUID notificationId) {
+        tenantRlsInitializer.initialize(tenantId);
+        if (notificationRepository.markAsRead(tenantId, userId, notificationId, Instant.now()) != 1) {
+            throw new NotificationNotFoundException(notificationId);
+        }
+    }
+
     private JsonNode readEvent(String message) {
         try {
             JsonNode event = objectMapper.readTree(message);

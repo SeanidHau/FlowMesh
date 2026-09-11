@@ -12,7 +12,7 @@ type ApiService = 'iam' | 'supplier' | 'workflow' | 'notification';
 interface ApiRequest {
   service: ApiService;
   path: string;
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PUT';
   token?: string;
   body?: unknown;
   file?: { name: string; type: string; data: ArrayBuffer };
@@ -67,7 +67,7 @@ function parseRequest(value: unknown): ApiRequest {
   if (!request.path?.startsWith('/api/v1/')) {
     throw new Error('只允许访问 /api/v1 API');
   }
-  if (request.method && !['GET', 'POST'].includes(request.method)) {
+  if (request.method && !['GET', 'POST', 'PUT'].includes(request.method)) {
     throw new Error('不支持的 HTTP 方法');
   }
   if (request.file && request.body !== undefined) {

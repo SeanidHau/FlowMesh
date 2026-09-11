@@ -54,6 +54,36 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
         assertThat(visibleToOtherTenant).isZero();
     }
 
+    /**
+     * 验证已读更新同时受数据库 RLS 和用户条件约束保护。
+     */
+    @Test
+    void shouldRestrictNotificationReadUpdateToTenantAndUser() {
+        UUID notificationId = UUID.randomUUID();
+        UUID sourceEventId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        inTransaction("tenant-a", () -> jdbcTemplate.update(
+            "INSERT INTO audit.notifications "
+                + "(id, source_event_id, tenant_id, recipient_user_id, notification_type, title, content, status) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, 'UNREAD')",
+            notificationId, sourceEventId, "tenant-a", userId,
+            "SUPPLIER_ACTIVATED", "title", "content"
+        ));
+
+        Integer crossTenantUpdate = inTransaction("tenant-b", () -> jdbcTemplate.update(
+            "UPDATE audit.notifications SET status = 'READ' WHERE id = ? AND tenant_id = ? AND recipient_user_id = ?",
+            notificationId, "tenant-a", userId
+        ));
+        assertThat(crossTenantUpdate).isZero();
+
+        Integer ownUserUpdate = inTransaction("tenant-a", () -> jdbcTemplate.update(
+            "UPDATE audit.notifications SET status = 'READ', read_at = now() "
+                + "WHERE id = ? AND tenant_id = ? AND recipient_user_id = ?",
+            notificationId, "tenant-a", userId
+        ));
+        assertThat(ownUserUpdate).isEqualTo(1);
+    }
+
     private <T> T inTransaction(String tenantId, java.util.function.Supplier<T> action) {
         return new TransactionTemplate(transactionManager).execute(status -> {
             jdbcTemplate.queryForObject(

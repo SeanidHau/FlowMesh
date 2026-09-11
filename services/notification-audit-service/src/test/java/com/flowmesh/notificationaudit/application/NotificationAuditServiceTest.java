@@ -1,6 +1,7 @@
 package com.flowmesh.notificationaudit.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +11,7 @@ import com.flowmesh.notificationaudit.domain.Notification;
 import com.flowmesh.notificationaudit.repository.AuditEventRepository;
 import com.flowmesh.notificationaudit.repository.NotificationRepository;
 import com.flowmesh.notificationaudit.rls.TenantRlsInitializer;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +75,53 @@ class NotificationAuditServiceTest {
         newService().handleSupplierActivated(message(eventId, applicationId, applicantUserId));
 
         org.mockito.Mockito.verifyNoInteractions(notificationRepository);
+    }
+
+    /**
+     * 当前用户可以重复调用已读操作，服务只按租户和用户范围更新通知。
+     */
+    @Test
+    void shouldMarkOwnNotificationAsRead() {
+        UUID notificationId = UUID.randomUUID();
+        when(notificationRepository.markAsRead(
+            org.mockito.ArgumentMatchers.eq("tenant-a"),
+            org.mockito.ArgumentMatchers.eq(UUID.fromString("00000000-0000-0000-0000-000000000001")),
+            org.mockito.ArgumentMatchers.eq(notificationId),
+            org.mockito.ArgumentMatchers.any(Instant.class)
+        )).thenReturn(1);
+
+        newService().markNotificationAsRead(
+            "tenant-a",
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            notificationId
+        );
+
+        verify(notificationRepository).markAsRead(
+            org.mockito.ArgumentMatchers.eq("tenant-a"),
+            org.mockito.ArgumentMatchers.any(UUID.class),
+            org.mockito.ArgumentMatchers.eq(notificationId),
+            org.mockito.ArgumentMatchers.any(Instant.class)
+        );
+    }
+
+    /**
+     * 跨租户或跨用户的通知必须表现为不存在，避免泄露资源归属信息。
+     */
+    @Test
+    void shouldRejectNotificationOutsideCurrentUser() {
+        UUID notificationId = UUID.randomUUID();
+        when(notificationRepository.markAsRead(
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(UUID.class),
+            org.mockito.ArgumentMatchers.eq(notificationId),
+            org.mockito.ArgumentMatchers.any(Instant.class)
+        )).thenReturn(0);
+
+        assertThatThrownBy(() -> newService().markNotificationAsRead(
+            "tenant-a",
+            UUID.randomUUID(),
+            notificationId
+        )).isInstanceOf(NotificationNotFoundException.class);
     }
 
     private NotificationAuditService newService() {

@@ -53,7 +53,7 @@ A: 已经实现：统一 Gateway、IAM、Supplier、Workflow、Risk 和 Notifica
 尚未作为当前运行链路实现：Camunda 流程引擎、Redis 缓存、外部邮件/短信通道和生产级托管 Prometheus/Alertmanager/Grafana/OpenTelemetry 平台。Gateway Redis 分布式限流、Redis 登录限流、MinIO 材料存储、本地 Prometheus/Alertmanager/Grafana 基线、真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标已经实现；生产级外部依赖 HA 仍需在目标集群演练。
 
 Q: 如果面试官质疑项目规模不够，你如何回答？
-A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计、基础观测和部署校验做成可运行闭环；但外部基础设施 HA、托管观测后端、真实通知通道和 Camunda 仍是明确的后续边界。
+A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计、站内通知已读、基础观测和部署校验做成可运行闭环；但外部基础设施 HA、托管观测后端、真实通知通道和 Camunda 仍是明确的后续边界。
 
 Q: 生产环境如何保护 PostgreSQL、Redis 和 RocketMQ 的连接？
 A: Helm 生产覆盖值将 PostgreSQL 连接设置为 `sslmode=require`，Redis 设置为 TLS，RocketMQ Producer 和 Consumer 分别使用外部 Secret 中的独立 Access Key/Secret Key，并默认开启 TLS。自建 RocketMQ 可以把访问通道覆盖为 `LOCAL`，但不能因此关闭 TLS；如果 PostgreSQL 平台提供受控 CA，还应升级到 `verify-full`。Kubernetes smoke test 会检查四组 RocketMQ 凭据键，避免发布后因为 Secret 不完整才暴露问题。

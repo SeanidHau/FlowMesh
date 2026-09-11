@@ -1,6 +1,7 @@
 package com.flowmesh.notificationaudit.repository;
 
 import com.flowmesh.notificationaudit.domain.Notification;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ibatis.annotations.Mapper;
@@ -32,5 +33,21 @@ public interface NotificationRepository {
         @Param("tenantId") String tenantId,
         @Param("recipientUserId") UUID recipientUserId,
         @Param("limit") int limit
+    );
+
+    /**
+     * 将属于当前租户和用户的通知标记为已读。
+     *
+     * @param tenantId 租户标识
+     * @param recipientUserId 接收人标识
+     * @param notificationId 通知标识
+     * @param readAt 已读时间
+     * @return 受影响行数
+     */
+    int markAsRead(
+        @Param("tenantId") String tenantId,
+        @Param("recipientUserId") UUID recipientUserId,
+        @Param("notificationId") UUID notificationId,
+        @Param("readAt") Instant readAt
     );
 }
