@@ -10,6 +10,20 @@ global:
   imageTag: ""
   existingSecret: flowmesh-runtime-secrets
 
+# 以下地址是生产平台占位值，发布流程必须通过 --set/额外 values 覆写为真实 HA 服务地址；
+# 显式声明它们是为了阻止 Helm 继承本地 Compose 的 postgres/redis/rocketmq-namesrv 服务名。
+postgresql:
+  host: postgresql.internal.example.com
+  port: 5432
+  database: flowmesh
+
+redis:
+  host: redis.internal.example.com
+  port: 6379
+
+rocketmq:
+  namesrvAddr: rocketmq-namesrv.internal.example.com:9876
+
 networkPolicy:
   enabled: true
   # 生产 Gateway 只能由 Ingress Controller 进入，避免绕过 TLS、审计和入口限流。

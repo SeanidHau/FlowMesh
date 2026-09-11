@@ -58,7 +58,7 @@ raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret
 puts "生产备份配置结构校验通过。"
 RUBY
 
-if grep -Eq 'host:[[:space:]]*(postgres|redis)$|namesrvAddr:[[:space:]]*rocketmq-namesrv' "${values_file}"; then
+if grep -Eq 'host:[[:space:]]*(postgres|redis)$|namesrvAddr:[[:space:]]*rocketmq-namesrv(:|$)' "${values_file}"; then
   echo '生产 values 仍使用本地依赖服务名（postgres/redis/rocketmq-namesrv）。' >&2
   exit 1
 fi

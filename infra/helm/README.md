@@ -130,6 +130,9 @@ Workflow 额外接受 Supplier 的内部状态回写请求；出站策略只允�
 Gateway 还只接受 `networkPolicy.ingressNamespace` 指定的 Ingress Controller 命名空间入口；如果平台使用其他命名空间，
 必须在生产覆盖值中显式修改该字段，不能通过直接暴露 Gateway Service 绕过 Ingress。
 
+生产覆盖值还会显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，防止继承本地 Compose 服务名；
+这些 `*.internal.example.com` 仅是安全占位值，发布流程必须替换为真实的 HA 服务地址后再执行 Helm 发布。
+
 如果目标集群安装了 Prometheus Operator，可通过以下参数启用六个应用 Service 的统一指标抓取：
 
 ```bash
