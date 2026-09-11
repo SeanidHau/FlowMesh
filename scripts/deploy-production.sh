@@ -136,6 +136,16 @@ done
 }
 rocketmq_namesrv_helm_value="${FLOWMESH_ROCKETMQ_NAMESRV_ADDR//,/\\,}"
 
+# 记录升级前的稳定 Helm revision，发布后的 smoke 失败时回滚到该版本。
+previous_revision=''
+if helm status "${release}" --namespace "${namespace}" >/dev/null 2>&1; then
+  previous_revision="$(helm history "${release}" --namespace "${namespace}" --max 1 | awk 'NR == 3 {print $1}')"
+  [[ "${previous_revision}" =~ ^[0-9]+$ ]] || {
+    echo "无法解析 Helm Release 的当前 revision：${release}" >&2
+    exit 2
+  }
+fi
+
 FLOWMESH_IMAGE_TAG="${image_tag}" "${ROOT_DIR}/scripts/verify-flowmesh-images.sh"
 bash "${ROOT_DIR}/scripts/validate-production-config.sh" "${values_path}"
 
@@ -178,9 +188,42 @@ helm upgrade --install "${release}" "${chart_path}" \
   -f "${values_path}" \
   "${helm_overrides[@]}"
 
-FLOWMESH_IMAGE_TAG="${image_tag}" \
+if FLOWMESH_IMAGE_TAG="${image_tag}" \
 FLOWMESH_K8S_NAMESPACE="${namespace}" \
 FLOWMESH_HELM_RELEASE="${release}" \
 FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}" \
 FLOWMESH_INGRESS_NAMESPACE="${ingress_namespace}" \
-"${ROOT_DIR}/tests/kubernetes-production-smoke.sh"
+  "${ROOT_DIR}/tests/kubernetes-production-smoke.sh"; then
+  exit 0
+else
+  smoke_status=$?
+fi
+
+rollback_status=0
+if [[ -n "${previous_revision}" ]]; then
+  echo "发布后 smoke 失败，回滚 Helm Release ${release} 到 revision ${previous_revision}。" >&2
+  if helm rollback "${release}" "${previous_revision}" \
+    --namespace "${namespace}" \
+    --wait \
+    --timeout "${helm_timeout}"; then
+    :
+  else
+    rollback_status=$?
+  fi
+else
+  echo '首次发布后的 smoke 失败，卸载本次应用资源并保留 Helm 历史。' >&2
+  if helm uninstall "${release}" \
+    --namespace "${namespace}" \
+    --keep-history \
+    --wait \
+    --timeout "${helm_timeout}"; then
+    :
+  else
+    rollback_status=$?
+  fi
+fi
+
+if [[ "${rollback_status}" -ne 0 ]]; then
+  echo "发布后 smoke 失败，且自动回滚也失败；请立即人工处置 Release：${release}" >&2
+fi
+exit "${smoke_status}"

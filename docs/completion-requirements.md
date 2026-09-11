@@ -39,7 +39,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 生产外部依赖连接安全已补齐：RocketMQ Producer/Consumer 使用独立 Secret 凭据和 TLS，PostgreSQL 默认 `sslmode=require`，Redis 默认启用 TLS；本地 Compose 保持关闭 TLS 的兼容默认值。 |
 | 已完成 | 提供只读外部依赖 HA 拓扑预检，检查 PostgreSQL 复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；实际故障切换、备份恢复和 RTO/RPO 仍需目标平台执行并留存证据。 |
 | 已完成 | 提供只读生产证据包门禁，要求目标环境提交 Kubernetes smoke、依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并使用清单和 SHA-256 校验和验证完整性；实际证据仍需由目标平台执行生成。 |
-| 已完成 | 提供生产发布入口：先校验完整提交 SHA 镜像签名和生产 values，再执行 Helm 原子等待发布，最后执行只读 Kubernetes smoke；运行时凭据只通过预先创建的 Secret 引用。 |
+| 已完成 | 提供生产发布入口：先校验完整提交 SHA 镜像签名和生产 values，再执行 Helm 原子等待发布，最后执行只读 Kubernetes smoke；smoke 失败会自动回滚或清理首次安装资源；运行时凭据只通过预先创建的 Secret 引用。 |
 | 已完成 | 提供受保护的生产发布工作流：仅手动触发，使用 `production` Environment 审批、部署并发互斥、完整提交 SHA 镜像校验和部署日志归档；工作流不接收或打印运行时凭据。 |
 | 已完成 | Workflow SLA 已通过临时 PostgreSQL E2E 验证催办、并行审批实例锁定、任务状态收敛和 Outbox 写入；每个实例使用子事务保证乐观锁失败时整体回滚；CI 会执行该回归。 |
 | 尚需目标平台证据 | 外部依赖 HA、托管观测后端、告警通知、备份恢复、RTO/RPO、压测和故障演练不能由本地 CI 代替；必须使用生产证据包门禁留存实际结果。 |
