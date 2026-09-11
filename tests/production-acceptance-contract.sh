@@ -21,6 +21,8 @@ grep -F -- 'FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY' "${script}" >/dev/null
 grep -F -- 'scripts/validate-runtime-observability.sh' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_DEPENDENCY_HA' "${script}" >/dev/null
 grep -F -- 'scripts/validate-production-ha.sh' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE' "${script}" >/dev/null
+grep -F -- 'scripts/validate-production-evidence.sh' "${script}" >/dev/null
 grep -F -- '拒绝覆盖已有验收报告' "${script}" >/dev/null
 grep -F -- 'set -o noclobber' "${script}" >/dev/null
 if grep -vE '^[[:space:]]*#' "${script}" | grep -E 'kubectl[[:space:]]+(apply|delete|patch|rollout[[:space:]]+restart|scale)' >/dev/null; then

@@ -44,6 +44,15 @@ case "${require_dependency_ha}" in
     ;;
 esac
 
+require_production_evidence="${FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE:-false}"
+case "${require_production_evidence}" in
+  true|false) ;;
+  *)
+    echo 'FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE 必须是 true 或 false。' >&2
+    exit 64
+    ;;
+esac
+
 report_directory="$(dirname "${report_path}")"
 mkdir -p "${report_directory}"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-production-acceptance.XXXXXX")"
@@ -62,6 +71,7 @@ trap cleanup EXIT
   echo '# FlowMesh 生产验收报告'
   echo "- 要求外部依赖 HA 拓扑：${require_dependency_ha}"
   echo "- 要求运行时观测后端：${require_runtime_observability}"
+  echo "- 要求目标环境证据包：${require_production_evidence}"
   echo
   echo "- 开始时间（UTC）：\`${started_at}\`"
   echo "- Kubernetes 命名空间：\`${FLOWMESH_K8S_NAMESPACE:-flowmesh}\`"
@@ -126,6 +136,19 @@ else
     echo
     echo '- 结果：SKIPPED'
     echo '- 原因：FLOWMESH_REQUIRE_DEPENDENCY_HA=false'
+    echo
+  } >> "${report_body}"
+fi
+if [[ "${require_production_evidence}" == true ]]; then
+  run_check '目标环境生产证据包校验' env \
+    FLOWMESH_EVIDENCE_DIR="${FLOWMESH_EVIDENCE_DIR:-}" \
+    "${ROOT_DIR}/scripts/validate-production-evidence.sh"
+else
+  {
+    echo '## 目标环境生产证据包校验'
+    echo
+    echo '- 结果：SKIPPED'
+    echo '- 原因：FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false'
     echo
   } >> "${report_body}"
 fi

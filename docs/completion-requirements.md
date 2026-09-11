@@ -38,8 +38,10 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 提供只读生命周期角色权限预检，核验专用账号的非超级用户、不可继承、BYPASSRLS、白名单表和锁键列权限；CI 契约测试与 PostgreSQL 生命周期 E2E 会执行该预检。 |
 | 已完成 | 生产外部依赖连接安全已补齐：RocketMQ Producer/Consumer 使用独立 Secret 凭据和 TLS，PostgreSQL 默认 `sslmode=require`，Redis 默认启用 TLS；本地 Compose 保持关闭 TLS 的兼容默认值。 |
 | 已完成 | 提供只读外部依赖 HA 拓扑预检，检查 PostgreSQL 复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；实际故障切换、备份恢复和 RTO/RPO 仍需目标平台执行并留存证据。 |
+| 已完成 | 提供只读生产证据包门禁，要求目标环境提交 Kubernetes smoke、依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并使用清单和 SHA-256 校验和验证完整性；实际证据仍需由目标平台执行生成。 |
 | 已完成 | Workflow SLA 已通过临时 PostgreSQL E2E 验证催办、并行审批实例锁定、任务状态收敛和 Outbox 写入；CI 会执行该回归。 |
-| 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
+| 尚需目标平台证据 | 外部依赖 HA、托管观测后端、告警通知、备份恢复、RTO/RPO、压测和故障演练不能由本地 CI 代替；必须使用生产证据包门禁留存实际结果。 |
+| 明确不纳入当前业务范围 | Camunda、Redis 缓存、Redis 短期幂等加速和外部邮件/短信通道；这些属于产品范围扩展，不是生产上线门禁。 |
 
 ## 3. MVP-4 范围
 
@@ -87,10 +89,10 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 - Camunda 8 BPMN 流程编排。
 - Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
 - 外部邮件/短信通道；通知审计服务和独立风险服务已在当前迭代接入。
-- 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地 Prometheus/Grafana 基线。
-- RocketMQ、PostgreSQL 多副本高可用、对象存储跨故障域复制、备份恢复和 Chaos Mesh 故障演练。
+- 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地基线，但真实平台接入和告警通知属于上线前必需证据。
+- RocketMQ、PostgreSQL 多副本高可用、对象存储跨故障域复制、备份恢复和 Chaos 故障演练；这些不是“可选功能”，而是生产环境验收项。
 
-这些组件只有在对应业务场景、数据边界和测试环境明确后再接入，不为了扩充简历技术栈而提前引入。
+Camunda、Redis 缓存和外部通知通道只有在对应业务场景、数据边界和测试环境明确后再接入，不为了扩充简历技术栈而提前引入。
 
 ## 5. 完成定义
 
