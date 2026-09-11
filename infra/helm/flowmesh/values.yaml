@@ -48,6 +48,13 @@ networkPolicy:
     externalPorts: [3310, 5432, 6379, 9876, 9000, 10909, 10911, 10912]
 
 observability:
+  tracing:
+    enabled: false
+    exportEnabled: false
+    endpoint: http://localhost:4318/v1/traces
+    samplingProbability: "0.1"
+    connectTimeout: 2s
+    exportTimeout: 5s
   serviceMonitor:
     enabled: false
     interval: 30s

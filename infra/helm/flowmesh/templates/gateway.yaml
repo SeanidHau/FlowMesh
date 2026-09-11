@@ -51,6 +51,7 @@ spec:
             - name: http
               containerPort: {{ .Values.gateway.port }}
           env:
+            {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
             - name: FLOWMESH_IAM_URL
               value: "http://{{ include "flowmesh.fullname" . }}-iam:{{ .Values.services.iam.port }}"
             - name: FLOWMESH_SUPPLIER_URL

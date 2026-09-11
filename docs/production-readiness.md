@@ -15,12 +15,13 @@
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
-- 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
+- 提供离线备份完整性校验脚本，并通过真实 PostgreSQL 容器 E2E 验证归档校验、角色密码不落盘和隔离数据库恢复；通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - CI 在 PR 构建六项服务镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
+- 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
 
 验证命令：
 
@@ -55,9 +56,9 @@ helm lint infra/helm/flowmesh \
 
 ### 可观测性与恢复
 
-- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信告警样例和本地 Grafana Dashboard；生产环境仍需接入托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端。
+- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信告警样例和本地 Grafana Dashboard；生产环境仍需接入托管 Prometheus、Grafana、日志聚合、OpenTelemetry Collector 和 Trace 后端。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
-- PostgreSQL 备份定时化、异地保存、定期恢复验证和恢复时间目标记录。
+- PostgreSQL 备份定时化、异地保存、定期恢复验证和恢复时间目标记录；仓库已提供可纳入平台调度的备份脚本和 CI 恢复回归，但目标平台仍需配置调度、加密对象存储和实际 RTO/RPO 记录。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 
 ### 业务闭环

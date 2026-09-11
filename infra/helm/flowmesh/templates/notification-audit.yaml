@@ -51,6 +51,7 @@ spec:
             - name: http
               containerPort: {{ .Values.services.notificationAudit.port }}
           env:
+            {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=audit"
             - name: AUDIT_DB_USER

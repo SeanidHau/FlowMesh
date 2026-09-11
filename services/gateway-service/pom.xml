@@ -34,6 +34,18 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
+    <!-- 作用：为 Gateway 提供可选 OpenTelemetry HTTP Trace 采集和 OTLP 导出。 -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+
+    <!-- 作用：将 Gateway 采样后的 Trace 发送到 OpenTelemetry Collector。 -->
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-exporter-otlp</artifactId>
+    </dependency>
+
     <!-- 作用：提供网关单元测试和 Spring Boot 测试基础设施。 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

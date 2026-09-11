@@ -21,6 +21,8 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |
 | 已完成 | RocketMQ 消费者已暴露处理耗时直方图，Prometheus 已增加消费 P95 延迟告警；观测配置脚本会校验关键告警集合。 |
 | 已完成 | risk-service 提供默认关闭的 `FAIL` / `TIMEOUT` 故障注入，用于复现 RocketMQ 重试、DLQ 和人工处置场景；生产 Helm 显式关闭该开关。 |
+| 已完成 | PostgreSQL 备份脚本不导出角色密码，并通过临时 PostgreSQL 容器 E2E 验证归档完整性、隔离数据库恢复和测试资源清理；CI 会执行该回归。 |
+| 已完成 | 六个服务提供默认关闭的 Micrometer Tracing 和 OTLP/HTTP 导出配置；生产 Helm 在开启导出但缺少 Collector 地址时拒绝渲染。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围

@@ -77,6 +77,18 @@ Prometheus `http://localhost:9090` 和 Grafana `http://localhost:3000`：
 docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus grafana
 ```
 
+## OpenTelemetry Trace
+
+Trace 采集和 OTLP 导出默认关闭。只有在目标环境已提供 OpenTelemetry Collector 时，才同时开启以下配置：
+
+```bash
+FLOWMESH_TRACING_ENABLED=true
+FLOWMESH_OTEL_EXPORT_ENABLED=true
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector.observability:4318/v1/traces
+```
+
+`FLOWMESH_TRACING_SAMPLING_PROBABILITY` 使用 `0.0` 到 `1.0` 的采样比例。先在非生产环境验证 Collector 接收、Trace 查询和出口 NetworkPolicy，再在生产环境启用。Collector 不可用时，不要把导出失败误判为业务请求失败；应根据平台的丢弃、重试和告警策略处置。
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：
@@ -154,13 +166,19 @@ export FLOWMESH_BACKUP_ROOT='./backups/postgres'
 ```
 
 备份完成后必须在同一台具备 PostgreSQL 客户端工具和 SHA-256 校验工具的机器上校验归档目录。备份脚本会生成
-`checksums.sha256`，校验步骤同时检查文件摘要和 custom-format 归档目录：
+`checksums.sha256`，并使用 `--no-role-passwords` 导出全局对象，避免角色密码进入备份文件。校验步骤同时检查文件摘要和 custom-format 归档目录：
 
 ```bash
 ./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>
 ```
 
-该校验只读取备份文件，不连接数据库；正式恢复仍需在隔离目标库中执行并记录恢复耗时。
+该校验只读取备份文件，不连接数据库；正式恢复仍需在隔离目标库中执行并记录恢复耗时。仓库还提供真实 PostgreSQL 备份恢复回归：
+
+```bash
+./tests/postgres-backup-e2e.sh
+```
+
+该回归会将探针数据恢复到独立数据库，并在退出时删除临时容器和目录。
 
 恢复必须在隔离的目标数据库执行，并显式确认，避免误覆盖生产数据：
 

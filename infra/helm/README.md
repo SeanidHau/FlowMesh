@@ -47,6 +47,24 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 生产模式要求显式提供真实 Ingress 域名和已存在的 TLS Secret；未提供时 Helm 渲染失败。
 镜像标签必须使用完整 Git 提交 SHA；主分支 CI 会为该标签执行 Trivy 漏洞扫描并生成 Cosign keyless 签名。
 
+生产 Trace 导出默认关闭。接入 OpenTelemetry Collector 后，显式开启 Trace 和 OTLP 导出，并提供
+Collector 的 OTLP/HTTP traces 地址：
+
+```bash
+helm upgrade --install flowmesh infra/helm/flowmesh \
+  -f infra/helm/flowmesh/values-production.yaml \
+  --set-string global.imageTag="$GITHUB_SHA" \
+  --set observability.tracing.enabled=true \
+  --set observability.tracing.exportEnabled=true \
+  --set observability.tracing.endpoint="http://otel-collector.observability:4318/v1/traces" \
+  --set ingress.host=api.example.com \
+  --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
+  --set 'ingress.tls[0].hosts[0]=api.example.com' \
+  --set global.existingSecret=flowmesh-runtime-secrets
+```
+
+生产环境不得在未部署 Collector 时开启 OTLP 导出；Helm 会拒绝缺少地址的生产渲染。
+
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
 `OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置

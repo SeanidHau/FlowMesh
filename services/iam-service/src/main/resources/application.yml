@@ -66,6 +66,17 @@ flowmesh:
       fail-open: ${FLOWMESH_LOGIN_RATE_LIMIT_FAIL_OPEN:true}
 
 management:
+  tracing:
+    enabled: ${FLOWMESH_TRACING_ENABLED:false}
+    sampling:
+      probability: ${FLOWMESH_TRACING_SAMPLING_PROBABILITY:0.1}
+  otlp:
+    tracing:
+      export:
+        enabled: ${FLOWMESH_OTEL_EXPORT_ENABLED:false}
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+      connect-timeout: ${FLOWMESH_OTEL_CONNECT_TIMEOUT:2s}
+      timeout: ${FLOWMESH_OTEL_EXPORT_TIMEOUT:5s}
   health:
     redis:
       enabled: ${FLOWMESH_LOGIN_RATE_LIMIT_ENABLED:false}

@@ -51,6 +51,7 @@ spec:
             - name: http
               containerPort: {{ .Values.services.risk.port }}
           env:
+            {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=risk"
             - name: RISK_DB_USER

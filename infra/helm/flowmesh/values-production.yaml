@@ -17,6 +17,16 @@ networkPolicy:
     enabled: true
     externalCidrs: []
 
+observability:
+  # 未接入 Collector 时保持关闭；启用导出时必须通过 --set 注入真实 OTLP/HTTP 地址。
+  tracing:
+    enabled: false
+    exportEnabled: false
+    endpoint: ""
+    samplingProbability: "0.1"
+    connectTimeout: 2s
+    exportTimeout: 5s
+
 # 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
 ingress:
   enabled: true

@@ -34,3 +34,22 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}
 {{- if $registry }}{{ printf "%s/%s" $registry $service.image }}{{ else }}{{ $service.image }}{{ end }}:{{ $tag }}
 {{- end }}
+
+{{/* 作用：统一注入可选 OpenTelemetry Trace 配置，并阻止生产导出缺少 Collector 地址。 */}}
+{{- define "flowmesh.observabilityEnv" -}}
+{{- if and .Values.global.production .Values.observability.tracing.exportEnabled (not .Values.observability.tracing.endpoint) }}
+{{- fail "observability.tracing.endpoint is required when OTLP export is enabled in production mode" }}
+{{- end }}
+- name: FLOWMESH_TRACING_ENABLED
+  value: {{ .Values.observability.tracing.enabled | quote }}
+- name: FLOWMESH_OTEL_EXPORT_ENABLED
+  value: {{ .Values.observability.tracing.exportEnabled | quote }}
+- name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+  value: {{ .Values.observability.tracing.endpoint | quote }}
+- name: FLOWMESH_TRACING_SAMPLING_PROBABILITY
+  value: {{ .Values.observability.tracing.samplingProbability | quote }}
+- name: FLOWMESH_OTEL_CONNECT_TIMEOUT
+  value: {{ .Values.observability.tracing.connectTimeout | quote }}
+- name: FLOWMESH_OTEL_EXPORT_TIMEOUT
+  value: {{ .Values.observability.tracing.exportTimeout | quote }}
+{{- end }}

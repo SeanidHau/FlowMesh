@@ -15,6 +15,14 @@ PostgreSQL、Redis 与真实 RocketMQ Broker。脚本通过 Gateway 访问业务
 Prometheus 指标、风控结果、申请人通知、死信查询、受控重放、审计和跨服务对账；退出时停止并删除本次测试容器和数据卷。
 本地验证完成后请按 [运行手册](../docs/runbook.md) 退出 Docker Desktop。
 
+PostgreSQL 备份恢复回归：
+
+```bash
+./tests/postgres-backup-e2e.sh
+```
+
+该脚本只使用临时 PostgreSQL 容器，验证 custom-format 备份、离线校验、角色密码不落盘和恢复到独立数据库；退出时删除测试资源。
+
 性能与故障演练：
 
 ```bash

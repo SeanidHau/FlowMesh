@@ -35,7 +35,7 @@
 ```
 
 该命令会启动 PostgreSQL Testcontainers，验证 Flyway、MyBatis、RLS、认证、Outbox 竞争和核心业务集成测试。
-真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL、Redis 和 RocketMQ，六个 Java 服务使用本机打包的 JAR；业务 API 通过 Gateway 访问，并覆盖风控与通知审计链路。
+真实 Broker 场景使用 `./tests/rocketmq-e2e.sh`，脚本只启动 PostgreSQL、Redis 和 RocketMQ，六个 Java 服务使用本机打包的 JAR；业务 API 通过 Gateway 访问，并覆盖风控与通知审计链路。备份恢复场景使用 `./tests/postgres-backup-e2e.sh`，在临时 PostgreSQL 容器中验证归档校验和隔离数据库恢复。
 Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，不提交任何真实密钥。
 
 压测使用 `tests/k6/supplier-onboarding.js`，故障恢复使用

@@ -72,6 +72,18 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <!-- 作用：为依赖公共模块的服务提供可选 OpenTelemetry 分布式追踪桥接。 -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+
+    <!-- 作用：将采样后的 Trace 通过 OTLP/HTTP 导出到 OpenTelemetry Collector。 -->
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-exporter-otlp</artifactId>
+    </dependency>
+
     <!-- 作用：Servlet API，JwtAuthenticationFilter 所需。 -->
     <dependency>
       <groupId>jakarta.servlet</groupId>

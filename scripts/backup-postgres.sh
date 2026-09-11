@@ -14,9 +14,26 @@ user="${FLOWMESH_PG_USER:-flowmesh}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_dir="${backup_root}/${timestamp}"
 
-mkdir -p "${backup_dir}"
+mkdir -p "${backup_root}"
+chmod 700 "${backup_root}"
+if ! mkdir "${backup_dir}"; then
+  printf '备份目录已存在，拒绝覆盖：%s\n' "${backup_dir}" >&2
+  exit 1
+fi
 chmod 700 "${backup_dir}"
+
+cleanup_failed_backup() {
+  local status=$?
+  unset PGPASSWORD PGCONNECT_TIMEOUT
+  if [[ "${status}" -ne 0 && -d "${backup_dir}" ]]; then
+    rm -rf -- "${backup_dir}"
+  fi
+  exit "${status}"
+}
+trap cleanup_failed_backup EXIT
+
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD}"
+export PGCONNECT_TIMEOUT="${FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS:-5}"
 
 pg_dump \
   --format=custom \
@@ -30,6 +47,7 @@ pg_dump \
 
 pg_dumpall \
   --globals-only \
+  --no-role-passwords \
   --host="${host}" \
   --port="${port}" \
   --username="${user}" \
@@ -42,6 +60,7 @@ else
 fi
 
 chmod 600 "${backup_dir}/flowmesh.dump" "${backup_dir}/globals.sql" "${backup_dir}/checksums.sha256"
-unset PGPASSWORD
+trap - EXIT
+unset PGPASSWORD PGCONNECT_TIMEOUT
 
 printf 'PostgreSQL 备份已创建：%s\n' "${backup_dir}"

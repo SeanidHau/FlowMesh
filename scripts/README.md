@@ -13,7 +13,16 @@
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
 
 备份完成后执行 `./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>`，确认
-SHA-256 校验清单和 custom-format 归档均可读取。恢复脚本会在写入目标数据库前再次执行同一校验。
+SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 使用
+`--no-role-passwords` 导出全局对象，不把数据库角色密码写入归档。恢复脚本会在写入目标数据库前再次执行同一校验。
+
+在具备 Docker 的环境中执行真实备份恢复回归：
+
+```bash
+./tests/postgres-backup-e2e.sh
+```
+
+该脚本在临时 PostgreSQL 容器中写入探针数据，创建备份，校验归档，恢复到独立数据库，最后读取恢复后的数据并删除测试资源。
 
 观测配置校验不会启动 Prometheus 或 Grafana，也不替代真实环境验证：
 

@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh tests/fault-drills/*.sh tests/rocketmq-e2e.sh
+        run: bash -n scripts/*.sh tests/fault-drills/*.sh tests/postgres-backup-e2e.sh tests/rocketmq-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -140,6 +140,30 @@ jobs:
             echo 'Production chart must fail when external egress CIDRs are missing.' >&2
             exit 1
           fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            --set observability.tracing.enabled=true \
+            --set observability.tracing.exportEnabled=true >/dev/null 2>&1; then
+            echo 'Production chart must fail when OTLP export is enabled without a Collector endpoint.' >&2
+            exit 1
+          fi
+          helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            --set observability.tracing.enabled=true \
+            --set observability.tracing.exportEnabled=true \
+            --set observability.tracing.endpoint=http://otel-collector.observability:4318/v1/traces >/dev/null
 
       # 使用项目固定的 Java 21 和 Maven Wrapper 执行完整 Reactor 测试。
       - name: Set up Java 21
@@ -152,6 +176,10 @@ jobs:
       - name: Run Maven tests
         run: ./mvnw test
 
+      # 使用临时 PostgreSQL 容器验证备份归档不会泄露角色密码，且可以恢复到独立数据库。
+      - name: Run PostgreSQL backup recovery test
+        run: ./tests/postgres-backup-e2e.sh
+
       # 验证 Electron 渲染进程、主进程和生产构建产物。
       - name: Set up Node.js 26
         uses: actions/setup-node@v4
@@ -163,6 +191,11 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      # 使用官方审计接口检查前端生产依赖和构建依赖，避免镜像源不支持 audit API 导致误报。
+      - name: Audit frontend dependencies
+        working-directory: frontend
+        run: npm audit --registry=https://registry.npmjs.org --audit-level=high
 
       - name: Build Electron desktop client
         working-directory: frontend
