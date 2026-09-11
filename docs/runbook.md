@@ -98,6 +98,20 @@ IAM 默认每小时清理已过期或已撤销超过 30 天的 Refresh Token，�
 
 ## Kubernetes 发布后验收
 
+如果需要一次性执行镜像签名、Kubernetes smoke、外部依赖预检和生命周期维护角色预检，并将结果留存为不可覆盖的报告，
+在目标生产运维环境执行：
+
+```bash
+FLOWMESH_ACCEPTANCE_REPORT="./artifacts/production-acceptance-$(date -u +%Y%m%dT%H%M%SZ).md" \
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_K8S_NAMESPACE=flowmesh \
+FLOWMESH_HELM_RELEASE=flowmesh \
+./scripts/run-production-acceptance.sh
+```
+
+该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
+便于发布记录和故障处置。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
+
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 
 ```bash

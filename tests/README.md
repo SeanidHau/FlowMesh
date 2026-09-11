@@ -90,6 +90,9 @@ Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 SL
 并发与截止时间，以及实际 Pod 注入的 PostgreSQL、Redis 和 RocketMQ TLS 配置。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
 `PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。
 
+目标生产环境的发布后只读验收可通过 `scripts/run-production-acceptance.sh` 统一执行；脚本会把镜像签名、Kubernetes smoke、
+外部依赖预检和生命周期角色预检的结果写入不可覆盖的 Markdown 报告。
+
 不连接集群的 smoke test 契约检查：
 
 ```bash
