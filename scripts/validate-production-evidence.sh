@@ -27,8 +27,18 @@ require_value FLOWMESH_EVIDENCE_DIR "${evidence_directory}"
   exit 2
 }
 
-manifest_file="${evidence_directory}/${FLOWMESH_EVIDENCE_MANIFEST:-manifest.md}"
-checksum_file="${evidence_directory}/${FLOWMESH_EVIDENCE_CHECKSUMS:-checksums.sha256}"
+manifest_name="${FLOWMESH_EVIDENCE_MANIFEST:-manifest.md}"
+checksum_name="${FLOWMESH_EVIDENCE_CHECKSUMS:-checksums.sha256}"
+[[ "${manifest_name}" == "$(basename "${manifest_name}")" && "${manifest_name}" != '.' && "${manifest_name}" != '..' ]] || {
+  echo 'FLOWMESH_EVIDENCE_MANIFEST 必须是证据目录内的文件名。' >&2
+  exit 2
+}
+[[ "${checksum_name}" == "$(basename "${checksum_name}")" && "${checksum_name}" != '.' && "${checksum_name}" != '..' ]] || {
+  echo 'FLOWMESH_EVIDENCE_CHECKSUMS 必须是证据目录内的文件名。' >&2
+  exit 2
+}
+manifest_file="${evidence_directory}/${manifest_name}"
+checksum_file="${evidence_directory}/${checksum_name}"
 required_files=(
   kubernetes-smoke.md
   dependency-ha.md
@@ -112,8 +122,8 @@ for file in "${required_files[@]}"; do
   }
 done
 
-CHECKSUM_FILE="${checksum_file}" ruby -e '
-  expected = %w[kubernetes-smoke.md dependency-ha.md runtime-observability.md service-recovery.md backup-restore.md load-test.md security-regression.md alert-routing.md manifest.md].sort
+CHECKSUM_FILE="${checksum_file}" EXPECTED_MANIFEST_FILE="${manifest_name}" ruby -e '
+  expected = %w[kubernetes-smoke.md dependency-ha.md runtime-observability.md service-recovery.md backup-restore.md load-test.md security-regression.md alert-routing.md].push(ENV.fetch("EXPECTED_MANIFEST_FILE")).sort
   actual = File.readlines(ENV.fetch("CHECKSUM_FILE"), chomp: true).reject(&:empty?).map do |line|
     parts = line.split(/\s+/, 2)
     abort "生产证据校验和格式无效。" unless parts.length == 2 && parts[0].match?(/\A[0-9a-fA-F]{64}\z/)

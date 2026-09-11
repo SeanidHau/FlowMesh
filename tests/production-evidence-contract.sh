@@ -54,6 +54,20 @@ EOF
 
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null
 
+cp "${temporary_directory}/manifest.md" "${temporary_directory}/custom-manifest.md"
+(
+  cd "${temporary_directory}"
+  shasum -a 256 "${required_files[@]}" custom-manifest.md > checksums.sha256
+)
+FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+FLOWMESH_EVIDENCE_MANIFEST=custom-manifest.md \
+  "${script}" >/dev/null
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" FLOWMESH_EVIDENCE_MANIFEST=../custom-manifest.md \
+  "${script}" >/dev/null 2>&1; then
+  echo '证据清单不得通过路径穿越访问。' >&2
+  exit 1
+fi
+
 if sed -i.bak 's/结果：`PASS`/结果：`FAIL`/' "${temporary_directory}/load-test.md"; then
   :
 else
