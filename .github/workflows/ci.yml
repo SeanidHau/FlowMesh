@@ -42,6 +42,9 @@ jobs:
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
 
+      - name: Validate image admission policy
+        run: bash scripts/validate-supply-chain-policy.sh
+
       - name: Validate production deployment guardrails
         run: bash scripts/validate-production-config.sh infra/helm/flowmesh/values-production.yaml
 

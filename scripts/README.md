@@ -10,6 +10,7 @@
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
 - `verify-flowmesh-images.sh`：部署前验证六个提交 SHA 镜像均具备受信任 GitHub Actions 签名。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
+- `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
 
 备份完成后执行 `./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>`，确认
 SHA-256 校验清单和 custom-format 归档均可读取。恢复脚本会在写入目标数据库前再次执行同一校验。

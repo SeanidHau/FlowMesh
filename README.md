@@ -21,7 +21,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
 | Prometheus、Grafana | 本地基线已实现 | 提供 Prometheus 抓取配置、告警规则和 Grafana 概览 Dashboard；生产环境仍需接入托管观测平台。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
-| 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；集群准入策略仍需配置。 |
+| 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；仓库提供 Kyverno 集群准入策略。 |
 | OpenTelemetry Trace 后端 | 计划中 | 服务已输出 Trace ID；完整 Trace 采集、存储和查询后端仍待接入。 |
 
 ## 项目目标

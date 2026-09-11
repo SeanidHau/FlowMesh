@@ -26,6 +26,7 @@ IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查�
 - Kubernetes 使用 Secret；CI 使用 GitHub Actions Secrets。
 - 仓库只能提交 `.env.example` 和 Secret 模板，不能提交真实密钥、Token、证书或密码。
 - Secret 不得写入镜像、日志、错误响应或测试快照。
+- 主分支镜像使用完整 Git SHA、Trivy 和 Cosign keyless 签名；Kubernetes 可通过 `infra/policies/kyverno/verify-flowmesh-images.yaml` 拒绝未签名镜像。
 
 ## 文件访问
 
