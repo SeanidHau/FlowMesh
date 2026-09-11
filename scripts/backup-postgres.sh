@@ -81,6 +81,27 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
   destination="${FLOWMESH_BACKUP_S3_URI%/}/$(basename "${backup_dir}")"
   aws_arguments=(s3 cp --only-show-errors)
   aws_api_arguments=()
+  verify_remote="${FLOWMESH_BACKUP_S3_VERIFY_REMOTE:-false}"
+  case "${verify_remote}" in
+    true|false)
+      ;;
+    *)
+      printf 'FLOWMESH_BACKUP_S3_VERIFY_REMOTE 必须是 true 或 false，当前为：%s\n' "${verify_remote}" >&2
+      exit 1
+      ;;
+  esac
+
+  if [[ "${verify_remote}" == "true" ]]; then
+    if [[ "${FLOWMESH_BACKUP_S3_URI}" =~ ^s3://([^/]+)(/(.*))?$ ]]; then
+      bucket="${BASH_REMATCH[1]}"
+      prefix="${BASH_REMATCH[3]:-}"
+    else
+      printf 'FLOWMESH_BACKUP_S3_URI 必须是 s3://bucket/optional-prefix 格式，才能执行远端校验。\n' >&2
+      exit 1
+    fi
+    prefix="${prefix%/}"
+  fi
+
   if [[ -n "${FLOWMESH_BACKUP_S3_ENDPOINT:-}" ]]; then
     aws_arguments+=(--endpoint-url "${FLOWMESH_BACKUP_S3_ENDPOINT}")
     aws_api_arguments+=(--endpoint-url "${FLOWMESH_BACKUP_S3_ENDPOINT}")
@@ -112,16 +133,8 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
       "${destination}/${backup_file}"
   done
 
-  if [[ "${FLOWMESH_BACKUP_S3_VERIFY_REMOTE:-false}" == "true" ]]; then
+  if [[ "${verify_remote}" == "true" ]]; then
     # 作用：在写入 _SUCCESS 前，从对象存储端确认每个归档对象可见，避免部分上传被误判为完整备份。
-    if [[ "${FLOWMESH_BACKUP_S3_URI}" =~ ^s3://([^/]+)(/(.*))?$ ]]; then
-      bucket="${BASH_REMATCH[1]}"
-      prefix="${BASH_REMATCH[3]:-}"
-    else
-      printf 'FLOWMESH_BACKUP_S3_URI 必须是 s3://bucket/optional-prefix 格式，才能执行远端校验。\n' >&2
-      exit 1
-    fi
-    prefix="${prefix%/}"
     for backup_file in flowmesh.dump globals.sql checksums.sha256; do
       object_key="${prefix:+${prefix}/}$(basename "${backup_dir}")/${backup_file}"
       aws s3api head-object "${aws_api_arguments[@]}" \

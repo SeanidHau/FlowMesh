@@ -68,6 +68,29 @@ if find "${backup_root}" -mindepth 1 -print -quit | grep -q .; then
   exit 1
 fi
 success_uploads_before="$(grep -Fc -- '_SUCCESS' "${aws_log}" || true)"
+aws_calls_before="$(wc -l < "${aws_log}")"
+
+if PATH="${fake_bin}:${PATH}" \
+  FLOWMESH_PG_PASSWORD=test \
+  FLOWMESH_BACKUP_ROOT="${backup_root}" \
+  FLOWMESH_BACKUP_S3_URI=s3://flowmesh-backups \
+  FLOWMESH_BACKUP_S3_VERIFY_REMOTE=maybe \
+  "${repo_root}/scripts/backup-postgres.sh" >/dev/null 2>&1; then
+  echo '无效的远端校验开关未被拒绝。' >&2
+  exit 1
+fi
+[[ "$(wc -l < "${aws_log}")" -eq "${aws_calls_before}" ]]
+
+if PATH="${fake_bin}:${PATH}" \
+  FLOWMESH_PG_PASSWORD=test \
+  FLOWMESH_BACKUP_ROOT="${backup_root}" \
+  FLOWMESH_BACKUP_S3_URI=not-an-s3-uri \
+  FLOWMESH_BACKUP_S3_VERIFY_REMOTE=true \
+  "${repo_root}/scripts/backup-postgres.sh" >/dev/null 2>&1; then
+  echo '无效的 S3 URI 未被拒绝。' >&2
+  exit 1
+fi
+[[ "$(wc -l < "${aws_log}")" -eq "${aws_calls_before}" ]]
 
 if PATH="${fake_bin}:${PATH}" \
   FLOWMESH_PG_PASSWORD=test \
