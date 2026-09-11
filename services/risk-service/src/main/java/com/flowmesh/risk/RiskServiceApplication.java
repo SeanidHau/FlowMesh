@@ -1,7 +1,9 @@
 package com.flowmesh.risk;
 
+import com.flowmesh.risk.config.RiskFaultInjectionProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -9,6 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @SpringBootApplication(scanBasePackages = {"com.flowmesh.risk", "com.flowmesh.common.health"})
 @EnableScheduling
+@EnableConfigurationProperties(RiskFaultInjectionProperties.class)
 public class RiskServiceApplication {
 
     /**

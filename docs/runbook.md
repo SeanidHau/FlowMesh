@@ -120,10 +120,20 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 
 ## 风控故障处置
 
-1. 检查风险事件的三次延迟重试记录。
-2. 确认 `risk-service` 的故障注入开关是否仍处于启用状态。
+故障注入默认关闭，只能在隔离演练环境显式开启。`FAIL` 模式立即抛出异常，`TIMEOUT` 模式等待配置的
+延迟后抛出异常；两种模式都在写入风控结果前失败，不会制造伪造的风控结论。
+
+```bash
+FLOWMESH_RISK_FAULT_INJECTION_ENABLED=true \
+FLOWMESH_RISK_FAULT_INJECTION_MODE=FAIL \
+docker compose --env-file .env -f infra/compose/docker-compose.yml up -d --build risk-service
+```
+
+1. 检查风险事件的 RocketMQ 重试记录和消费者失败指标。
+2. 确认 `risk-service` 的故障注入开关仅在隔离演练环境中启用。
 3. 如果消息已进入 DLQ，使用 DLQ 重放流程重放，或创建人工风控结论。
-4. 人工通过、人工拒绝和流程终止必须填写原因。
+4. 演练完成后关闭故障注入并重启 `risk-service`，确认 readiness 恢复。
+5. 人工通过、人工拒绝和流程终止必须填写原因。
 
 ## 对账处置
 

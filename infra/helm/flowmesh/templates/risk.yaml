@@ -62,6 +62,8 @@ spec:
                   key: RISK_DB_PASSWORD
             - name: ROCKETMQ_NAMESRV_ADDR
               value: {{ .Values.rocketmq.namesrvAddr | quote }}
+            - name: FLOWMESH_RISK_FAULT_INJECTION_ENABLED
+              value: "false"
             - name: FLOWMESH_RISK_CONSUMER_ENABLED
               value: "true"
             - name: FLOWMESH_RISK_OUTBOX_ENABLED

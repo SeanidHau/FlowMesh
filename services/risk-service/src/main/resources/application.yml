@@ -42,6 +42,10 @@ flowmesh:
   risk:
     consumer-enabled: ${FLOWMESH_RISK_CONSUMER_ENABLED:false}
     outbox-enabled: ${FLOWMESH_RISK_OUTBOX_ENABLED:false}
+    fault-injection:
+      enabled: ${FLOWMESH_RISK_FAULT_INJECTION_ENABLED:false}
+      mode: ${FLOWMESH_RISK_FAULT_INJECTION_MODE:FAIL}
+      delay: ${FLOWMESH_RISK_FAULT_INJECTION_DELAY:0s}
     publish-interval-ms: ${FLOWMESH_RISK_PUBLISH_INTERVAL_MS:1000}
     batch-size: ${FLOWMESH_RISK_BATCH_SIZE:10}
     lease-seconds: ${FLOWMESH_RISK_LEASE_SECONDS:60}

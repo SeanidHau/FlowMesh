@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.common.messaging.EventEnvelopeValidator;
+import com.flowmesh.risk.config.RiskFaultInjectionProperties;
 import com.flowmesh.risk.domain.RiskOutboxEvent;
 import com.flowmesh.risk.domain.RiskResult;
 import com.flowmesh.risk.repository.RiskOutboxRepository;
@@ -28,6 +29,7 @@ public class RiskEvaluationService {
     private final RiskOutboxRepository outboxRepository;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
+    private final RiskFaultInjectionProperties faultInjectionProperties;
 
     /**
      * 创建风控评估服务。
@@ -36,17 +38,20 @@ public class RiskEvaluationService {
      * @param outboxRepository 风控 Outbox 仓储
      * @param tenantRlsInitializer RLS 初始化器
      * @param objectMapper JSON 解析器
+     * @param faultInjectionProperties 故障注入配置
      */
     public RiskEvaluationService(
         RiskResultRepository resultRepository,
         RiskOutboxRepository outboxRepository,
         TenantRlsInitializer tenantRlsInitializer,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        RiskFaultInjectionProperties faultInjectionProperties
     ) {
         this.resultRepository = resultRepository;
         this.outboxRepository = outboxRepository;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
+        this.faultInjectionProperties = faultInjectionProperties;
     }
 
     /**
@@ -67,6 +72,7 @@ public class RiskEvaluationService {
             throw new IllegalArgumentException("风控请求 aggregateId 与 payload.applicationId 不一致");
         }
 
+        injectConfiguredFailure();
         tenantRlsInitializer.initialize(tenantId);
         if (resultRepository.findByApplicationId(applicationId).isPresent()) {
             return;
@@ -99,6 +105,28 @@ public class RiskEvaluationService {
                 new RiskCheckCompletedPayload(applicationId, decision.name(), reason, eventId)
             ))
         ));
+    }
+
+    /**
+     * 在业务副作用发生前执行显式故障注入。
+     *
+     * <p>异常会回到 RocketMQ 消费容器，由容器负责重试和死信处理；方法不会写入
+     * 风控结果或 Outbox，因此演练不会制造伪造的业务结论。</p>
+     */
+    private void injectConfiguredFailure() {
+        if (!faultInjectionProperties.enabled()) {
+            return;
+        }
+        String mode = faultInjectionProperties.validatedMode();
+        if ("TIMEOUT".equals(mode) && !faultInjectionProperties.delay().isZero()) {
+            try {
+                Thread.sleep(faultInjectionProperties.delay().toMillis());
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("风控故障演练被中断", exception);
+            }
+        }
+        throw new IllegalStateException("风控故障演练：" + mode);
     }
 
     private JsonNode readEvent(String message) {

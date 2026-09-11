@@ -161,7 +161,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 - MinIO 私有桶，路径为 `tenantId/applicationId/fileId`。
 - 后端签发短时预签名 URL，并校验租户、申请状态、类型和大小。
-- 首版仅 PDF/PNG/JPG，单文件最大 10 MB；预留病毒扫描事件。
+- 首版接受 PDF/PNG/JPG 和 DOCX，单文件最大 20 MB；生产环境启用 ClamAV 同步扫描，扫描结果写入材料安全状态。
 
 ## 7. 数据生命周期
 

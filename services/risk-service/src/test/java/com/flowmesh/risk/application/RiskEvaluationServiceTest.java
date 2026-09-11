@@ -1,16 +1,19 @@
 package com.flowmesh.risk.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.flowmesh.risk.config.RiskFaultInjectionProperties;
 import com.flowmesh.risk.domain.RiskOutboxEvent;
 import com.flowmesh.risk.domain.RiskResult;
 import com.flowmesh.risk.repository.RiskOutboxRepository;
 import com.flowmesh.risk.repository.RiskResultRepository;
 import com.flowmesh.risk.rls.TenantRlsInitializer;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -71,12 +74,34 @@ class RiskEvaluationServiceTest {
         assertThat(captor.getValue().getDecision()).isEqualTo(RiskResult.Decision.PASS);
     }
 
+    /**
+     * 开启故障演练时应在写入风控结果前抛出异常，交由消息容器执行重试。
+     */
+    @Test
+    void shouldFailBeforeWritingResultWhenFaultInjectionIsEnabled() {
+        UUID applicationId = UUID.randomUUID();
+        RiskEvaluationService service = new RiskEvaluationService(
+            resultRepository,
+            outboxRepository,
+            tenantRlsInitializer,
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            new RiskFaultInjectionProperties(true, "FAIL", Duration.ZERO)
+        );
+
+        assertThatThrownBy(() -> service.evaluate(message(applicationId, "正常供应商")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("风控故障演练");
+        verify(resultRepository, org.mockito.Mockito.never()).insert(org.mockito.ArgumentMatchers.any());
+        verify(outboxRepository, org.mockito.Mockito.never()).insert(org.mockito.ArgumentMatchers.any());
+    }
+
     private RiskEvaluationService newService() {
         return new RiskEvaluationService(
             resultRepository,
             outboxRepository,
             tenantRlsInitializer,
-            new ObjectMapper().registerModule(new JavaTimeModule())
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            new RiskFaultInjectionProperties(false, "FAIL", Duration.ZERO)
         );
     }
 
