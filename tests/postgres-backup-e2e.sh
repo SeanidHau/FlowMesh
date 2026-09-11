@@ -12,6 +12,9 @@ POSTGRES_PASSWORD="flowmesh-backup-e2e-password"
 
 cleanup() {
   local status=$?
+  # 备份文件由容器内 postgres 用户以 0600 创建；先由容器 root 清理挂载目录，
+  # 避免 Linux Runner 宿主用户无法删除测试临时文件。
+  docker exec --user 0 "${CONTAINER}" sh -c 'rm -rf /backup/*' >/dev/null 2>&1 || true
   docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
   rm -rf -- "${BACKUP_ROOT}"
   exit "${status}"
@@ -60,8 +63,9 @@ backup_name="$(basename "${backup_dir}")"
 docker exec "${CONTAINER}" \
   /workspace/scripts/verify-postgres-backup.sh "/backup/${backup_name}"
 
-if grep -Eiq '(^|[[:space:]])(CREATE|ALTER)[[:space:]]+ROLE[^;]*PASSWORD' \
-  "${backup_dir}/globals.sql"; then
+if docker exec --user 0 "${CONTAINER}" \
+  grep -Eiq '(^|[[:space:]])(CREATE|ALTER)[[:space:]]+ROLE[^;]*PASSWORD' \
+  "/backup/${backup_name}/globals.sql"; then
   echo "全局对象备份不应包含角色密码。" >&2
   exit 1
 fi
