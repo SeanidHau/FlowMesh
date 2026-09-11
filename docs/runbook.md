@@ -116,6 +116,9 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 ./tests/kubernetes-production-smoke.sh
 ```
 
+smoke test 还会校验每个 Pod 的非 root、只读根文件系统、默认 Seccomp、探针和资源限制；如果生产
+Ingress Controller 不在 `ingress-nginx` 命名空间，执行前设置 `FLOWMESH_INGRESS_NAMESPACE` 为实际命名空间。
+
 smoke test 只读取集群状态，不证明 PostgreSQL、Redis、RocketMQ、对象存储已经完成故障切换；这些依赖
 仍需按目标平台的 HA 和恢复剧本单独演练。
 

@@ -44,6 +44,33 @@ fi
 
 for deployment in "${expected_deployments[@]}"; do
   kubectl -n "${namespace}" rollout status "deployment/${deployment}" --timeout="${FLOWMESH_ROLLOUT_TIMEOUT:-5m}"
+  deployment_json="$(kubectl -n "${namespace}" get "deployment/${deployment}" -o json)"
+  DEPLOYMENT_JSON="${deployment_json}" DEPLOYMENT_NAME="${deployment}" ruby -e '
+require "json"
+name = ENV.fetch("DEPLOYMENT_NAME")
+spec = JSON.parse(ENV.fetch("DEPLOYMENT_JSON")).fetch("spec").fetch("template").fetch("spec")
+raise "#{name} 必须关闭 ServiceAccount Token 自动挂载" unless spec.fetch("automountServiceAccountToken") == false
+security = spec.fetch("securityContext")
+raise "#{name} 必须使用非 root 用户" unless security.fetch("runAsNonRoot") == true
+raise "#{name} 必须使用 RuntimeDefault seccomp" unless security.fetch("seccompProfile").fetch("type") == "RuntimeDefault"
+spec.fetch("containers").each do |container|
+  container_name = container.fetch("name")
+  container_security = container.fetch("securityContext")
+  raise "#{name}/#{container_name} 不得允许提权" unless container_security.fetch("allowPrivilegeEscalation") == false
+  raise "#{name}/#{container_name} 必须使用只读根文件系统" unless container_security.fetch("readOnlyRootFilesystem") == true
+  raise "#{name}/#{container_name} 必须丢弃全部 Linux capabilities" unless container_security.fetch("capabilities").fetch("drop").include?("ALL")
+  resources = container.fetch("resources")
+  %w[requests limits].each do |resource_type|
+    values = resources.fetch(resource_type)
+    %w[cpu memory].each do |resource_name|
+      raise "#{name}/#{container_name} 缺少 #{resource_type}.#{resource_name}" unless values.key?(resource_name)
+    end
+  end
+  %w[startupProbe readinessProbe livenessProbe].each do |probe|
+    raise "#{name}/#{container_name} 缺少 #{probe}" unless container.key?(probe)
+  end
+end
+'
   images="$(kubectl -n "${namespace}" get "deployment/${deployment}" -o jsonpath='{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}')"
   while IFS= read -r image; do
     [[ -n "${image}" ]] || continue
@@ -58,8 +85,34 @@ kubectl -n "${namespace}" get pdb -l "${deployment_selector}" >/dev/null
 kubectl -n "${namespace}" get hpa -l "${deployment_selector}" >/dev/null
 kubectl -n "${namespace}" get networkpolicy -l "${deployment_selector}" >/dev/null
 kubectl -n "${namespace}" get networkpolicy "${release}-flowmesh-gateway-ingress" >/dev/null
-kubectl -n "${namespace}" get secret "${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}" >/dev/null
-kubectl -n "${namespace}" get secret "${FLOWMESH_BACKUP_SECRET_NAME:-flowmesh-backup-credentials}" >/dev/null
+gateway_policy_json="$(kubectl -n "${namespace}" get networkpolicy "${release}-flowmesh-gateway-ingress" -o json)"
+FLOWMESH_GATEWAY_POLICY_JSON="${gateway_policy_json}" EXPECTED_INGRESS_NAMESPACE="${FLOWMESH_INGRESS_NAMESPACE:-ingress-nginx}" ruby -e '
+require "json"
+policy = JSON.parse(ENV.fetch("FLOWMESH_GATEWAY_POLICY_JSON"))
+expected = ENV.fetch("EXPECTED_INGRESS_NAMESPACE")
+allowed = policy.fetch("spec").fetch("ingress").any? do |rule|
+  rule.fetch("from", []).any? do |source|
+    source.dig("namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") == expected
+  end
+end
+raise "Gateway NetworkPolicy 未允许指定的 Ingress Controller 命名空间" unless allowed
+'
+
+runtime_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}" -o json)"
+RUNTIME_SECRET_JSON="${runtime_secret_json}" ruby -e '
+require "json"
+keys = JSON.parse(ENV.fetch("RUNTIME_SECRET_JSON")).fetch("data").keys
+required = %w[JWT_SIGNING_KEY REDIS_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD RISK_DB_PASSWORD AUDIT_DB_PASSWORD OBJECT_STORAGE_ACCESS_KEY OBJECT_STORAGE_SECRET_KEY]
+missing = required - keys
+raise "运行时 Secret 缺少键：#{missing.join(",")}" unless missing.empty?
+'
+
+backup_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_BACKUP_SECRET_NAME:-flowmesh-backup-credentials}" -o json)"
+BACKUP_SECRET_JSON="${backup_secret_json}" ruby -e '
+require "json"
+keys = JSON.parse(ENV.fetch("BACKUP_SECRET_JSON")).fetch("data").keys
+raise "备份凭据 Secret 缺少 POSTGRES_PASSWORD" unless keys.include?("POSTGRES_PASSWORD")
+'
 
 cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${backup_cronjob}" -o json)"
 CRONJOB_JSON="${cronjob_json}" ruby -e '
