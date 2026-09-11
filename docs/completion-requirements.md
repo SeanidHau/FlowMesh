@@ -82,7 +82,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 
 | 编号 | 需求 | 验收标准 |
 | --- | --- | --- |
-| QA-01 | PostgreSQL 集成测试 | Docker 可用时执行 `./mvnw -q test`；风险服务和通知审计服务已补充真实 PostgreSQL RLS 集成测试。 |
+| QA-01 | PostgreSQL 集成测试 | Docker 可用时执行 `./mvnw -q test`；supplier、workflow、risk 和通知审计服务均有真实 PostgreSQL RLS 集成测试。 |
 | QA-02 | RocketMQ 集成测试 | `tests/rocketmq-e2e.sh` 使用 Compose 的 PostgreSQL、Redis、真实 RocketMQ Broker 和本机 JAR 验证跨服务主链路、死信运维闭环和对账。 |
 | QA-03 | CI 校验 | Maven、前端构建、Helm lint 和模板渲染均已写入 GitHub Actions。 |
 | QA-04 | 应用安全边界回归 | CI 校验认证入口、Actuator 匿名范围、运维与内部对账角色约束，以及 Gateway 不暴露 `/internal/` 路径。 |
