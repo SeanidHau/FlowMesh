@@ -20,6 +20,8 @@ grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- './scripts/deploy-production.sh' "${workflow}" >/dev/null
+grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
+grep -F -- "refs/heads/main" "${workflow}" >/dev/null
 
 if grep -E '^[[:space:]]*(push|pull_request):' "${workflow}" >/dev/null; then
   echo '生产发布工作流只能通过 workflow_dispatch 触发。' >&2

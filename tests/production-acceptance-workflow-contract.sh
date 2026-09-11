@@ -20,6 +20,8 @@ grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
 grep -F -- 'expect_prometheus_rule:' "${workflow}" >/dev/null
 grep -F -- 'type: choice' "${workflow}" >/dev/null
+grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
+grep -F -- "refs/heads/main" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY: 'true'" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_DEPENDENCY_HA: 'true'" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE: 'true'" "${workflow}" >/dev/null

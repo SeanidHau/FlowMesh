@@ -44,6 +44,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
 
+      - name: Require main branch
+        run: |
+          set -Eeuo pipefail
+          [[ "${GITHUB_REF}" == 'refs/heads/main' ]] || {
+            echo '生产发布只能从 main 分支执行。' >&2
+            exit 1
+          }
+
       - name: Check runner prerequisites
         run: |
           set -Eeuo pipefail
