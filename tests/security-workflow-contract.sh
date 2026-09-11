@@ -8,8 +8,8 @@ workflow="${repo_root}/.github/workflows/security.yml"
 
 test -s "${workflow}"
 
-grep -F -- 'github/codeql-action/init@v3' "${workflow}" >/dev/null
-grep -F -- 'github/codeql-action/analyze@v3' "${workflow}" >/dev/null
+grep -F -- 'github/codeql-action/init@v4' "${workflow}" >/dev/null
+grep -F -- 'github/codeql-action/analyze@v4' "${workflow}" >/dev/null
 grep -F -- 'actions/dependency-review-action@v4' "${workflow}" >/dev/null
 grep -F -- 'java-kotlin' "${workflow}" >/dev/null
 grep -F -- 'javascript-typescript' "${workflow}" >/dev/null
