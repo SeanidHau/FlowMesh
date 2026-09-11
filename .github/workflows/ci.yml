@@ -78,6 +78,9 @@ jobs:
       - name: Validate production environment documentation contract
         run: bash tests/production-environment-doc-contract.sh
 
+      - name: Validate image pull secret contract
+        run: bash tests/image-pull-secret-contract.sh
+
       - name: Validate PostgreSQL restore contract
         run: bash tests/postgres-restore-contract.sh
 

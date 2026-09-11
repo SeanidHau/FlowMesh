@@ -26,6 +26,7 @@ spec:
             app.kubernetes.io/instance: {{ .Release.Name }}
             app.kubernetes.io/component: workflow-sla
         spec:
+          {{- include "flowmesh.imagePullSecrets" . | nindent 10 }}
           restartPolicy: Never
           automountServiceAccountToken: false
           securityContext:

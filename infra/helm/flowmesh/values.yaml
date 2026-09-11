@@ -1,6 +1,8 @@
 # 作用：提供 Chart 的非敏感默认值。生产部署应使用预先创建的 Secret。
 global:
   imagePullPolicy: IfNotPresent
+  # 私有镜像仓库凭据由集群管理员预先创建；留空表示镜像仓库公开可读。
+  imagePullSecrets: []
   production: false
   imageRegistry: ""
   imageTag: ""

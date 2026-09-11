@@ -16,6 +16,7 @@ ingress_namespace="${FLOWMESH_INGRESS_NAMESPACE:-ingress-nginx}"
 monitoring_namespace="${FLOWMESH_MONITORING_NAMESPACE:-monitoring}"
 prometheus_release="${FLOWMESH_PROMETHEUS_RELEASE:-kube-prometheus-stack}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-true}"
+image_pull_secret="${FLOWMESH_IMAGE_PULL_SECRET_NAME:-}"
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -68,6 +69,9 @@ require_safe_name FLOWMESH_RUNTIME_SECRET_NAME "${runtime_secret}"
 require_safe_name FLOWMESH_INGRESS_NAMESPACE "${ingress_namespace}"
 require_safe_name FLOWMESH_MONITORING_NAMESPACE "${monitoring_namespace}"
 require_safe_name FLOWMESH_PROMETHEUS_RELEASE "${prometheus_release}"
+if [[ -n "${image_pull_secret}" ]]; then
+  require_safe_name FLOWMESH_IMAGE_PULL_SECRET_NAME "${image_pull_secret}"
+fi
 
 require_value FLOWMESH_INGRESS_HOST "${FLOWMESH_INGRESS_HOST:-}"
 require_value FLOWMESH_INGRESS_TLS_SECRET_NAME "${FLOWMESH_INGRESS_TLS_SECRET_NAME:-}"
@@ -176,6 +180,10 @@ helm_overrides=(
   --set-string "observability.serviceMonitor.labels.release=${prometheus_release}"
   --set-string "observability.prometheusRule.labels.release=${prometheus_release}"
 )
+
+if [[ -n "${image_pull_secret}" ]]; then
+  helm_overrides+=(--set-string "global.imagePullSecrets[0].name=${image_pull_secret}")
+fi
 
 for index in "${!external_cidrs[@]}"; do
   helm_overrides+=("--set-string" "networkPolicy.egress.externalCidrs[${index}]=${external_cidrs[${index}]}")

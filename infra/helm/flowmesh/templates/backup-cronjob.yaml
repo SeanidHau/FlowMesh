@@ -37,6 +37,7 @@ spec:
             {{- include "flowmesh.labels" . | nindent 12 }}
             app.kubernetes.io/component: postgres-backup
         spec:
+          {{- include "flowmesh.imagePullSecrets" . | nindent 10 }}
           {{- if .Values.backup.serviceAccountName }}
           serviceAccountName: {{ .Values.backup.serviceAccountName | quote }}
           automountServiceAccountToken: true

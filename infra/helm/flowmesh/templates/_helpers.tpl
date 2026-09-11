@@ -23,6 +23,14 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- default (printf "%s-config" (include "flowmesh.fullname" .)) .Values.global.existingSecret -}}
 {{- end }}
 
+{{/* 作用：为应用和维护 CronJob 统一注入可选的私有镜像仓库凭据。 */}}
+{{- define "flowmesh.imagePullSecrets" -}}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+{{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
 {{/* 作用：统一生成镜像引用；生产模式必须绑定不可变的提交 SHA 标签。 */}}
 {{- define "flowmesh.imageReference" -}}
 {{- $root := .root -}}

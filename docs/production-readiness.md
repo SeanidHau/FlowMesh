@@ -30,6 +30,7 @@
 - 四个 RocketMQ 服务支持独立 Producer/Consumer 凭据、访问通道和 TLS 配置；生产 Helm 默认开启 Producer/Consumer TLS，并要求运行时 Secret 提供四组凭据键。
 - 生产应用和备份 PostgreSQL 连接默认使用 `sslmode=require`，Redis 连接默认启用 TLS；目标平台配置 CA 后可进一步使用 PostgreSQL `verify-full` 完成服务端身份校验。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
+- Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。

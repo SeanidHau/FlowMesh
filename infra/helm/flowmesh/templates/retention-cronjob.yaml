@@ -37,6 +37,7 @@ spec:
             {{- include "flowmesh.labels" . | nindent 12 }}
             app.kubernetes.io/component: retention
         spec:
+          {{- include "flowmesh.imagePullSecrets" . | nindent 10 }}
           automountServiceAccountToken: false
           restartPolicy: Never
           securityContext:

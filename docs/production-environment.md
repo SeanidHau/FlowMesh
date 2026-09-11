@@ -92,6 +92,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 | `FLOWMESH_BACKUP_S3_URI` | 备份对象存储 URI |
 | `FLOWMESH_NOTIFICATION_WEBHOOK_URL` | HTTPS 外部通知 Webhook |
 | `FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS` | 外部依赖出口 CIDR，逗号分隔 |
+| `FLOWMESH_IMAGE_PULL_SECRET_NAME` | 可选，私有镜像仓库的 Kubernetes image pull Secret 名称 |
 
 生产验收工作流还需要以下只读检查变量：
 
@@ -130,6 +131,9 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 3. 通过 `production` Environment 审批。
 4. 工作流执行 `helm upgrade --install --atomic --wait`，随后执行 Kubernetes smoke test。
 5. 检查部署日志、Pod 就绪状态、Ingress、PDB、HPA、NetworkPolicy、镜像提交 SHA 和 CronJob 配置。
+
+如果 GHCR 或目标镜像仓库不是公开可读，先创建包含拉取权限的 Kubernetes Secret，并在生产发布工作流的 Environment Variable 中设置
+`FLOWMESH_IMAGE_PULL_SECRET_NAME`。该变量只传递 Secret 名称，不传递仓库凭据；发布入口会将它注入应用和维护 CronJob 的 Pod。
 
 发布后不得直接修改生产 Pod。配置变更必须提交代码或 Helm values，并重新执行同一发布流程。
 

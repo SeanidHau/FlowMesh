@@ -23,6 +23,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: risk
     spec:
+      {{- include "flowmesh.imagePullSecrets" . | nindent 6 }}
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ .Values.services.risk.terminationGracePeriodSeconds }}
       topologySpreadConstraints:
