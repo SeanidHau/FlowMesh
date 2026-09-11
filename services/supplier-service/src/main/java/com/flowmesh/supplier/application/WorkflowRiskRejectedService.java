@@ -57,7 +57,7 @@ public class WorkflowRiskRejectedService {
         UUID applicationId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
         String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
         JsonNode payload = EventEnvelopeValidator.validate(event, "WorkflowRiskRejected");
-        EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
+        UUID applicantUserId = EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
         EventEnvelopeValidator.requiredText(payload, "reason");
         tenantRlsInitializer.initializeTenant(tenantId);
         if (inboxRepository.existsById(eventId)) {
@@ -65,6 +65,9 @@ public class WorkflowRiskRejectedService {
         }
         SupplierApplication application = applicationRepository.findById(applicationId)
             .orElseThrow(SupplierApplicationNotFoundException::new);
+        if (!application.getApplicantUserId().equals(applicantUserId)) {
+            throw new IllegalArgumentException("风控拒绝事件的申请人与申请记录不一致");
+        }
         application.rejectRisk();
         if (applicationRepository.updateState(application) != 1) {
             throw new OptimisticLockingFailureException("风控拒绝更新时申请版本发生冲突");

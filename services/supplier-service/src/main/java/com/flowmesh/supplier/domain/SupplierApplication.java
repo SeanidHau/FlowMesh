@@ -91,8 +91,8 @@ public class SupplierApplication {
      * @throws IllegalStateException 当前申请已启用或任务顺序不合法
      */
     public void applyWorkflowTask(String taskKey) {
-        if (status == ApplicationStatus.ENABLED) {
-            throw new IllegalStateException("申请已经启用");
+        if (status == ApplicationStatus.ENABLED || status == ApplicationStatus.REJECTED) {
+            throw new IllegalStateException("申请已经进入终态");
         }
         if (status == ApplicationStatus.SUBMITTED && !"PURCHASER_REVIEW".equals(taskKey)) {
             throw new IllegalStateException("申请尚未完成采购初审");

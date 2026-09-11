@@ -1,6 +1,7 @@
 package com.flowmesh.supplier.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.flowmesh.supplier.domain.ApplicationStatus;
 import com.flowmesh.supplier.domain.SupplierApplication;
@@ -95,6 +96,48 @@ class WorkflowTaskCompletedServiceIntegrationTest extends PostgresIntegrationTes
         assertThat(rejected.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
         assertThat(rejected.getStateVersion()).isEqualTo(1);
         assertThat(inboxRepository.countByAggregateId(application.getId())).isEqualTo(1);
+    }
+
+    /**
+     * 验证风控拒绝后的迟到审批事件不能重新激活申请，且错误申请人事件会被拒绝。
+     */
+    @Test
+    void shouldKeepRiskRejectionTerminalAndValidateApplicant() {
+        tenantRlsInitializer.initializeTenant("tenant-a");
+        SupplierApplication application = applicationRepository.saveAndFlush(
+            new SupplierApplication("tenant-a", UUID.randomUUID(), "终态保护供应商")
+        );
+        UUID applicationId = application.getId();
+
+        String mismatchedApplicantEvent = """
+            {
+              "eventId":"%s","eventType":"WorkflowRiskRejected","schemaVersion":1,
+              "tenantId":"tenant-a","aggregateId":"%s","occurredAt":"2026-09-11T00:00:00Z",
+              "traceId":"trace-risk-rejected","payload":{"applicantUserId":"%s",
+              "reason":"申请人不匹配"}
+            }
+            """.formatted(UUID.randomUUID(), applicationId, UUID.randomUUID());
+
+        assertThatThrownBy(() -> riskRejectedService.apply(mismatchedApplicantEvent))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("申请人与申请记录不一致");
+
+        String rejectionEvent = """
+            {
+              "eventId":"%s","eventType":"WorkflowRiskRejected","schemaVersion":1,
+              "tenantId":"tenant-a","aggregateId":"%s","occurredAt":"2026-09-11T00:00:00Z",
+              "traceId":"trace-risk-rejected","payload":{"applicantUserId":"%s",
+              "reason":"命中风险规则"}
+            }
+            """.formatted(UUID.randomUUID(), applicationId, application.getApplicantUserId());
+        riskRejectedService.apply(rejectionEvent);
+
+        assertThatThrownBy(() -> service.apply(event(UUID.randomUUID(), applicationId, "PURCHASER_REVIEW")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("终态");
+        SupplierApplication rejected = applicationRepository.findById(applicationId).orElseThrow();
+        assertThat(rejected.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+        assertThat(rejected.getStateVersion()).isEqualTo(1);
     }
 
     private String event(UUID eventId, UUID applicationId, String taskKey) {
