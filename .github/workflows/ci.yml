@@ -495,7 +495,7 @@ jobs:
       # 主分支发布后立即扫描不可变提交标签；只有通过扫描的镜像才会进入签名步骤。
       - name: Scan published image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/seanidhau/flowmesh/${{ matrix.service }}:${{ github.sha }}
           format: table
