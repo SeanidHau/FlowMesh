@@ -124,6 +124,8 @@ Workflow 额外接受 Supplier 的内部状态回写请求；出站策略只允�
 以及通过 `networkPolicy.egress.externalCidrs` 注入的外部依赖 CIDR 和固定端口。启用前应确认
 集群 CNI 支持 NetworkPolicy，并根据 Prometheus Operator 的实际命名空间设置
 `networkPolicy.monitoringNamespace`，再根据 PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 的实际地址注入 CIDR。
+Gateway 还只接受 `networkPolicy.ingressNamespace` 指定的 Ingress Controller 命名空间入口；如果平台使用其他命名空间，
+必须在生产覆盖值中显式修改该字段，不能通过直接暴露 Gateway Service 绕过 Ingress。
 
 如果目标集群安装了 Prometheus Operator，可通过以下参数启用六个应用 Service 的统一指标抓取：
 

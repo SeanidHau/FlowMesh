@@ -12,6 +12,8 @@ global:
 
 networkPolicy:
   enabled: true
+  # 生产 Gateway 只能由 Ingress Controller 进入，避免绕过 TLS、审计和入口限流。
+  ingressNamespace: ingress-nginx
   # Prometheus Operator 通常在独立命名空间抓取 Actuator 指标。
   monitoringNamespace: monitoring
   # 生产发布必须注入 PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 的实际出口 CIDR。

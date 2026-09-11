@@ -1,5 +1,42 @@
 {{- if .Values.networkPolicy.enabled }}
 {{- $root := . -}}
+{{- if and $root.Values.global.production (not $root.Values.networkPolicy.ingressNamespace) }}
+{{- fail "networkPolicy.ingressNamespace is required in production mode" }}
+{{- end }}
+{{- if $root.Values.networkPolicy.ingressNamespace }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "flowmesh.fullname" $root }}-gateway-ingress
+  labels:
+    {{- include "flowmesh.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $root.Release.Name }}
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $root.Values.networkPolicy.ingressNamespace | quote }}
+      ports:
+        - protocol: TCP
+          port: http
+    {{- if $root.Values.networkPolicy.monitoringNamespace }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $root.Values.networkPolicy.monitoringNamespace | quote }}
+      ports:
+        - protocol: TCP
+          port: http
+    {{- end }}
+---
+{{- end }}
 {{- range $name := list "iam" "supplier" "workflow" "risk" "notification-audit" }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

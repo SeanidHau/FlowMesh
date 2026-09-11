@@ -150,6 +150,31 @@ jobs:
             echo 'NetworkPolicy must allow Prometheus monitoring namespace ingress.' >&2
             exit 1
           fi
+          if ! helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" | grep -q 'kubernetes.io/metadata.name: "ingress-nginx"'; then
+            echo 'Gateway NetworkPolicy must allow the configured Ingress Controller namespace.' >&2
+            exit 1
+          fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set networkPolicy.ingressNamespace= \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
+            echo 'Production chart must require a Gateway Ingress Controller namespace.' >&2
+            exit 1
+          fi
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set global.existingSecret=flowmesh-runtime-secrets \

@@ -57,6 +57,7 @@ done
 kubectl -n "${namespace}" get pdb -l "${deployment_selector}" >/dev/null
 kubectl -n "${namespace}" get hpa -l "${deployment_selector}" >/dev/null
 kubectl -n "${namespace}" get networkpolicy -l "${deployment_selector}" >/dev/null
+kubectl -n "${namespace}" get networkpolicy "${release}-flowmesh-gateway-ingress" >/dev/null
 kubectl -n "${namespace}" get secret "${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}" >/dev/null
 kubectl -n "${namespace}" get secret "${FLOWMESH_BACKUP_SECRET_NAME:-flowmesh-backup-credentials}" >/dev/null
 

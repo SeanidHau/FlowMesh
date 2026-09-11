@@ -10,6 +10,7 @@
 - 生产 values 提供 gateway 和五个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
 - 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**`、`/api/workflow/**` 和 `/api/notification/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Gateway 已使用 Redis Lua 令牌桶对所有业务路由执行分布式限流，并暴露允许、拒绝和 Redis 故障指标；生产入口必须覆写配置的客户端地址请求头，避免公网请求伪造限流身份。
+- 生产 Helm 为 Gateway 单独渲染入站 NetworkPolicy，只允许指定 Ingress Controller 命名空间和监控命名空间访问，避免绕过 TLS、审计和入口限流直接调用 Gateway Service。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
@@ -52,7 +53,7 @@ helm lint infra/helm/flowmesh \
 
 ### 平台与网络
 
-- Gateway 的审计和真实入口网络策略；限流已在 Gateway 侧实现，目标集群仍需提供会覆写客户端地址请求头的 Ingress Controller 和证书 Secret。
+- Gateway 的真实入口仍需由目标集群提供会覆写客户端地址请求头的 Ingress Controller 和证书 Secret；仓库已提供并验收 Gateway 入站 NetworkPolicy。
 - Helm 生产覆盖值已提供业务服务入口、Prometheus 指标抓取入口和出站白名单 NetworkPolicy；发布流程必须注入监控命名空间和外部依赖 CIDR，仍需在目标 CNI 和真实集群完成连通性演练。
 - 已提供 Kyverno 镜像签名准入策略；目标集群仍需安装 Kyverno、应用策略，并配置持续运行时漏洞扫描平台。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
