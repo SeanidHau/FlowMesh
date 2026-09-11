@@ -26,6 +26,13 @@ case "${expect_prometheus_rule}" in
 esac
 export FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}"
 
+image_tag="${FLOWMESH_IMAGE_TAG:-}"
+if [[ ! "${image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
+  echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
+  exit 64
+fi
+export FLOWMESH_IMAGE_TAG="${image_tag}"
+
 require_runtime_observability="${FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-true}"
 case "${require_runtime_observability}" in
   true|false) ;;
@@ -76,7 +83,7 @@ trap cleanup EXIT
   echo "- 开始时间（UTC）：\`${started_at}\`"
   echo "- Kubernetes 命名空间：\`${FLOWMESH_K8S_NAMESPACE:-flowmesh}\`"
   echo "- Helm Release：\`${FLOWMESH_HELM_RELEASE:-flowmesh}\`"
-  echo "- 镜像提交：\`${FLOWMESH_IMAGE_TAG:-未设置}\`"
+  echo "- 镜像提交：\`${image_tag}\`"
   echo "- 期望 Prometheus Operator 资源：\`${expect_prometheus_rule}\`"
   echo
   echo '> 本报告只记录仓库提供的只读预检结果，不证明外部依赖 HA、故障切换、备份恢复或 RTO/RPO 已完成。'
@@ -142,6 +149,7 @@ fi
 if [[ "${require_production_evidence}" == true ]]; then
   run_check '目标环境生产证据包校验' env \
     FLOWMESH_EVIDENCE_DIR="${FLOWMESH_EVIDENCE_DIR:-}" \
+    FLOWMESH_IMAGE_TAG="${image_tag}" \
     "${ROOT_DIR}/scripts/validate-production-evidence.sh"
 else
   {

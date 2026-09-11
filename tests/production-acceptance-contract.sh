@@ -16,6 +16,8 @@ for required_check in \
 done
 
 grep -F -- 'FLOWMESH_ACCEPTANCE_REPORT' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
+grep -F -- '必须是 40 位小写 Git 提交 SHA' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_EXPECT_PROMETHEUS_RULE' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY' "${script}" >/dev/null
 grep -F -- 'scripts/validate-runtime-observability.sh' "${script}" >/dev/null

@@ -22,6 +22,8 @@ required_files=(
   security-regression.md
   alert-routing.md
 )
+test_image_tag=0123456789012345678901234567890123456789
+export FLOWMESH_IMAGE_TAG="${test_image_tag}"
 
 for file in "${required_files[@]}"; do
   cat > "${temporary_directory}/${file}" <<EOF
@@ -79,7 +81,7 @@ EOF
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
 FLOWMESH_EVIDENCE_ENVIRONMENT=contract-test \
 FLOWMESH_EVIDENCE_OPERATOR=contract-test \
-FLOWMESH_IMAGE_TAG=flowmesh-test-image \
+FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${manifest_generator}" >/dev/null
 
 if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
@@ -91,6 +93,13 @@ if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
 fi
 
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null
+
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_IMAGE_TAG=ffffffffffffffffffffffffffffffffffffffff \
+  "${script}" >/dev/null 2>&1; then
+  echo '证据包镜像提交与本次验收提交不一致时应拒绝验收。' >&2
+  exit 1
+fi
 
 cp "${temporary_directory}/manifest.md" "${temporary_directory}/custom-manifest.md"
 (

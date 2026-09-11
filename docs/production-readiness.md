@@ -37,6 +37,7 @@
 - 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 才能跳过。
 - 提供只读生产证据包校验和清单生成工具：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告；生成器只创建清单与 SHA-256 校验和，不伪造演练报告，校验器还要求每类报告包含对应检查命令、证据摘要和关键结果，并通过清单与校验和防止缺项或篡改。生产验收默认强制执行该门禁，非生产预检必须显式设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false` 才能跳过。
 - `.github/workflows/production-acceptance.yml` 会显式将上述三个门禁固定为 `true`，避免生产工作流依赖脚本默认值而被意外放宽；只有非生产手工预检才允许使用对应的 `false` 参数。
+- 生产验收还会将 `FLOWMESH_IMAGE_TAG` 绑定到证据清单中的镜像提交 SHA；旧提交或其他环境生成的证据包不能用于当前版本验收。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
 - SLA 升级使用 PostgreSQL 行锁和每个流程实例的 PL/pgSQL 子事务；乐观锁失败或 Outbox/任务插入异常时，任务状态、并行任务取消和流程状态会整体回滚，避免留下半完成升级。

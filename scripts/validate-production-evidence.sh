@@ -22,6 +22,12 @@ require_value() {
 
 evidence_directory="${FLOWMESH_EVIDENCE_DIR:-}"
 require_value FLOWMESH_EVIDENCE_DIR "${evidence_directory}"
+expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
+require_value FLOWMESH_IMAGE_TAG "${expected_image_tag}"
+if [[ ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
+  printf 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA：%s\n' "${expected_image_tag}" >&2
+  exit 2
+fi
 [[ -d "${evidence_directory}" ]] || {
   printf '生产证据目录不存在：%s\n' "${evidence_directory}" >&2
   exit 2
@@ -138,11 +144,13 @@ grep -F -- '- 总结果：`PASS`' "${manifest_file}" >/dev/null || {
   exit 1
 }
 
-MANIFEST_FILE="${manifest_file}" ruby -rjson -e '
+MANIFEST_FILE="${manifest_file}" EXPECTED_IMAGE_TAG="${expected_image_tag}" ruby -rjson -e '
   content = File.read(ENV.fetch("MANIFEST_FILE"))
+  expected_image_tag = ENV.fetch("EXPECTED_IMAGE_TAG")
   required = {
     "环境标识" => /- 环境标识：`[^`\n]+`/,
     "执行人" => /- 执行人：`[^`\n]+`/,
+    "镜像提交" => /- 镜像提交：`#{Regexp.escape(expected_image_tag)}`/,
     "开始时间" => /- 开始时间（UTC）：`[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z`/,
     "完成时间" => /- 完成时间（UTC）：`[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z`/
   }
