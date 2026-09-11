@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-dependencies-preflight-contract.sh tests/retention-cleanup-contract.sh tests/retention-role-contract.sh tests/rocketmq-e2e.sh tests/workflow-sla-contract.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-dependencies-preflight-contract.sh tests/retention-cleanup-contract.sh tests/retention-role-contract.sh tests/rocketmq-e2e.sh tests/workflow-sla-contract.sh tests/workflow-sla-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -341,6 +341,10 @@ jobs:
       # 使用临时 PostgreSQL 容器验证消息、死信、Inbox 和幂等记录的生命周期清理。
       - name: Run PostgreSQL retention cleanup test
         run: ./tests/postgres-retention-e2e.sh
+
+      # 使用临时 PostgreSQL 容器验证 SLA 对并行审批实例的锁定、任务收敛和 Outbox 写入。
+      - name: Run Workflow SLA PostgreSQL E2E test
+        run: ./tests/workflow-sla-e2e.sh
 
       # 验证 Electron 渲染进程、主进程和生产构建产物。
       - name: Set up Node.js 26
