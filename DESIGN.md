@@ -189,7 +189,7 @@ DRAFT → SUBMITTED → RISK_CHECKING → PROCUREMENT_REVIEW
 
 ### 9.0 当前实现边界
 
-本设计蓝图包含后续演进目标。当前可运行基线提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、risk、notification-audit、Vue 3、Electron、Redis 登录限流、MinIO 材料存储、Outbox 运维、跨服务对账、补件重审、审批 SLA 和基础指标；Camunda、Redis 缓存、完整 Prometheus/Grafana/OpenTelemetry 平台以及生产级高可用仍在后续生产化路线中。当前 workflow 使用内部状态机作为可运行流程实现，后续可替换为 Camunda 但不改变事件契约。部署和面试说明必须以 README 与 `docs/production-readiness.md` 为准。
+本设计蓝图包含后续演进目标。当前可运行基线提供 PostgreSQL、RocketMQ、IAM、supplier、workflow、risk、notification-audit、Vue 3、Electron、Redis 登录限流、MinIO 材料存储、Outbox 运维、跨服务对账、补件重审、审批 SLA、基础指标、本地观测栈和目标平台只读验收脚本；生产观测后端、告警通知、外部依赖高可用、备份恢复和 RTO/RPO 仍需在目标平台完成并留存证据。当前 workflow 使用内部状态机作为可运行流程实现，后续可替换为 Camunda 但不改变事件契约。部署和面试说明必须以 README 与 `docs/production-readiness.md` 为准。
 
 ### 技术栈
 

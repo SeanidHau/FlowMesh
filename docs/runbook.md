@@ -108,6 +108,8 @@ FLOWMESH_K8S_NAMESPACE=flowmesh \
 FLOWMESH_HELM_RELEASE=flowmesh \
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
 FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true \
+FLOWMESH_PROMETHEUS_URL='https://prometheus.observability.example.com' \
+FLOWMESH_ALERTMANAGER_URL='https://alertmanager.observability.example.com' \
 ./scripts/run-production-acceptance.sh
 ```
 

@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档、补件重审和审批 SLA 处置，以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+核心业务 MVP-4 已完成，并已形成生产化应用基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档、补件重审和审批 SLA 处置，以及 Compose、Helm、CI 验证。仓库同时提供目标集群的只读 smoke、外部依赖 TLS 预检、运行时 Prometheus/Alertmanager 预检和恢复演练入口；仍需在实际目标集群完成外部依赖 HA、告警通知、备份恢复与 RTO/RPO 证据。Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -22,11 +22,11 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed，并默认启用 Redis TLS。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
-| Prometheus、Alertmanager、Grafana | 本地基线已实现 | 提供 Prometheus 抓取、Alertmanager 路由、告警规则和 Grafana 概览 Dashboard；生产环境仍需接入托管观测平台和通知渠道。 |
+| Prometheus、Alertmanager、Grafana | 本地基线 + 生产验收入口 | 提供抓取、路由、告警规则、Grafana 概览 Dashboard，以及只读运行时后端校验；生产环境仍需接入实际观测平台和通知渠道。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
 | 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；仓库提供 Kyverno 集群准入策略。 |
 | OpenTelemetry Trace | 已提供可选出口 | 六个服务支持 Micrometer Tracing 和 OTLP/HTTP 导出；默认关闭，目标平台仍需提供 Collector、存储和查询后端。 |
-| PostgreSQL 备份 | 已实现 | 提供备份镜像、Helm CronJob、S3 兼容对象存储上传、服务端加密、失败重试和恢复回归；生产平台仍需配置复制、生命周期和 RTO/RPO。 |
+| PostgreSQL 备份 | 已实现 + 生产恢复入口 | 提供备份镜像、Helm CronJob、S3 兼容对象存储上传、服务端加密、失败重试和恢复回归；生产平台仍需配置复制、生命周期并留存实际 RTO/RPO。 |
 
 ## 项目目标
 
