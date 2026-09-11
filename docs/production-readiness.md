@@ -59,7 +59,7 @@ helm lint infra/helm/flowmesh \
 
 ### 可观测性与恢复
 
-- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信告警样例和本地 Grafana Dashboard；生产环境仍需接入托管 Prometheus、Grafana、日志聚合、OpenTelemetry Collector 和 Trace 后端。
+- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard 和本地 Alertmanager 路由基线；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
 - PostgreSQL 备份已经提供 Helm CronJob、S3 上传、服务端加密、失败重试和 CI 恢复回归；目标平台仍需配置对象存储跨故障域复制、生命周期、定期恢复验证和实际 RTO/RPO 记录。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。

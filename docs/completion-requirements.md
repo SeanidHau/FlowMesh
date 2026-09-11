@@ -8,7 +8,7 @@
 
 MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC、PostgreSQL RLS、MyBatis 持久化和 RocketMQ Transactional Outbox 基础链路。
 
-当前 Outbox 已具备数据库认领租约、指数退避、失败终态、死信查询、受控重放和审计；事件信封/业务 ID 校验、业务与消息指标、HTTP/事件 Trace 标识、依赖就绪探针、真实 RocketMQ E2E、并发竞争测试和跨服务对账均已接入。Redis 第一阶段用于 IAM 登录尝试限流，数据库仍是认证与幂等的最终事实源。
+当前 Outbox 已具备数据库认领租约、指数退避、失败终态、死信查询、受控重放和审计；事件信封/业务 ID 校验、业务与消息指标、HTTP/事件 Trace 标识、依赖就绪探针、真实 RocketMQ E2E、并发竞争测试和跨服务对账均已接入。Redis 用于 Gateway 分布式入口限流和 IAM 登录尝试限流，数据库仍是认证与幂等的最终事实源。
 
 ## 3.1 本轮实施状态
 
@@ -27,6 +27,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | Helm 提供可选 Prometheus Operator `PrometheusRule`，CI 验证启用时能够渲染关键服务、HTTP 和消息告警规则。 |
 | 已完成 | 生产 NetworkPolicy 已允许可配置监控命名空间访问 Actuator 指标端口，CI 验证生产渲染包含该入口。 |
 | 已完成 | 提供只读 Kubernetes 生产 smoke test，验证发布后的 Deployment、提交 SHA 镜像、PDB/HPA/NetworkPolicy、Secret 和备份 CronJob。 |
+| 已完成 | Gateway 已接入 Redis Lua 令牌桶限流，Redis 故障 fail-closed 返回 `503`、额度耗尽返回 `429`，并提供 Micrometer 指标、Prometheus 告警和本地 Alertmanager 路由基线。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围

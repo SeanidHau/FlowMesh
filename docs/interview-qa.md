@@ -11,7 +11,7 @@ Q: 你本人具体负责了哪些模块？如何证明不是只会搭框架？
 A: 回答应落到可验证的代码和决策上，例如：负责 Gateway 与多个领域服务的边界设计、数据库迁移、认证链路、申请幂等、Outbox 发布器、RLS、文件安全检查和 Testcontainers 集成测试。面试时应能打开代码说明一次请求如何经过 Gateway、Controller、Application Service、Repository、事务和事件发布，而不是只罗列技术名词。
 
 Q: 为什么简历中不能把 Camunda、Redis 缓存和真实外部风控写成已落地能力？
-A: 因为当前仓库使用内部状态机推进审批，Redis 只承担登录限流，risk-service 使用可复现的模拟规则而非真实征信机构。MinIO 材料存储和独立 risk-service 已接入运行链路，但不能把尚未接入的 Camunda、Redis 缓存或外部风控供应商写成已落地能力。
+A: 因为当前仓库使用内部状态机推进审批，Redis 已用于 Gateway 分布式入口限流和 IAM 登录限流，但没有作为业务缓存或幂等事实源；risk-service 使用可复现的模拟规则而非真实征信机构。MinIO 材料存储和独立 risk-service 已接入运行链路，但不能把尚未接入的 Camunda、Redis 缓存或外部风控供应商写成已落地能力。
 
 Q: 申请提交后为什么不是直接进入采购审批？
 A: Workflow 先创建 `RISK_CHECKING` 投影并通过 Outbox 发布 `RiskCheckRequested`。risk-service 消费后在本地事务中保存风控结果和 `RiskCheckCompleted`，Workflow 以事件 Inbox 做幂等；PASS 才进入采购初审，REJECT 进入终止状态。这样把外部风控延迟和失败重试从审批接口中隔离出来。
@@ -50,7 +50,7 @@ A: 会存在短暂的中间状态，所以 API 和前端不能假设申请创建
 Q: 当前项目哪些内容已经实现，哪些内容还没有实现？
 A: 已经实现：统一 Gateway、IAM、Supplier、Workflow、Risk 和 Notification-Audit 六个服务，JWT 登录刷新登出、RBAC、多租户 RLS、供应商申请、材料上传与安全校验、持久化接口幂等、异步风控、通知审计、RocketMQ Outbox、重试/死信/受控重放、跨服务对账、Docker Compose、Helm 和 CI 校验。
 
-尚未作为当前运行链路实现：Camunda 流程引擎、Redis 缓存、外部邮件/短信通道和生产级托管 Prometheus/Grafana/OpenTelemetry 平台。Redis 登录限流、MinIO 材料存储、本地 Prometheus/Grafana 基线、真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标已经实现；生产级外部依赖 HA 仍需在目标集群演练。
+尚未作为当前运行链路实现：Camunda 流程引擎、Redis 缓存、外部邮件/短信通道和生产级托管 Prometheus/Alertmanager/Grafana/OpenTelemetry 平台。Gateway Redis 分布式限流、Redis 登录限流、MinIO 材料存储、本地 Prometheus/Alertmanager/Grafana 基线、真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标已经实现；生产级外部依赖 HA 仍需在目标集群演练。
 
 Q: 如果面试官质疑项目规模不够，你如何回答？
 A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计、基础观测和部署校验做成可运行闭环；但外部基础设施 HA、托管观测后端、真实通知通道和 Camunda 仍是明确的后续边界。
@@ -234,9 +234,9 @@ Q: 项目当前有哪些明显的技术债或风险？
 A:
 - 完整监控平台、生产级 Broker/数据库高可用和目标集群 Chaos 故障演练仍需补充；当前已提供 Prometheus 抓取与告警样例、恢复演练脚本，核心 RocketMQ E2E 和多实例 Outbox 竞争测试已完成。
 - 当前 workflow 是内部流程状态实现，尚未接入 Camunda 8；这属于明确的编排替换路线，不影响当前事件契约。
-- Redis 缓存和外部邮件/短信通道仍未接入；Redis 登录限流、MinIO、独立风险/通知服务、DLQ 查询/重放/审计和对账入口已接入。
+- Redis 缓存和外部邮件/短信通道仍未接入；Gateway/IAM Redis 限流、MinIO、独立风险/通知服务、DLQ 查询/重放/审计和对账入口已接入。
 - Compose 仍是单机演示拓扑；Helm 已提供 Gateway、双副本、HPA、PDB、Ingress 和业务入口 NetworkPolicy，但外部依赖 HA 仍由目标平台负责。
-- 当前已具备基础业务/消息指标、HTTP Trace ID、按消费者区分的消息处理耗时指标和可选 OTLP Trace 出口；生产 Collector、告警通知路由和大规模并发压测仍需在目标环境完成。
+- 当前已具备基础业务/消息指标、Gateway 限流结果指标、HTTP Trace ID、按消费者区分的消息处理耗时指标和可选 OTLP Trace 出口；生产 Collector、告警通知路由和大规模并发压测仍需在目标环境完成。
 
 Q: 当前实现扩容时最可能的瓶颈是什么？
 A: 主要瓶颈包括 Outbox 扫描和认领 SQL、RocketMQ 发布吞吐、消费者数据库事务、PostgreSQL 连接池以及消息堆积。当前已经有消息处理耗时直方图和 P95 告警，但扩容前仍应通过指标和压测确认瓶颈，再调整批大小、索引、连接池和消费者并发，不能只增加 Pod 副本。

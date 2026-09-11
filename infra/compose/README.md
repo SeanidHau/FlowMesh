@@ -17,12 +17,15 @@ docker compose -f infra/compose/docker-compose.yml ps
 观测 profile：
 
 ```bash
-docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus grafana
+docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus alertmanager grafana
 ```
 
-Prometheus 地址为 `http://localhost:9090`，Grafana 地址为 `http://localhost:3000`。Grafana 使用
+Prometheus 地址为 `http://localhost:9090`，Alertmanager 地址为 `http://localhost:9093`，Grafana 地址为 `http://localhost:3000`。Grafana 使用
 `.env` 中的 `GRAFANA_ADMIN_USER` 和 `GRAFANA_ADMIN_PASSWORD`，并自动加载
 `dashboards/flowmesh-overview.json`。
+
+本地 Alertmanager 只保留告警并在 UI 展示，不发送邮件、短信或企业 IM。生产环境必须替换
+`alertmanager.yml` 中的 receiver、分组和静默策略，并配置通知渠道、值班责任和告警恢复演练。
 
 PostgreSQL 数据卷只会在第一次初始化时执行 `postgres/init` 脚本；若修改账号或 Schema
 初始化逻辑，需要清理本地演示数据后重新创建卷。

@@ -365,6 +365,18 @@ services:
       - ./prometheus-rules.yml:/etc/prometheus/rules/flowmesh.yml:ro
       - prometheusdata:/prometheus
 
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: [observability]
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanagerdata:/alertmanager
+
   grafana:
     image: grafana/grafana:11.5.2
     profiles: [observability]
@@ -391,3 +403,4 @@ volumes:
   rocketmq-store:
   rocketmq-logs:
   prometheusdata:
+  alertmanagerdata:

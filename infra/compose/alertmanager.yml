@@ -1,0 +1,15 @@
+# 作用：提供本地观测环境的 Alertmanager 路由基线。
+# 生产环境必须替换为企业通知渠道、静默策略和责任人路由。
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: [alertname, job, route]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: flowmesh-local
+
+receivers:
+  # 本地默认不向外部系统发送消息，只在 Alertmanager UI 中保留告警状态。
+  - name: flowmesh-local
