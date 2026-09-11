@@ -33,6 +33,7 @@
 - Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
+- CI 已提供独立源码安全工作流：对 Java/Kotlin 和 TypeScript/JavaScript 执行 CodeQL，并在 Pull Request 中以高危级别阻断依赖审查失败；生产发布仍需结合组织级 Secret Scanning、Dependabot 告警处置和代码扫描告警基线。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
 - Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、确认失败、外部通知积压/死信/失败，以及 PostgreSQL 备份、生命周期清理和 Workflow SLA CronJob 长时间未成功执行告警；CronJob 告警依赖 kube-state-metrics，生产环境仍需配置 Alertmanager 路由和值班通知。
