@@ -76,6 +76,7 @@ helm lint infra/helm/flowmesh \
 - risk-service 已提供默认关闭的 `FAIL` / `TIMEOUT` 受控故障注入，用于验证消息重试、DLQ 和人工处置；生产 Helm 会显式关闭该开关。
 - 高并发压测、故障注入和跨租户安全回归。仓库已提供 k6 压测脚本和显式确认的服务恢复演练脚本，但必须在目标环境执行并留存结果。
 - 提供只读 Kubernetes 生产 smoke test，验证六个 Deployment、提交 SHA 镜像、安全上下文、探针、资源限制、PDB/HPA/NetworkPolicy、Gateway Ingress 边界、运行时 Secret 必需键和备份 CronJob；目标环境仍需实际执行并留存输出。
+- 提供只读外部依赖 preflight，检查 PostgreSQL/Redis/RocketMQ TLS 和对象存储 HTTPS；目标环境仍需执行并留存输出，且该检查不替代 HA、故障切换和恢复演练。
 
 ## 完成判定
 

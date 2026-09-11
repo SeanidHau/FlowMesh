@@ -54,3 +54,12 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 RocketMQ Producer/Consumer 凭据）、备份凭据 Secret 和备份 CronJob
 并发与截止时间。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
 `PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。
+
+目标生产网络中的外部依赖只读预检：
+
+```bash
+./scripts/validate-production-dependencies.sh
+```
+
+该脚本检查 PostgreSQL readiness/TLS、Redis TLS/PING、RocketMQ NameServer TLS 握手和对象存储 HTTPS；凭据通过环境变量注入，
+脚本不会输出密码，也不会执行写操作。仓库中的 `production-dependencies-preflight-contract.sh` 使用命令替身离线验证其安全门禁。

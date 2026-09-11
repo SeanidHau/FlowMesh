@@ -107,6 +107,22 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 ./tests/kubernetes-production-smoke.sh
 ```
 
+在同一运维环境、且能够访问外部依赖的网络位置执行只读连接预检。该脚本不会写入任何依赖：
+
+```bash
+FLOWMESH_PG_HOST='postgres-primary.database.svc' \
+FLOWMESH_PG_USER='flowmesh' \
+FLOWMESH_PG_SSLMODE=require \
+FLOWMESH_REDIS_HOST='redis-primary.cache.svc' \
+FLOWMESH_REDIS_PASSWORD="$REDIS_PASSWORD" \
+FLOWMESH_ROCKETMQ_NAMESRV_ADDR='namesrv-0.messaging.svc:9876,namesrv-1.messaging.svc:9876' \
+FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
+./scripts/validate-production-dependencies.sh
+```
+
+如果使用私有 CA，为 RocketMQ TLS 预检设置 `FLOWMESH_ROCKETMQ_CA_FILE`；预检通过不代表已经完成多副本
+故障切换、备份恢复或 RTO/RPO 验收，这些仍需按目标平台剧本执行并留存结果。
+
 默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS、PostgreSQL TLS 和 PostgreSQL
 备份 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
 

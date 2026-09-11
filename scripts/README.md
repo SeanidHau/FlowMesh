@@ -9,6 +9,7 @@
 - `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
 - `infra/backup/entrypoint.sh`：在备份容器中调用 PostgreSQL 备份和对象存储上传流程。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
+- `validate-production-dependencies.sh`：在目标生产网络内只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的连接安全与基础可达性。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像和一个备份镜像均具备受信任 GitHub Actions 签名。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。

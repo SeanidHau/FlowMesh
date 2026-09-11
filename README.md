@@ -44,6 +44,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | [安全规范](docs/security.md) | JWT、RBAC、RLS、Secret 和对象存储规则 |
 | [测试策略](docs/testing-strategy.md) | 单元、集成、契约、E2E 和压测范围 |
 | [运行手册](docs/runbook.md) | 启停、排障、DLQ 重放、对账和恢复步骤 |
+| [生产依赖预检](scripts/validate-production-dependencies.sh) | 只读检查目标环境外部依赖的 TLS 与基础连通性 |
 | [补齐需求与验收](docs/completion-requirements.md) | 当前阶段范围、验收标准和实施状态 |
 | [生产化验收清单](docs/production-readiness.md) | 从 MVP-4 推进到生产级项目的完成标准 |
 
