@@ -52,6 +52,7 @@ if [[ -e "${report_path}" ]]; then
   echo "拒绝覆盖已有生产 HA 报告：${report_path}" >&2
   exit 64
 fi
+mkdir -p "$(dirname "${report_path}")"
 
 timeout_seconds="${FLOWMESH_HA_TIMEOUT_SECONDS:-5}"
 pg_host="${FLOWMESH_PG_HOST:-}"
