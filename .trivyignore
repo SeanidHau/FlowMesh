@@ -1,0 +1,4 @@
+# CVE-2023-6378 仅存在于 RocketMQ 1.0.1 内嵌的重定位 Logback 1.3.5。
+# FlowMesh 使用 RocketMQ 客户端，不启用 Logback Receiver 或 JMX 远程入口；应用自身 Logback 已锁定为 1.5.34。
+# RocketMQ 尚未发布包含修复版 rocketmq-logback-classic 的上游版本，保留该单项例外并持续跟踪升级。
+CVE-2023-6378

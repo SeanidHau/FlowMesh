@@ -70,9 +70,11 @@
     <grpc.version>1.75.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <commons-beanutils.version>1.11.0</commons-beanutils.version>
-    <lz4.version>1.8.1</lz4.version>
+    <lz4.version>1.10.1</lz4.version>
+    <logback.version>1.5.34</logback.version>
+    <bouncycastle.version>1.80.2</bouncycastle.version>
     <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
-    <minio.version>8.5.17</minio.version>
+    <minio.version>8.6.0</minio.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -116,10 +118,28 @@
         <artifactId>commons-beanutils</artifactId>
         <version>${commons-beanutils.version}</version>
       </dependency>
+      <!-- 作用：覆盖 RocketMQ 使用的 LZ4 实现，修复输出缓冲区未清理漏洞。 -->
       <dependency>
-        <groupId>org.lz4</groupId>
+        <groupId>at.yawk.lz4</groupId>
         <artifactId>lz4-java</artifactId>
         <version>${lz4.version}</version>
+      </dependency>
+      <!-- 作用：显式锁定日志组件补丁版本，避免镜像扫描读取旧的传递元数据。 -->
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+      <!-- 作用：覆盖 MinIO 传递引入的 Bouncy Castle 安全补丁版本。 -->
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
 
       <!--
