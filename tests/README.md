@@ -52,7 +52,7 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 
 脚本验证 Deployment 可用性、提交 SHA 镜像、安全上下文、探针、资源 requests/limits、PDB/HPA/NetworkPolicy、
 Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 RocketMQ Producer/Consumer 凭据）、备份凭据 Secret 和备份 CronJob
-并发与截止时间。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
+并发与截止时间，以及实际 Pod 注入的 PostgreSQL、Redis 和 RocketMQ TLS 配置。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
 `PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。
 
 目标生产网络中的外部依赖只读预检：

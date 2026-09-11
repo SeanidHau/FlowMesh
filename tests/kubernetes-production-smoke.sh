@@ -70,6 +70,25 @@ spec.fetch("containers").each do |container|
     raise "#{name}/#{container_name} 缺少 #{probe}" unless container.key?(probe)
   end
 end
+container = spec.fetch("containers").first
+env = container.fetch("env").each_with_object({}) do |entry, values|
+  values[entry.fetch("name")] = entry["value"]
+end
+if name.end_with?("-gateway", "-iam")
+  raise "#{name} 必须启用 Redis TLS" unless env["REDIS_SSL_ENABLED"] == "true"
+end
+unless name.end_with?("-gateway")
+  jdbc_url = env["SPRING_DATASOURCE_URL"].to_s
+  raise "#{name} 必须使用 PostgreSQL 加密连接" unless jdbc_url.match?(/(?:\?|&)sslmode=(require|verify-ca|verify-full)(?:&|$)/)
+end
+rocketmq_services = %w[-supplier -workflow -risk -notification-audit]
+if rocketmq_services.any? { |suffix| name.end_with?(suffix) }
+  raise "#{name} 缺少 RocketMQ 访问通道" if env["ROCKETMQ_ACCESS_CHANNEL"].to_s.empty?
+  raise "#{name} 必须启用 RocketMQ Consumer TLS" unless env["ROCKETMQ_CONSUMER_TLS_ENABLED"] == "true"
+end
+if %w[-supplier -workflow -risk].any? { |suffix| name.end_with?(suffix) }
+  raise "#{name} 必须启用 RocketMQ Producer TLS" unless env["ROCKETMQ_PRODUCER_TLS_ENABLED"] == "true"
+end
 '
   images="$(kubectl -n "${namespace}" get "deployment/${deployment}" -o jsonpath='{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}')"
   while IFS= read -r image; do
