@@ -47,6 +47,20 @@ public interface RiskOutboxRepository {
     int markPublished(@Param("id") UUID id, @Param("claimToken") UUID claimToken);
 
     /**
+     * 在发送前延长当前发布器持有的认领租约。
+     *
+     * @param id 事件标识
+     * @param claimToken 认领令牌
+     * @param claimedUntil 新的租约到期时间
+     * @return 受影响行数；令牌已失效时为 0
+     */
+    int renewClaim(
+        @Param("id") UUID id,
+        @Param("claimToken") UUID claimToken,
+        @Param("claimedUntil") Instant claimedUntil
+    );
+
+    /**
      * 记录发布失败和下一次重试时间。
      *
      * @param id 事件标识

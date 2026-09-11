@@ -51,6 +51,19 @@ public class OutboxClaimService {
         return repository.claimBatch(now, claimToken, now.plusSeconds(leaseSeconds), batchSize);
     }
 
+    /**
+     * 在网络发送前续租单条事件，避免批次中前序耗时导致当前事件失去所有权。
+     *
+     * @param event 待发送事件
+     * @return 仍持有租约时为 {@code true}
+     */
+    @Transactional
+    public boolean renew(OutboxEvent event) {
+        return repository.renewClaim(
+            event.getId(), event.getClaimToken(), Instant.now().plusSeconds(leaseSeconds)
+        ) == 1;
+    }
+
     private void validateConfiguration(int configuredBatchSize, long configuredLeaseSeconds,
                                        long configuredSendTimeoutMillis) {
         if (configuredBatchSize < 1 || configuredBatchSize > 100) {

@@ -106,6 +106,11 @@ public class OutboxPublisher {
     }
 
     private void publish(OutboxEvent event) {
+        if (!outboxClaimService.renew(event)) {
+            confirmationFailedCounter.increment();
+            log.warn("RocketMQ 事件租约已失效，跳过发送，eventId={}", event.getId());
+            return;
+        }
         try {
             Message<String> message = MessageBuilder.withPayload(event.getPayload())
                 .setHeader(MessageConst.PROPERTY_KEYS, event.getAggregateId().toString())

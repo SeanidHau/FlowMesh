@@ -98,6 +98,11 @@ public class WorkflowOutboxPublisher {
     public void publishPendingEvents() {
         List<WorkflowOutboxEvent> events = claimService.claimBatch();
         for (WorkflowOutboxEvent event : events) {
+            if (!claimService.renew(event)) {
+                confirmationFailedCounter.increment();
+                log.warn("RocketMQ workflow 事件租约已失效，跳过发送，eventId={}", event.getId());
+                continue;
+            }
             try {
                 Message<String> message = MessageBuilder.withPayload(event.getPayload())
                     .setHeader(MessageConst.PROPERTY_KEYS, event.getAggregateId().toString())

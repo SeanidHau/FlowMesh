@@ -52,6 +52,15 @@
     WHERE id = #{id, jdbcType=OTHER} AND claim_token = #{claimToken, jdbcType=OTHER}
   </update>
 
+  <update id="renewClaim">
+    UPDATE risk_outbox_events
+    SET claimed_until = #{claimedUntil}
+    WHERE id = #{id, jdbcType=OTHER}
+      AND claim_token = #{claimToken, jdbcType=OTHER}
+      AND published_at IS NULL
+      AND dead_lettered_at IS NULL
+  </update>
+
   <update id="markFailed">
     UPDATE risk_outbox_events
     SET attempt_count = #{attemptCount}, next_attempt_at = #{nextAttemptAt},

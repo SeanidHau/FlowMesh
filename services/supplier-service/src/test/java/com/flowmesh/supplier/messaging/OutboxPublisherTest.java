@@ -35,6 +35,7 @@ class OutboxPublisherTest {
         OutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(true);
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(1);
 
         OutboxPublisher publisher = new OutboxPublisher(
@@ -60,6 +61,7 @@ class OutboxPublisherTest {
         OutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(true);
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(0);
 
         OutboxPublisher publisher = new OutboxPublisher(
@@ -83,6 +85,7 @@ class OutboxPublisherTest {
         OutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(true);
         doThrow(new IllegalStateException("broker unavailable"))
             .when(template).syncSend(
                 eq("supplier-events:ApplicationSubmitted"), any(Message.class), anyLong()
@@ -96,6 +99,27 @@ class OutboxPublisherTest {
         verify(repository).markDeadLetteredIfClaimed(
             eq(event.getId()), eq(event.getClaimToken()), eq("broker unavailable"), any(), eq(1)
         );
+    }
+
+    /**
+     * 验证租约已经被其他发布器接管时不会再次发送同一事件。
+     */
+    @Test
+    void shouldSkipEventWhenLeaseCannotBeRenewed() {
+        OutboxEventRepository repository = mock(OutboxEventRepository.class);
+        OutboxClaimService claimService = mock(OutboxClaimService.class);
+        RocketMQTemplate template = mock(RocketMQTemplate.class);
+        OutboxEvent event = event();
+        event.claim(UUID.randomUUID(), Instant.now().plusSeconds(30));
+        when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(false);
+
+        new OutboxPublisher(repository, template, claimService, new SimpleMeterRegistry(), 3, 1, 3000)
+            .publishPendingEvents();
+
+        org.mockito.Mockito.verifyNoInteractions(template);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never())
+            .markPublishedIfClaimed(any(), any(), any());
     }
 
     private OutboxEvent event() {

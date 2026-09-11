@@ -35,6 +35,7 @@ class WorkflowOutboxPublisherTest {
         WorkflowOutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(60));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(true);
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(1);
 
         WorkflowOutboxPublisher publisher = new WorkflowOutboxPublisher(
@@ -61,6 +62,7 @@ class WorkflowOutboxPublisherTest {
         WorkflowOutboxEvent event = event();
         event.claim(UUID.randomUUID(), Instant.now().plusSeconds(60));
         when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(true);
         when(repository.markPublishedIfClaimed(any(), any(), any())).thenReturn(0);
 
         WorkflowOutboxPublisher publisher = new WorkflowOutboxPublisher(
@@ -71,6 +73,27 @@ class WorkflowOutboxPublisherTest {
         assertThat(meterRegistry.get("flowmesh.outbox.published").counter().count()).isZero();
         assertThat(meterRegistry.get("flowmesh.outbox.confirmation_failed").counter().count())
             .isEqualTo(1);
+    }
+
+    /**
+     * 验证租约已经被其他发布器接管时不会再次发送同一事件。
+     */
+    @Test
+    void shouldSkipEventWhenLeaseCannotBeRenewed() {
+        WorkflowOutboxEventRepository repository = mock(WorkflowOutboxEventRepository.class);
+        WorkflowOutboxClaimService claimService = mock(WorkflowOutboxClaimService.class);
+        RocketMQTemplate template = mock(RocketMQTemplate.class);
+        WorkflowOutboxEvent event = event();
+        event.claim(UUID.randomUUID(), Instant.now().plusSeconds(60));
+        when(claimService.claimBatch()).thenReturn(List.of(event));
+        when(claimService.renew(event)).thenReturn(false);
+
+        new WorkflowOutboxPublisher(repository, template, claimService, new SimpleMeterRegistry(), 3, 1, 3000)
+            .publishPendingEvents();
+
+        org.mockito.Mockito.verifyNoInteractions(template);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never())
+            .markPublishedIfClaimed(any(), any(), any());
     }
 
     private WorkflowOutboxEvent event() {

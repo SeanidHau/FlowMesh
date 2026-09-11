@@ -89,6 +89,13 @@ public class RiskOutboxPublisher {
             batchSize, now, now.plusSeconds(leaseSeconds), claimToken
         );
         for (RiskOutboxEvent event : events) {
+            if (repository.renewClaim(
+                event.getId(), claimToken, Instant.now().plusSeconds(leaseSeconds)
+            ) != 1) {
+                confirmationFailedCounter.increment();
+                log.warn("RocketMQ 风控事件租约已失效，跳过发送，eventId={}", event.getId());
+                continue;
+            }
             try {
                 rocketMQTemplate.syncSend(
                     event.getTopic() + ":" + event.getTag(), event.getPayload(), sendTimeoutMillis
