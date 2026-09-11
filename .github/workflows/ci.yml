@@ -177,7 +177,7 @@ jobs:
               }
             }
             END { print count + 0 }
-          ')
+          ')"
           if [[ "$pg_sslmode_count" -ne 2 || "$pg_sslmode_require_count" -ne 2 ]]; then
             echo 'PostgreSQL backup and retention CronJobs must use encrypted connections.' >&2
             exit 1
