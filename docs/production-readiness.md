@@ -8,12 +8,14 @@
 - Kubernetes 应用 Pod 使用非 root、只读根文件系统、默认 Seccomp，并关闭 ServiceAccount Token 自动挂载。
 - Helm 默认提供 CPU/内存 requests 和 limits、启动/就绪/存活探针、滚动更新和优雅终止配置。
 - 生产 values 提供 gateway 和五个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
-- 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**` 和 `/api/workflow/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
+- 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**`、`/api/workflow/**` 和 `/api/notification/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
+- supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 - 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
+- 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - CI 在 PR 构建六项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
 
 验证命令：
@@ -26,6 +28,8 @@ helm lint infra/helm/flowmesh \
   --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
   --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
   --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+  --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+  --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
   --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
 ./mvnw -q -DskipTests package
 ```
@@ -47,7 +51,7 @@ helm lint infra/helm/flowmesh \
 
 ### 可观测性与恢复
 
-- 已提供 Prometheus 抓取配置和服务/Outbox/死信告警样例；生产环境仍需接入托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端。
+- 已提供 Prometheus 抓取配置、服务/Outbox/死信告警样例和本地 Grafana Dashboard；生产环境仍需接入托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端。
 - PostgreSQL 备份定时化、异地保存、定期恢复验证和恢复时间目标记录。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 

@@ -1,6 +1,6 @@
 {{- if .Values.networkPolicy.enabled }}
 {{- $root := . -}}
-{{- range $name := list "iam" "supplier" "workflow" "notification-audit" }}
+{{- range $name := list "iam" "supplier" "workflow" "risk" "notification-audit" }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

@@ -81,6 +81,20 @@ jobs:
             echo 'Chart must fail to render when runtime credentials are missing.' >&2
             exit 1
           fi
+          helm lint infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set global.existingSecret=flowmesh-runtime-secrets
+          helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            echo 'Production chart must fail when immutable image tag is missing.' >&2
+            exit 1
+          fi
 
       # 使用项目固定的 Java 21 和 Maven Wrapper 执行完整 Reactor 测试。
       - name: Set up Java 21

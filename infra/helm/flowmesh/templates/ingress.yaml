@@ -44,4 +44,11 @@ spec:
                 name: {{ include "flowmesh.fullname" . }}-gateway
                 port:
                   name: http
+          - path: /api/notification
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "flowmesh.fullname" . }}-gateway
+                port:
+                  name: http
 {{- end }}

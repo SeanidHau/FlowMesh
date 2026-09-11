@@ -1,4 +1,4 @@
-export type ApiService = 'iam' | 'supplier' | 'workflow';
+export type ApiService = 'iam' | 'supplier' | 'workflow' | 'notification';
 
 export interface TokenResponse {
   accessToken: string;
@@ -25,6 +25,15 @@ export interface SupplierDocumentResponse {
 export interface DocumentDownloadResponse {
   url: string;
   expiresAt: string;
+}
+
+export interface NotificationResponse {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  status: string;
+  createdAt: string;
 }
 
 export interface WorkflowInstanceResponse {

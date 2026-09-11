@@ -22,3 +22,15 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- define "flowmesh.configSecret" -}}
 {{- default (printf "%s-config" (include "flowmesh.fullname" .)) .Values.global.existingSecret -}}
 {{- end }}
+
+{{/* 作用：统一生成镜像引用；生产模式必须绑定不可变的提交 SHA 标签。 */}}
+{{- define "flowmesh.imageReference" -}}
+{{- $root := .root -}}
+{{- $service := .service -}}
+{{- $registry := trimSuffix "/" (default "" $root.Values.global.imageRegistry) -}}
+{{- $tag := default $service.tag $root.Values.global.imageTag -}}
+{{- if $root.Values.global.production }}
+{{- $tag = required "global.imageTag is required in production mode" $root.Values.global.imageTag -}}
+{{- end }}
+{{- if $registry }}{{ printf "%s/%s" $registry $service.image }}{{ else }}{{ $service.image }}{{ end }}:{{ $tag }}
+{{- end }}

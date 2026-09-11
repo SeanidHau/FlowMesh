@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param bucket 材料对象桶名称
  * @param presignedUrlExpirySeconds 下载 URL 有效期，单位为秒
  * @param maxFileSizeBytes 单个文件最大字节数
+ * @param readinessEnabled 是否将对象存储连通性纳入 readiness
  */
 @ConfigurationProperties(prefix = "flowmesh.object-storage")
 public record ObjectStorageProperties(
@@ -19,6 +20,7 @@ public record ObjectStorageProperties(
     String secretKey,
     String bucket,
     int presignedUrlExpirySeconds,
-    long maxFileSizeBytes
+    long maxFileSizeBytes,
+    boolean readinessEnabled
 ) {
 }

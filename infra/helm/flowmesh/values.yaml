@@ -1,6 +1,9 @@
 # 作用：提供 Chart 的非敏感默认值。生产部署应使用预先创建的 Secret。
 global:
   imagePullPolicy: IfNotPresent
+  production: false
+  imageRegistry: ""
+  imageTag: ""
   jwtIssuer: flowmesh-local
   jwtSigningKey: ""
   redisPassword: ""

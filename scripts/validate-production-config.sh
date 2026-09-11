@@ -19,6 +19,8 @@ require_value() {
 }
 
 require_value '^global:[[:space:]]*$' 'global 配置块'
+require_value '^  production:[[:space:]]*true[[:space:]]*$' '生产模式必须启用'
+require_value '^  imageRegistry:[[:space:]]*[^[:space:]]+' '生产镜像仓库地址'
 require_value '^  existingSecret:[[:space:]]*[^[:space:]]+' '外部 Secret 引用'
 require_value '^networkPolicy:[[:space:]]*$' 'NetworkPolicy 配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' 'NetworkPolicy 必须启用'

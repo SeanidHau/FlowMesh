@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: notification-audit
-          image: "{{ .Values.services.notificationAudit.image }}:{{ .Values.services.notificationAudit.tag }}"
+          image: "{{ include "flowmesh.imageReference" (dict "root" . "service" .Values.services.notificationAudit) }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false

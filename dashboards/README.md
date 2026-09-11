@@ -1,5 +1,8 @@
 # Grafana Dashboard
 
-本目录将保存可导入的 Grafana Dashboard JSON，以及对应 PromQL、日志和 Trace 查询示例。
+可直接导入的本地 Grafana Dashboard 位于
+[`infra/compose/grafana/dashboards/flowmesh-overview.json`](../infra/compose/grafana/dashboards/flowmesh-overview.json)，
+Compose 的 `observability` profile 会自动加载它。
 
-首版 Dashboard 至少覆盖服务健康、HTTP 错误、Outbox 堆积、RocketMQ 消费失败、DLQ、对账差异和审批 SLA。
+Dashboard 覆盖服务健康、HTTP 请求/5xx、Outbox 堆积、RocketMQ 消费失败、Outbox 确认失败和死信；
+对账差异与审批 SLA 仍应接入业务专用指标后再增加面板，避免用不存在的指标制造“绿色”假象。

@@ -19,7 +19,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 当前迭代 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
 | 当前迭代 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
 | 当前迭代 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |
-| 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、完整监控平台和生产级高可用，详见后续产品能力。 |
+| 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围
 
@@ -55,7 +55,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 
 | 编号 | 需求 | 验收标准 |
 | --- | --- | --- |
-| QA-01 | PostgreSQL 集成测试 | Docker 可用时执行 `./mvnw -q test`，本轮完整通过。 |
+| QA-01 | PostgreSQL 集成测试 | Docker 可用时执行 `./mvnw -q test`；风险服务和通知审计服务已补充真实 PostgreSQL RLS 集成测试。 |
 | QA-02 | RocketMQ 集成测试 | `tests/rocketmq-e2e.sh` 使用 Compose 的 PostgreSQL、Redis、真实 RocketMQ Broker 和本机 JAR 验证跨服务主链路、死信运维闭环和对账。 |
 | QA-03 | CI 校验 | Maven、前端构建、Helm lint 和模板渲染均已写入 GitHub Actions。 |
 | QA-04 | 资源回收 | 本地验证结束后停止本任务启动的 Compose 容器，并关闭 Docker Desktop；后续验证前再按需启动。 |
@@ -67,7 +67,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 - Camunda 8 BPMN 流程编排。
 - Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
 - 外部邮件/短信通道；通知审计服务和独立风险服务已在当前迭代接入。
-- Prometheus、Grafana、OpenTelemetry 的完整监控与告警平台。
+- 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地 Prometheus/Grafana 基线。
 - RocketMQ、PostgreSQL 多副本高可用、备份恢复和 Chaos Mesh 故障演练。
 
 这些组件只有在对应业务场景、数据边界和测试环境明确后再接入，不为了扩充简历技术栈而提前引入。

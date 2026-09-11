@@ -26,6 +26,33 @@ groups:
         for: 2m
         labels:
           severity: critical
+          annotations:
+            summary: "FlowMesh 出现死信事件"
+            description: "{{ $labels.instance }} 存在待处置死信事件。"
+      - alert: FlowMeshConsumerFailures
+        expr: sum by (consumer) (rate(flowmesh_messaging_failed_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
         annotations:
-          summary: "FlowMesh 出现死信事件"
-          description: "{{ $labels.instance }} 存在待处置死信事件。"
+          summary: "FlowMesh 消费者持续失败"
+          description: "消费者 {{ $labels.consumer }} 在过去五分钟持续失败。"
+      - alert: FlowMeshOutboxConfirmationFailures
+        expr: sum by (service) (rate(flowmesh_outbox_confirmation_failed_total[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FlowMesh Outbox 确认失败"
+          description: "服务 {{ $labels.service }} 已发送消息但未完成本地确认。"
+
+  - name: flowmesh-http
+    rules:
+      - alert: FlowMeshHttp5xxRate
+        expr: sum(rate(http_server_requests_seconds_count{job=~"flowmesh-.*",status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FlowMesh HTTP 5xx 增加"
+          description: "FlowMesh 最近五分钟的 HTTP 5xx 速率超过 0.1 req/s。"

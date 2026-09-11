@@ -170,6 +170,7 @@ services:
       FLOWMESH_OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-flowmesh}
       FLOWMESH_OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
       FLOWMESH_OBJECT_STORAGE_BUCKET: flowmesh-documents
+      FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED: ${FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED:-true}
       FLOWMESH_FILE_SCAN_ENABLED: ${FLOWMESH_FILE_SCAN_ENABLED:-false}
       FLOWMESH_CLAMAV_HOST: clamav
       FLOWMESH_CLAMAV_PORT: 3310
@@ -283,6 +284,8 @@ services:
         condition: service_healthy
       workflow-service:
         condition: service_healthy
+      notification-audit-service:
+        condition: service_healthy
     environment:
       FLOWMESH_IAM_URL: http://iam-service:8081
       FLOWMESH_SUPPLIER_URL: http://supplier-service:8082
@@ -313,11 +316,29 @@ services:
       - ./prometheus-rules.yml:/etc/prometheus/rules/flowmesh.yml:ro
       - prometheusdata:/prometheus
 
+  grafana:
+    image: grafana/grafana:11.5.2
+    profiles: [observability]
+    depends_on:
+      prometheus:
+        condition: service_started
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+
 volumes:
   pgdata:
   redisdata:
   miniodata:
   clamavdata:
+  grafanadata:
   rocketmq-store:
   rocketmq-logs:
   prometheusdata:

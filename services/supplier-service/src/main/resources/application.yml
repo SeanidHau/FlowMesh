@@ -76,6 +76,7 @@ flowmesh:
     bucket: ${FLOWMESH_OBJECT_STORAGE_BUCKET:flowmesh-documents}
     presigned-url-expiry-seconds: ${FLOWMESH_OBJECT_STORAGE_PRESIGNED_URL_EXPIRY_SECONDS:300}
     max-file-size-bytes: ${FLOWMESH_DOCUMENT_MAX_FILE_SIZE_BYTES:20971520}
+    readiness-enabled: ${FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED:false}
   file-scan:
     enabled: ${FLOWMESH_FILE_SCAN_ENABLED:false}
     host: ${FLOWMESH_CLAMAV_HOST:localhost}
@@ -100,4 +101,4 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,db,rocketMq
+          include: readinessState,db,rocketMq,objectStorage,clamAv

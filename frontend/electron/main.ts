@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEV_SERVER_URL = 'http://127.0.0.1:5173';
 const PACKAGED_ENTRY_PATH = path.join(__dirname, '../dist/index.html');
 
-type ApiService = 'iam' | 'supplier' | 'workflow';
+type ApiService = 'iam' | 'supplier' | 'workflow' | 'notification';
 
 interface ApiRequest {
   service: ApiService;
@@ -28,6 +28,7 @@ const serviceUrls: Record<ApiService, string> = {
   iam: process.env.FLOWMESH_IAM_URL ?? 'http://127.0.0.1:8081',
   supplier: process.env.FLOWMESH_SUPPLIER_URL ?? 'http://127.0.0.1:8082',
   workflow: process.env.FLOWMESH_WORKFLOW_URL ?? 'http://127.0.0.1:8083',
+  notification: process.env.FLOWMESH_NOTIFICATION_AUDIT_URL ?? 'http://127.0.0.1:8085',
 };
 const gatewayUrl = process.env.FLOWMESH_GATEWAY_URL;
 
@@ -65,7 +66,7 @@ function parseRequest(value: unknown): ApiRequest {
     throw new Error('非法 IPC 请求');
   }
   const request = value as Partial<ApiRequest>;
-  if (!['iam', 'supplier', 'workflow'].includes(request.service ?? '')) {
+  if (!['iam', 'supplier', 'workflow', 'notification'].includes(request.service ?? '')) {
     throw new Error('未知 API 服务');
   }
   if (!request.path?.startsWith('/api/v1/')) {

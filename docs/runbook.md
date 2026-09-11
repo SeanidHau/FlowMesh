@@ -27,13 +27,15 @@
    docker compose --env-file .env -f infra/compose/docker-compose.yml ps
    ```
 
-3. 检查 Gateway 和三个业务服务的健康状态。
+3. 检查 Gateway 和五个业务服务的健康状态。
 
    ```bash
    curl -fsS http://localhost:8080/actuator/health
    curl -fsS http://localhost:8081/actuator/health
    curl -fsS http://localhost:8082/actuator/health
    curl -fsS http://localhost:8083/actuator/health
+   curl -fsS http://localhost:8084/actuator/health
+   curl -fsS http://localhost:8085/actuator/health
    ```
 
 4. 启动 Electron 工作台。
@@ -52,14 +54,14 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml --profile doc
 ```
 
 并将 `.env` 中的 `FLOWMESH_FILE_SCAN_ENABLED` 设置为 `true`。
-桌面端默认访问宿主机的
-`8081`、`8082` 和 `8083` 端口。
+桌面端默认通过 Gateway 访问宿主机的 `8080` 端口；本地调试时才直接访问
+`8081` 至 `8085` 的服务端口。
 
-需要本地查看 Prometheus 指标时，可额外启用 `observability` profile，访问
-`http://localhost:9090`：
+需要本地查看 Prometheus/Grafana 指标时，可额外启用 `observability` profile，访问
+Prometheus `http://localhost:9090` 和 Grafana `http://localhost:3000`：
 
 ```bash
-docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus
+docker compose --env-file .env -f infra/compose/docker-compose.yml --profile observability up -d prometheus grafana
 ```
 
 ## 停止与数据卷

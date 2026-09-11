@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、完整观测平台和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -19,9 +19,9 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；Redis 故障时降级放行。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
-| Prometheus 指标端点 | 基础能力已实现 | Gateway、IAM、Supplier、Workflow、Risk 暴露 Actuator Prometheus 端点；完整监控平台仍待建设。 |
+| Prometheus、Grafana | 本地基线已实现 | 提供 Prometheus 抓取配置、告警规则和 Grafana 概览 Dashboard；生产环境仍需接入托管观测平台。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
-| Grafana、OpenTelemetry | 计划中 | 基础指标和 Trace ID 已接入，完整监控平台仍待建设。 |
+| OpenTelemetry Trace 后端 | 计划中 | 服务已输出 Trace ID；完整 Trace 采集、存储和查询后端仍待接入。 |
 
 ## 项目目标
 
@@ -49,7 +49,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 ```text
 services/                    # Maven 后端服务模块
 frontend/                    # Electron + Vue 3 + TypeScript 桌面工作台
-infra/compose/               # Docker Compose 本地开发环境
+infra/compose/               # Docker Compose 本地开发环境和可选观测组件
 infra/helm/                  # kind 使用的 Helm Chart
 docs/                        # 架构、规范、ADR、运行手册
 tests/                       # REST Client、E2E、契约和压测脚本

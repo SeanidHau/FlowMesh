@@ -1,0 +1,18 @@
+flowmesh:
+  audit:
+    consumer-enabled: false
+  security:
+    jwt:
+      issuer: flowmesh-test
+      signing-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
+  flyway:
+    schemas: audit
+    create-schemas: true
+  datasource:
+    hikari:
+      connection-init-sql: SET search_path TO audit

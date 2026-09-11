@@ -1,0 +1,15 @@
+flowmesh:
+  risk:
+    consumer-enabled: false
+    outbox-enabled: false
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
+  flyway:
+    schemas: risk
+    create-schemas: true
+  datasource:
+    hikari:
+      connection-init-sql: SET search_path TO risk

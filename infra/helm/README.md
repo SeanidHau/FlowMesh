@@ -15,13 +15,21 @@ helm lint infra/helm/flowmesh \
   --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
-  --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
+  --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD" \
+  --set services.risk.dbPassword="$RISK_DB_PASSWORD" \
+  --set services.notificationAudit.dbPassword="$AUDIT_DB_PASSWORD" \
+  --set objectStorage.accessKey="$OBJECT_STORAGE_ACCESS_KEY" \
+  --set objectStorage.secretKey="$OBJECT_STORAGE_SECRET_KEY"
 helm upgrade --install flowmesh infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
   --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
-  --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD"
+  --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD" \
+  --set services.risk.dbPassword="$RISK_DB_PASSWORD" \
+  --set services.notificationAudit.dbPassword="$AUDIT_DB_PASSWORD" \
+  --set objectStorage.accessKey="$OBJECT_STORAGE_ACCESS_KEY" \
+  --set objectStorage.secretKey="$OBJECT_STORAGE_SECRET_KEY"
 ```
 
 生产环境应使用生产覆盖值，并让 `global.existingSecret` 指向外部 Secret：
@@ -29,6 +37,7 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 ```bash
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
+  --set-string global.imageTag="$GITHUB_SHA" \
   --set global.existingSecret=flowmesh-runtime-secrets
 ```
 

@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: supplier
-          image: "{{ .Values.services.supplier.image }}:{{ .Values.services.supplier.tag }}"
+          image: "{{ include "flowmesh.imageReference" (dict "root" . "service" .Values.services.supplier) }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false
@@ -89,6 +89,8 @@ spec:
                   key: OBJECT_STORAGE_SECRET_KEY
             - name: FLOWMESH_OBJECT_STORAGE_BUCKET
               value: {{ .Values.objectStorage.bucket | quote }}
+            - name: FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED
+              value: "true"
             - name: FLOWMESH_FILE_SCAN_ENABLED
               value: {{ .Values.fileScan.enabled | quote }}
             - name: FLOWMESH_CLAMAV_HOST

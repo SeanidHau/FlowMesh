@@ -50,10 +50,10 @@ A: 会存在短暂的中间状态，所以 API 和前端不能假设申请创建
 Q: 当前项目哪些内容已经实现，哪些内容还没有实现？
 A: 已经实现：统一 Gateway、IAM、Supplier、Workflow、Risk 和 Notification-Audit 六个服务，JWT 登录刷新登出、RBAC、多租户 RLS、供应商申请、材料上传与安全校验、持久化接口幂等、异步风控、通知审计、RocketMQ Outbox、重试/死信/受控重放、跨服务对账、Docker Compose、Helm 和 CI 校验。
 
-尚未作为当前运行链路实现：Camunda 流程引擎、Redis 缓存、外部邮件/短信通道和完整 Prometheus/Grafana/OpenTelemetry 平台。Redis 登录限流、MinIO 材料存储、真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标已经实现；生产级外部依赖 HA 仍需在目标集群演练。
+尚未作为当前运行链路实现：Camunda 流程引擎、Redis 缓存、外部邮件/短信通道和生产级托管 Prometheus/Grafana/OpenTelemetry 平台。Redis 登录限流、MinIO 材料存储、本地 Prometheus/Grafana 基线、真实 RocketMQ Broker E2E、DLQ 查询/受控重放/审计、跨服务对账和基础业务消息指标已经实现；生产级外部依赖 HA 仍需在目标集群演练。
 
 Q: 如果面试官质疑项目规模不够，你如何回答？
-A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计和部署校验做成可运行闭环；但外部基础设施 HA、完整观测平台、真实通知通道和 Camunda 仍是明确的后续边界。
+A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计、基础观测和部署校验做成可运行闭环；但外部基础设施 HA、托管观测后端、真实通知通道和 Camunda 仍是明确的后续边界。
 
 Q: 为什么选择 RocketMQ，而不是 RabbitMQ？
 A: 本项目选择 RocketMQ，是因为项目需要面向领域事件的异步解耦、消费重试、延迟重试和后续死信处理能力。RocketMQ 的 Topic、Tag、消费重试和消息存储模型比较适合这种事件驱动链路。
@@ -198,7 +198,7 @@ A: 当前 IAM 对登录成功、登录失败和登出进行审计，记录租户
 Q: 为什么使用 Testcontainers，而不是 H2？
 A: 项目使用 PostgreSQL RLS、Flyway、schema、非超级用户和 PostgreSQL 特有 SQL，H2 无法真实还原这些行为。Testcontainers 可以在测试中启动真实 PostgreSQL，验证迁移、权限和 RLS 策略。
 
-三个服务的集成测试基类统一使用 `@Testcontainers` 管理容器，并用 `@DirtiesContext(AFTER_CLASS)` 防止 Spring 测试上下文复用已关闭容器连接池。
+五个使用 PostgreSQL 的服务测试模块统一使用 `@Testcontainers` 管理容器，并用 `@DirtiesContext(AFTER_CLASS)` 防止 Spring 测试上下文复用已关闭容器连接池。
 
 Q: 为什么 Testcontainers 的生命周期会和 Spring Context 缓存冲突？
 A: JUnit 扩展可能在测试类结束后停止静态容器，而 Spring TestContext 仍可能缓存同一应用上下文和连接池。后续测试复用这个上下文时，连接池指向已关闭的容器，就会出现连接校验失败或进程长时间等待。`@DirtiesContext(AFTER_CLASS)` 让上下文在容器生命周期结束前后不再被错误复用。
@@ -212,12 +212,12 @@ Q: 如何判断是测试失败，还是 Docker 环境导致卡住？
 A: 先查看 surefire XML 是否存在 `failures` 或 `errors`，再看 Maven 和 surefire 子进程最后停在哪一步。若日志停在 Docker client 初始化，且 `docker ps`、Docker socket `_ping` 也无响应，应判定为环境问题；修复 Docker 后必须重新运行 Maven，并以进程正常退出和完整 Reactor 汇总为准。
 
 Q: Helm Chart 如何防止部署默认密码？
-A: Chart 对 JWT 签名密钥和三个数据库密码使用 Helm `required` 校验，并拒绝已知占位值。也支持通过 `global.existingSecret` 引用预先创建的 Kubernetes Secret，避免 Chart 生成生产凭据。
+A: Chart 对 JWT 签名密钥、五个业务数据库密码和对象存储密钥使用 Helm `required` 校验，并拒绝已知占位值。也支持通过 `global.existingSecret` 引用预先创建的 Kubernetes Secret，避免 Chart 生成生产凭据。
 
 CI 中使用仅用于校验的临时值执行 `helm lint` 和 `helm template`，同时验证缺少凭据时渲染必须失败。真实密钥不会提交到仓库。
 
 Q: 配置 `global.existingSecret` 后，Chart 会自动创建这个 Secret 吗？
-A: 不会。设置 `existingSecret` 表示 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它。这样可以避免 Helm release manifest 包含生产凭据；部署前必须验证 Secret 存在且包含 `JWT_SIGNING_KEY`、三个数据库密码等必需键。
+A: 不会。设置 `existingSecret` 表示 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它。这样可以避免 Helm release manifest 包含生产凭据；部署前必须验证 Secret 存在且包含 `JWT_SIGNING_KEY`、五个业务数据库密码和对象存储密钥等必需键。
 
 Q: 为什么使用 Docker Compose 和 Helm 两套部署方式？
 A: Docker Compose 面向本地开发和演示，负责启动 PostgreSQL、RocketMQ 和应用服务，降低本地运行门槛。Helm 面向 Kubernetes 部署，提供 Deployment、Service、Secret 引用、健康探针、资源配置和副本数配置。

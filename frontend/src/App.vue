@@ -7,6 +7,7 @@ import {
   taskRoles,
   type ApplicationResponse,
   type SupplierDocumentResponse,
+  type NotificationResponse,
   type UserSession,
   type WorkflowInstanceResponse,
 } from './types';
@@ -19,6 +20,7 @@ const session = ref<UserSession | null>(null);
 const application = ref<ApplicationResponse | null>(null);
 const workflow = ref<WorkflowInstanceResponse | null>(null);
 const documents = ref<SupplierDocumentResponse[]>([]);
+const notifications = ref<NotificationResponse[]>([]);
 const documentInput = ref<HTMLInputElement | null>(null);
 const applicationId = ref(localStorage.getItem('flowmesh.applicationId') ?? '');
 const isBusy = ref(false);
@@ -116,6 +118,7 @@ async function logout(): Promise<void> {
     application.value = null;
     workflow.value = null;
     documents.value = [];
+    notifications.value = [];
     noticeMessage.value = '';
   } catch (error) {
     showError(error);
@@ -144,7 +147,11 @@ async function createApplication(): Promise<void> {
 }
 
 async function loadState(): Promise<void> {
-  if (!applicationId.value || !session.value) return;
+  if (!session.value) return;
+  if (!applicationId.value) {
+    await loadNotifications();
+    return;
+  }
   errorMessage.value = '';
   isBusy.value = true;
   try {
@@ -161,12 +168,26 @@ async function loadState(): Promise<void> {
       if (!(error instanceof ApiError) || error.status !== 404) throw error;
       workflow.value = null;
     }
+    await loadNotifications();
   } catch (error) {
     application.value = null;
     workflow.value = null;
     showError(error);
   } finally {
     isBusy.value = false;
+  }
+}
+
+async function loadNotifications(): Promise<void> {
+  if (!session.value) return;
+  try {
+    notifications.value = await api.listNotifications();
+  } catch (error) {
+    // 通知属于辅助体验，服务暂时不可用时不阻塞申请查询和审批操作。
+    if (error instanceof ApiError && error.status === 401) {
+      throw error;
+    }
+    notifications.value = [];
   }
 }
 
@@ -207,6 +228,7 @@ async function completeCurrentTask(): Promise<void> {
   try {
     workflow.value = await api.completeTask(applicationId.value, workflow.value.currentTask);
     await refreshApplication();
+    await loadNotifications();
     noticeMessage.value = workflow.value.status === 'COMPLETED'
       ? '审批链已完成，供应商已进入启用状态'
       : `${completedTaskLabel} 已完成，流程继续推进`;
@@ -375,7 +397,7 @@ onMounted(() => {
                   </div>
                 </div>
               </article>
-              <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">工作状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已就绪</span></div><div class="event-list"><div class="event-item"><span class="event-state success"></span><div><strong>已登录工作台</strong><small>身份验证完成</small></div><time>刚刚</time></div><div class="event-item"><span class="event-state info"></span><div><strong>工作区准备就绪</strong><small>可以提交或查看申请</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待新的申请</strong><small>创建申请后会显示在这里</small></div><time>等待</time></div></div></article>
+              <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-overline">工作状态</span><h2>最近活动</h2></div><span class="stream-state"><span class="status-indicator"></span>已就绪</span></div><div class="event-list"><template v-if="notifications.length"><div v-for="notification in notifications" :key="notification.id" class="event-item"><span class="event-state success"></span><div><strong>{{ notification.title }}</strong><small>{{ notification.content }}</small></div><time>{{ formatTime(notification.createdAt) }}</time></div></template><template v-else><div class="event-item"><span class="event-state success"></span><div><strong>工作区准备就绪</strong><small>当前暂无新的站内通知</small></div><time>正常</time></div><div class="event-item"><span class="event-state"></span><div><strong>等待新的申请</strong><small>创建申请后会显示在这里</small></div><time>等待</time></div></template></div></article>
             </div>
             <div class="application-selector"><label><span>载入已有申请</span><input v-model="applicationId" placeholder="粘贴申请编号后回车" @keyup.enter="selectApplication" /></label><button class="secondary-button" type="button" @click="selectApplication">载入申请</button></div>
           </template>

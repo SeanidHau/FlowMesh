@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 interface ApiRequest {
-  service: 'iam' | 'supplier' | 'workflow';
+  service: 'iam' | 'supplier' | 'workflow' | 'notification';
   path: string;
   method?: 'GET' | 'POST';
   token?: string;

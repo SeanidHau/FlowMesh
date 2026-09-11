@@ -6,6 +6,7 @@ import type {
   WorkflowInstanceResponse,
   DocumentDownloadResponse,
   SupplierDocumentResponse,
+  NotificationResponse,
 } from './types';
 
 interface RequestOptions {
@@ -124,6 +125,18 @@ export class FlowMeshApi {
   async getWorkflow(applicationId: string): Promise<WorkflowInstanceResponse> {
     return this.request<WorkflowInstanceResponse>(
       'workflow', `/api/v1/workflow-instances/${applicationId}`, { authenticated: true },
+    );
+  }
+
+  /**
+   * 查询当前用户最近的站内通知。
+   *
+   * @param limit 返回条数上限
+   * @return 当前用户可见的通知
+   */
+  async listNotifications(limit = 10): Promise<NotificationResponse[]> {
+    return this.request<NotificationResponse[]>(
+      'notification', `/api/v1/notifications?limit=${limit}`, { authenticated: true },
     );
   }
 

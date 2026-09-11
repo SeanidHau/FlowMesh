@@ -2,6 +2,12 @@
 # PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 均指向外部高可用平台；本文件不部署这些依赖。
 global:
   imagePullPolicy: IfNotPresent
+  production: true
+  # 服务 image 字段已包含 flowmesh 仓库命名空间，最终地址为
+  # ghcr.io/seanidhau/flowmesh/<service>:<commit-sha>。
+  imageRegistry: ghcr.io/seanidhau
+  # 生产部署必须通过 --set-string global.imageTag=<Git commit SHA> 注入不可变镜像标签。
+  imageTag: ""
   existingSecret: flowmesh-runtime-secrets
 
 networkPolicy:
