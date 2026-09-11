@@ -13,3 +13,10 @@ spring:
   datasource:
     hikari:
       connection-init-sql: SET search_path TO risk
+
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: readinessState,db

@@ -7,8 +7,8 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/infra/compose/docker-compose.yml"
-ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/flowmesh-e2e.XXXXXX.env")"
-BROKER_CONFIG="$(mktemp "${TMPDIR:-/tmp}/flowmesh-e2e-broker.XXXXXX.conf")"
+ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/flowmesh-e2e.env.XXXXXX")"
+BROKER_CONFIG="$(mktemp "${TMPDIR:-/tmp}/flowmesh-e2e-broker.conf.XXXXXX")"
 COMPOSE_PROJECT="flowmesh-e2e-$$"
 COMPOSE_ARGS=(-p "${COMPOSE_PROJECT}" --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
 APP_PIDS=()
@@ -24,10 +24,10 @@ cleanup() {
     done
     docker compose "${COMPOSE_ARGS[@]}" logs --tail=80 rocketmq-namesrv rocketmq-broker >&2 || true
   fi
-  for pid in "${APP_PIDS[@]}"; do
+  for pid in "${APP_PIDS[@]:-}"; do
     kill "${pid}" >/dev/null 2>&1 || true
   done
-  for pid in "${APP_PIDS[@]}"; do
+  for pid in "${APP_PIDS[@]:-}"; do
     wait "${pid}" >/dev/null 2>&1 || true
   done
   docker compose "${COMPOSE_ARGS[@]}" down --remove-orphans -v >/dev/null 2>&1 || true
@@ -53,6 +53,8 @@ RISK_DB_PASSWORD=flowmesh-e2e-risk
 AUDIT_DB_PASSWORD=flowmesh-e2e-audit
 REDIS_PASSWORD=flowmesh-e2e-redis
 GRAFANA_ADMIN_PASSWORD=flowmesh-e2e-grafana
+MINIO_ROOT_USER=flowmesh-e2e-minio
+MINIO_ROOT_PASSWORD=flowmesh-e2e-minio-password
 JWT_SIGNING_KEY=${JWT_KEY}
 JWT_ISSUER=flowmesh-e2e
 FLOWMESH_OUTBOX_ENABLED=true
@@ -194,11 +196,22 @@ fi
 
 WORKFLOW_URL="${API_BASE}/api/workflow/api/v1/workflow-instances/${APPLICATION_ID}"
 for attempt in $(seq 1 60); do
-  if curl --fail --silent --show-error -H "Authorization: Bearer ${PURCHASER_TOKEN}" "${WORKFLOW_URL}" >/dev/null; then
-    break
+  if workflow_snapshot="$(curl --fail --silent --show-error \
+    -H "Authorization: Bearer ${PURCHASER_TOKEN}" "${WORKFLOW_URL}")"; then
+    workflow_status="$(printf '%s' "${workflow_snapshot}" | python3 -c \
+      'import json, sys; print(json.load(sys.stdin).get("status"))')"
+    workflow_task="$(printf '%s' "${workflow_snapshot}" | python3 -c \
+      'import json, sys; print(json.load(sys.stdin).get("currentTask"))')"
+    if [ "${workflow_status}" = "REJECTED" ]; then
+      echo "RocketMQ 风控结果为拒绝，E2E 无法继续审批。" >&2
+      exit 1
+    fi
+    if [ "${workflow_task}" = "PURCHASER_REVIEW" ]; then
+      break
+    fi
   fi
   if [ "$attempt" -eq 60 ]; then
-    echo "RocketMQ 未能将申请投影为 workflow 实例。" >&2
+    echo "RocketMQ 未能将申请推进到采购初审节点。" >&2
     exit 1
   fi
   sleep 2

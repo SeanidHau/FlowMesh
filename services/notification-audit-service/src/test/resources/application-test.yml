@@ -16,3 +16,10 @@ spring:
   datasource:
     hikari:
       connection-init-sql: SET search_path TO audit
+
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: readinessState,db

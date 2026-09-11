@@ -2,6 +2,7 @@ package com.flowmesh.supplier.messaging;
 
 import com.flowmesh.supplier.application.WorkflowTaskCompletedService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.rocketmq.spring.annotation.ConsumeMode;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,6 +22,7 @@ import org.slf4j.MDC;
     topic = "workflow-events",
     selectorExpression = "WorkflowTaskCompleted",
     consumerGroup = "flowmesh-supplier",
+    consumeMode = ConsumeMode.ORDERLY,
     maxReconsumeTimes = 3
 )
 public class WorkflowTaskCompletedListener implements RocketMQListener<String> {

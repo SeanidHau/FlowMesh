@@ -21,3 +21,10 @@ spring:
   datasource:
     hikari:
       connection-init-sql: SET search_path TO supplier
+
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: readinessState,db,objectStorage,clamAv

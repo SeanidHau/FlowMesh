@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.flowmesh.common.security.AuthPrincipal;
 import com.flowmesh.common.security.JwtService;
+import com.flowmesh.workflow.application.RiskCheckResultService;
 import com.flowmesh.workflow.application.WorkflowEventProjectionService;
 import com.flowmesh.workflow.repository.WorkflowOutboxEventRepository;
 import com.flowmesh.workflow.support.PostgresIntegrationTest;
@@ -33,6 +34,9 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private WorkflowEventProjectionService projectionService;
+
+    @Autowired
+    private RiskCheckResultService riskCheckResultService;
 
     @Autowired
     private WorkflowOutboxEventRepository outboxRepository;
@@ -64,6 +68,27 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
             """.formatted(eventId, applicationId, applicationId);
         projectionService.project(message);
         projectionService.project(message);
+
+        UUID riskEventId = UUID.randomUUID();
+        String riskResult = """
+            {
+              "eventId":"%s",
+              "eventType":"RiskCheckCompleted",
+              "schemaVersion":1,
+              "aggregateId":"%s",
+              "tenantId":"tenant-a",
+              "occurredAt":"2026-08-31T00:00:01Z",
+              "traceId":"trace-test",
+              "payload":{
+                "applicationId":"%s",
+                "decision":"PASS",
+                "reason":"模拟风险校验通过",
+                "requestedEventId":"%s"
+              }
+            }
+            """.formatted(riskEventId, applicationId, applicationId, eventId);
+        riskCheckResultService.apply(riskResult);
+        riskCheckResultService.apply(riskResult);
 
         mockMvc.perform(get("/api/v1/workflow-instances/{id}", applicationId)
                 .header("Authorization", "Bearer " + token("tenant-a", Set.of("PURCHASER"))))

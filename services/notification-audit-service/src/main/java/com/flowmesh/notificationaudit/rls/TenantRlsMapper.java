@@ -13,8 +13,9 @@ public interface TenantRlsMapper {
     /**
      * 将租户标识写入当前数据库事务。
      *
-    * @param tenantId 租户标识
+     * @param tenantId 租户标识
+     * @return PostgreSQL {@code set_config} 返回的租户标识
      */
     @Select("SELECT set_config('app.tenant_id', #{tenantId}, true)")
-    void setTenant(@Param("tenantId") String tenantId);
+    String setTenant(@Param("tenantId") String tenantId);
 }

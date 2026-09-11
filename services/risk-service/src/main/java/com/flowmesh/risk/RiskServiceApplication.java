@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * FlowMesh 异步风控服务启动类。
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.flowmesh.risk", "com.flowmesh.common.health"})
 @EnableScheduling
 public class RiskServiceApplication {
 
