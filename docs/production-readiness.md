@@ -34,6 +34,7 @@
 - Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、确认失败，以及 PostgreSQL 备份、生命周期清理和 Workflow SLA CronJob 长时间未成功执行告警；CronJob 告警依赖 kube-state-metrics，生产环境仍需配置 Alertmanager 路由和值班通知。
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
 - 提供只读运行时观测预检：检查 Prometheus/Alertmanager 就绪、六个 FlowMesh 服务目标可见，以及关键告警规则已加载；生产验收可通过 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 将其纳入证据报告。
+- 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收可通过 `FLOWMESH_REQUIRE_DEPENDENCY_HA=true` 将其纳入证据报告。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
 - 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。

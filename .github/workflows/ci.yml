@@ -60,6 +60,9 @@ jobs:
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 
+      - name: Validate production HA contract
+        run: bash tests/production-ha-contract.sh
+
       - name: Validate Kubernetes smoke test contract
         run: bash tests/kubernetes-production-smoke-contract.sh
 

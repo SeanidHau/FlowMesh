@@ -35,6 +35,15 @@ case "${require_runtime_observability}" in
     ;;
 esac
 
+require_dependency_ha="${FLOWMESH_REQUIRE_DEPENDENCY_HA:-false}"
+case "${require_dependency_ha}" in
+  true|false) ;;
+  *)
+    echo 'FLOWMESH_REQUIRE_DEPENDENCY_HA 必须是 true 或 false。' >&2
+    exit 64
+    ;;
+esac
+
 report_directory="$(dirname "${report_path}")"
 mkdir -p "${report_directory}"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-production-acceptance.XXXXXX")"
@@ -51,6 +60,7 @@ trap cleanup EXIT
 
 {
   echo '# FlowMesh 生产验收报告'
+  echo "- 要求外部依赖 HA 拓扑：${require_dependency_ha}"
   echo "- 要求运行时观测后端：${require_runtime_observability}"
   echo
   echo "- 开始时间（UTC）：\`${started_at}\`"
@@ -103,6 +113,19 @@ else
     echo
     echo '- 结果：SKIPPED'
     echo '- 原因：FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false'
+    echo
+  } >> "${report_body}"
+fi
+if [[ "${require_dependency_ha}" == true ]]; then
+  run_check '外部依赖 HA 拓扑预检' env \
+    FLOWMESH_HA_REPORT="${temporary_directory}/dependency-ha.md" \
+    "${ROOT_DIR}/scripts/validate-production-ha.sh"
+else
+  {
+    echo '## 外部依赖 HA 拓扑预检'
+    echo
+    echo '- 结果：SKIPPED'
+    echo '- 原因：FLOWMESH_REQUIRE_DEPENDENCY_HA=false'
     echo
   } >> "${report_body}"
 fi

@@ -110,11 +110,13 @@ FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
 FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true \
 FLOWMESH_PROMETHEUS_URL='https://prometheus.observability.example.com' \
 FLOWMESH_ALERTMANAGER_URL='https://alertmanager.observability.example.com' \
+FLOWMESH_REQUIRE_DEPENDENCY_HA=true \
 ./scripts/run-production-acceptance.sh
 ```
 
 该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
-便于发布记录和故障处置。`FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 时还要求提供
+便于发布记录和故障处置。设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=true` 后，还会只读验证 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，并将拓扑证据写入报告；该检查仍不替代实际故障切换和恢复演练。
+`FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 时还要求提供
 `FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`，并只读验证观测后端已就绪、六个服务目标可见且关键告警已加载。
 默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
 可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
@@ -159,6 +161,13 @@ Ingress Controller 不在 `ingress-nginx` 命名空间，执行前设置 `FLOWME
 
 smoke test 只读取集群状态，不证明 PostgreSQL、Redis、RocketMQ、对象存储已经完成故障切换；这些依赖
 仍需按目标平台的 HA、RocketMQ ACL/TLS 连通性和恢复剧本单独演练。
+
+如果需要单独生成外部依赖 HA 拓扑证据，除基础连接参数外还需要提供：
+FLOWMESH_HA_REPORT、FLOWMESH_PG_PASSWORD、FLOWMESH_HA_EXPECTED_PG_REPLICAS、
+FLOWMESH_HA_REDIS_HOSTS、FLOWMESH_HA_EXPECTED_REDIS_REPLICAS，并将
+FLOWMESH_PG_SSLMODE 设置为 verify-ca 或 verify-full。Redis host 使用 host:port 逗号列表，
+RocketMQ NameServer 也必须提供至少两个 host:port。生产验收设置
+FLOWMESH_REQUIRE_DEPENDENCY_HA=true 后会自动调用该预检。
 
 ### 应用服务恢复演练
 
