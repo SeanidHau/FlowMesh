@@ -90,6 +90,9 @@ jobs:
       - name: Validate security workflow contract
         run: bash tests/security-workflow-contract.sh
 
+      - name: Validate application security boundaries
+        run: bash tests/security-boundary-contract.sh
+
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 
