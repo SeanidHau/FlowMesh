@@ -34,14 +34,55 @@ fi
 compose_file="${FLOWMESH_COMPOSE_FILE:-infra/compose/docker-compose.yml}"
 env_file="${FLOWMESH_ENV_FILE:-.env}"
 drill_started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+recovery_started_at=''
+recovery_finished_at=''
+recovery_started_ns=''
+recovery_finished_ns=''
+recovery_seconds=''
+service_needs_restore=false
+restore_service() {
+  local exit_code="$?"
+  if [[ "${service_needs_restore}" == true ]]; then
+    docker compose --env-file "${env_file}" -f "${compose_file}" start "${service}" >/dev/null 2>&1 || true
+  fi
+  exit "${exit_code}"
+}
+trap restore_service EXIT
 docker compose --env-file "${env_file}" -f "${compose_file}" stop "${service}"
-recovery_started_epoch="$(date +%s)"
+service_needs_restore=true
+
+# 先确认停止动作确实造成健康检查失败，避免把未生效的故障注入误判为恢复成功。
+service_unavailable=false
+for attempt in $(seq 1 10); do
+  if ! curl --fail --silent --show-error --max-time 2 "${health_url}" >/dev/null 2>&1; then
+    service_unavailable=true
+    break
+  fi
+  sleep 1
+done
+if [[ "${service_unavailable}" != true ]]; then
+  echo "故障注入未生效：${service} 停止后健康检查仍然成功。" >&2
+  exit 1
+fi
+
+recovery_started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+if [[ "$(uname -s)" == Darwin* ]]; then
+  recovery_started_ns="$(python3 -c 'import time; print(time.monotonic_ns())')"
+else
+  recovery_started_ns="$(date +%s%N)"
+fi
 docker compose --env-file "${env_file}" -f "${compose_file}" start "${service}"
 
 for attempt in $(seq 1 60); do
   if curl --fail --silent "${health_url}" >/dev/null; then
-    recovery_finished_epoch="$(date +%s)"
-    recovery_seconds=$((recovery_finished_epoch - recovery_started_epoch))
+    service_needs_restore=false
+    recovery_finished_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    if [[ "$(uname -s)" == Darwin* ]]; then
+      recovery_finished_ns="$(python3 -c 'import time; print(time.monotonic_ns())')"
+    else
+      recovery_finished_ns="$(date +%s%N)"
+    fi
+    recovery_seconds="$(( (recovery_finished_ns - recovery_started_ns + 999999999) / 1000000000 ))"
     if [[ -n "${expected_rto_seconds}" && "${recovery_seconds}" -gt "${expected_rto_seconds}" ]]; then
       echo "故障恢复超出目标 RTO：${recovery_seconds}s > ${expected_rto_seconds}s。" >&2
       exit 1
@@ -58,6 +99,9 @@ for attempt in $(seq 1 60); do
           echo "- 服务：\`${service}\`"
           echo "- 健康检查：\`${health_url}\`"
           echo "- 开始时间（UTC）：\`${drill_started_at}\`"
+          echo "- 故障恢复计时开始（UTC）：\`${recovery_started_at}\`"
+          echo "- 故障恢复完成（UTC）：\`${recovery_finished_at}\`"
+          echo "- 停止后健康检查：\`FAIL（符合预期）\`"
           echo "- 恢复耗时：\`${recovery_seconds}s\`"
           if [[ -n "${expected_rto_seconds}" ]]; then
             echo "- 目标 RTO：\`${expected_rto_seconds}s\`"
@@ -66,7 +110,7 @@ for attempt in $(seq 1 60); do
             echo '- 结果：`RECOVERED`（未设置目标 RTO）'
           fi
           echo
-          echo '> 该报告只证明 Compose 服务停止后的恢复耗时，不证明数据库、Redis、RocketMQ 或对象存储的故障切换能力。'
+          echo '> 该报告只证明 Compose 服务停止后应用进程的恢复耗时，不证明数据库、Redis、RocketMQ 或对象存储的故障切换能力。'
         } > "${report_path}"
       ); then
         echo "无法创建演练报告，拒绝覆盖已有文件：${report_path}" >&2

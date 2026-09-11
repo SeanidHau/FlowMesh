@@ -15,6 +15,7 @@
 - `validate-retention-role.sh`：只读核验生命周期维护账号的角色属性、RLS 能力和精确表/列权限。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
 - `run-production-acceptance.sh`：串联生产发布后的只读验收并生成不可覆盖的证据报告。
+- `validate-runtime-observability.sh`：只读检查目标 Prometheus、Alertmanager、FlowMesh targets 和关键告警规则。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
 
@@ -36,7 +37,8 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 ./scripts/validate-observability.sh
 ```
 
-目标环境发布后可使用 `run-production-acceptance.sh` 串联镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检，
+目标环境发布后可使用 `run-production-acceptance.sh` 串联镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检；
+设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 后，还会检查目标 Prometheus、Alertmanager、六个 FlowMesh 服务目标和关键告警规则，
 并将每项结果写入不可覆盖的 Markdown 报告。该脚本只读，不执行集群写操作或故障切换；具体变量和示例见 [运行手册](../docs/runbook.md)。
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境使用 Helm `CronJob` 定时执行备份。备份镜像

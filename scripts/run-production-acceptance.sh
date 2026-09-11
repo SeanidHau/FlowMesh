@@ -26,6 +26,15 @@ case "${expect_prometheus_rule}" in
 esac
 export FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}"
 
+require_runtime_observability="${FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-false}"
+case "${require_runtime_observability}" in
+  true|false) ;;
+  *)
+    echo 'FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY 必须是 true 或 false。' >&2
+    exit 64
+    ;;
+esac
+
 report_directory="$(dirname "${report_path}")"
 mkdir -p "${report_directory}"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-production-acceptance.XXXXXX")"
@@ -42,6 +51,7 @@ trap cleanup EXIT
 
 {
   echo '# FlowMesh 生产验收报告'
+  echo "- 要求运行时观测后端：${require_runtime_observability}"
   echo
   echo "- 开始时间（UTC）：\`${started_at}\`"
   echo "- Kubernetes 命名空间：\`${FLOWMESH_K8S_NAMESPACE:-flowmesh}\`"
@@ -85,6 +95,17 @@ run_check '镜像签名与不可变标签' "${ROOT_DIR}/scripts/verify-flowmesh-
 run_check 'Kubernetes 生产 smoke test' "${ROOT_DIR}/tests/kubernetes-production-smoke.sh"
 run_check '外部依赖 TLS 与连通性预检' "${ROOT_DIR}/scripts/validate-production-dependencies.sh"
 run_check '生命周期维护角色权限预检' "${ROOT_DIR}/scripts/validate-retention-role.sh"
+if [[ "${require_runtime_observability}" == true ]]; then
+  run_check '运行时 Prometheus 与 Alertmanager 预检' "${ROOT_DIR}/scripts/validate-runtime-observability.sh"
+else
+  {
+    echo '## 运行时 Prometheus 与 Alertmanager 预检'
+    echo
+    echo '- 结果：SKIPPED'
+    echo '- 原因：FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false'
+    echo
+  } >> "${report_body}"
+fi
 
 {
   echo "- 完成时间（UTC）：\`$(date -u '+%Y-%m-%dT%H:%M:%SZ')\`"

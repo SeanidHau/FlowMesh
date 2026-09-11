@@ -51,4 +51,9 @@ set -e
   exit 1
 }
 
+grep -F -- 'service_needs_restore=true' "${SCRIPT}" >/dev/null
+grep -F -- 'trap restore_service EXIT' "${SCRIPT}" >/dev/null
+grep -F -- 'service_unavailable=true' "${SCRIPT}" >/dev/null
+grep -F -- 'monotonic_ns' "${SCRIPT}" >/dev/null
+
 echo '故障恢复演练脚本契约检查通过。'

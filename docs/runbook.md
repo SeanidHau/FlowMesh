@@ -107,11 +107,14 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 FLOWMESH_K8S_NAMESPACE=flowmesh \
 FLOWMESH_HELM_RELEASE=flowmesh \
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
+FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true \
 ./scripts/run-production-acceptance.sh
 ```
 
 该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
-便于发布记录和故障处置。默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
+便于发布记录和故障处置。`FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 时还要求提供
+`FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`，并只读验证观测后端已就绪、六个服务目标可见且关键告警已加载。
+默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
 可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
 
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
@@ -167,7 +170,8 @@ FLOWMESH_DRILL_REPORT=./artifacts/risk-service-recovery-$(date +%Y%m%d%H%M%S).md
 ```
 
 报告至少应记录服务、健康检查地址、UTC 开始时间、恢复耗时和目标 RTO；执行人还应补充消息积压、错误率、
-影响范围和是否触发告警。该演练只验证应用进程停止后的恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储已具备故障切换能力。
+影响范围和是否触发告警。脚本会先验证停止后健康检查确实失败，再使用单调时钟测量恢复时间；
+该演练只验证应用进程停止后的恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储已具备故障切换能力。
 
 ## 停止与数据卷
 
