@@ -70,7 +70,8 @@
     <grpc.version>1.75.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <commons-beanutils.version>1.11.0</commons-beanutils.version>
-    <lz4.version>1.10.1</lz4.version>
+    <lz4.version>1.8.1</lz4.version>
+    <rocketmq.lz4.version>1.10.1</rocketmq.lz4.version>
     <logback.version>1.5.34</logback.version>
     <bouncycastle.version>1.80.2</bouncycastle.version>
     <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
@@ -121,6 +122,12 @@
       <!-- 作用：覆盖 RocketMQ 使用的 LZ4 实现，修复输出缓冲区未清理漏洞。 -->
       <dependency>
         <groupId>at.yawk.lz4</groupId>
+        <artifactId>lz4-java</artifactId>
+        <version>${rocketmq.lz4.version}</version>
+      </dependency>
+      <!-- 作用：覆盖 RocketMQ 5.3.x 传递的旧版 LZ4，修复越界读写漏洞。 -->
+      <dependency>
+        <groupId>org.lz4</groupId>
         <artifactId>lz4-java</artifactId>
         <version>${lz4.version}</version>
       </dependency>
