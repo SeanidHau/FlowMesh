@@ -81,6 +81,16 @@ spec:
               value: {{ .Values.services.iam.loginRateLimitEnabled | quote }}
             - name: FLOWMESH_LOGIN_RATE_LIMIT_FAIL_OPEN
               value: {{ .Values.services.iam.loginRateLimitFailOpen | quote }}
+            - name: FLOWMESH_REFRESH_TOKEN_CLEANUP_ENABLED
+              value: {{ .Values.services.iam.refreshTokenCleanup.enabled | quote }}
+            - name: FLOWMESH_REFRESH_TOKEN_CLEANUP_INTERVAL_MS
+              value: {{ .Values.services.iam.refreshTokenCleanup.intervalMs | quote }}
+            - name: FLOWMESH_REFRESH_TOKEN_CLEANUP_INITIAL_DELAY_MS
+              value: {{ .Values.services.iam.refreshTokenCleanup.initialDelayMs | quote }}
+            - name: FLOWMESH_REFRESH_TOKEN_CLEANUP_RETENTION
+              value: {{ .Values.services.iam.refreshTokenCleanup.retention | quote }}
+            - name: FLOWMESH_REFRESH_TOKEN_CLEANUP_BATCH_SIZE
+              value: {{ .Values.services.iam.refreshTokenCleanup.batchSize | quote }}
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

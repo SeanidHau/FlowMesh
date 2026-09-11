@@ -85,4 +85,17 @@
     SET revoked_at = #{revokedAt}, version = version + 1
     WHERE id = #{id, jdbcType=OTHER} AND version = #{version} AND revoked_at IS NULL
   </update>
+
+  <delete id="deleteExpiredOrRevokedBefore">
+    DELETE FROM iam_refresh_tokens
+    WHERE id IN (
+      SELECT id
+      FROM iam_refresh_tokens
+      WHERE expires_at &lt; #{cutoff}
+         OR (revoked_at IS NOT NULL AND revoked_at &lt; #{cutoff})
+      ORDER BY id
+      LIMIT #{batchSize}
+      FOR UPDATE SKIP LOCKED
+    )
+  </delete>
 </mapper>

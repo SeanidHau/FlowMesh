@@ -78,6 +78,9 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 `OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
 
+IAM 默认每小时清理保留超过 30 天的过期或撤销 Refresh Token；可通过
+`services.iam.refreshTokenCleanup.intervalMs`、`retention` 和 `batchSize` 调整，生产环境不应关闭该任务。
+
 生产环境还必须创建备份凭据 Secret。该 Secret 至少包含 `POSTGRES_PASSWORD`；如果集群不使用
 云厂商工作负载身份，还需要包含 `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`，临时凭据可以额外
 提供 `AWS_SESSION_TOKEN`。`backup.serviceAccountName` 用于绑定工作负载身份，不能把长期云凭据

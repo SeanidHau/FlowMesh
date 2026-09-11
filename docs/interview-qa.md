@@ -182,7 +182,7 @@ A: 登录前的 tenantId 只能作为查找范围，不能被直接当成已认�
 Q: JWT 和 Refresh Token 如何配合？
 A: 登录成功后 IAM 签发短生命周期 Access Token 和持久化 Refresh Token。Access Token 用于跨服务认证，包含用户、租户和角色等声明；Refresh Token 用于换取新的令牌对。
 
-刷新时执行 Refresh Token 轮换，旧令牌被标记为已使用或撤销，避免同一个刷新令牌被无限复用。登出会撤销当前 Refresh Token。签名密钥要求使用足够长度的随机 Base64 值，生产环境通过外部 Secret 注入。
+刷新时执行 Refresh Token 轮换，旧令牌被标记为已使用或撤销，避免同一个刷新令牌被无限复用。登出会撤销当前 Refresh Token。IAM 多副本会按保留窗口和批量上限清理过期或长期撤销的令牌，并用 `FOR UPDATE SKIP LOCKED` 避免清理任务互相争抢。签名密钥要求使用足够长度的随机 Base64 值，生产环境通过外部 Secret 注入。
 
 Q: Refresh Token 轮换如何防止令牌重放？
 A: 每次刷新都使旧 Refresh Token 失效并签发新的令牌对。攻击者重放已经使用过的旧令牌时，服务端应拒绝请求；在更高安全等级下还可以检测令牌族重放并撤销同一会话的全部令牌。令牌值不能写入日志或审计表。

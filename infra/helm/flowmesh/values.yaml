@@ -140,6 +140,12 @@ services:
     dbPassword: ""
     loginRateLimitEnabled: true
     loginRateLimitFailOpen: true
+    refreshTokenCleanup:
+      enabled: true
+      intervalMs: 3600000
+      initialDelayMs: 60000
+      retention: P30D
+      batchSize: 1000
     replicas: 1
     resources:
       requests:

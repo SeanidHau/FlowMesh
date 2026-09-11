@@ -4,6 +4,7 @@ import com.flowmesh.iam.domain.token.RefreshToken;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -71,4 +72,16 @@ public interface RefreshTokenRepository {
      * @return 受影响行数
      */
     int insert(RefreshToken token);
+
+    /**
+     * 分批删除已经过期或撤销超过保留窗口的刷新令牌。
+     *
+     * @param cutoff 保留窗口截止时间
+     * @param batchSize 本次最多删除的记录数
+     * @return 实际删除的记录数
+     */
+    int deleteExpiredOrRevokedBefore(
+        @Param("cutoff") Instant cutoff,
+        @Param("batchSize") int batchSize
+    );
 }

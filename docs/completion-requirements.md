@@ -28,6 +28,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 生产 NetworkPolicy 已允许可配置监控命名空间访问 Actuator 指标端口，CI 验证生产渲染包含该入口。 |
 | 已完成 | 提供只读 Kubernetes 生产 smoke test，验证发布后的 Deployment、提交 SHA 镜像、PDB/HPA/NetworkPolicy、Secret 和备份 CronJob。 |
 | 已完成 | Gateway 已接入 Redis Lua 令牌桶限流，Redis 故障 fail-closed 返回 `503`、额度耗尽返回 `429`，并提供 Micrometer 指标、Prometheus 告警和本地 Alertmanager 路由基线。 |
+| 已完成 | IAM Refresh Token 已提供带保留窗口、批量上限和 `FOR UPDATE SKIP LOCKED` 的多副本安全清理任务，并通过 PostgreSQL 集成测试验证失效令牌删除不会影响有效令牌。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围

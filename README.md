@@ -10,7 +10,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | --- | --- | --- |
 | API Gateway | 已实现 | 统一路由到 IAM、Supplier 和 Workflow，业务服务保持内网入口。 |
 | Gateway Redis 分布式限流 | 已实现 | Redis Lua 令牌桶按客户端地址限流；额度耗尽返回 429，Redis 故障 fail-closed 返回 503。 |
-| IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出和认证安全审计。 |
+| IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出、安全审计，以及多副本安全的失效令牌定期清理。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描和短期下载 URL。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |

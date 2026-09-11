@@ -2,6 +2,7 @@ package com.flowmesh.iam;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * FlowMesh IAM 服务的 Spring Boot 启动入口。
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 的生命周期。</p>
  */
 @SpringBootApplication(scanBasePackages = "com.flowmesh")
+@EnableScheduling
 public class IamServiceApplication {
 
     /**

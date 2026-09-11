@@ -89,6 +89,13 @@ OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector.observability:4318/v1/t
 
 `FLOWMESH_TRACING_SAMPLING_PROBABILITY` 使用 `0.0` 到 `1.0` 的采样比例。先在非生产环境验证 Collector 接收、Trace 查询和出口 NetworkPolicy，再在生产环境启用。Collector 不可用时，不要把导出失败误判为业务请求失败；应根据平台的丢弃、重试和告警策略处置。
 
+## Refresh Token 生命周期维护
+
+IAM 默认每小时清理已过期或已撤销超过 30 天的 Refresh Token，每次最多处理 1000 条；清理指标为
+`flowmesh_iam_refresh_token_cleanup_total`。生产环境可通过 Helm 的
+`services.iam.refreshTokenCleanup.retention`、`batchSize` 和 `intervalMs` 调整保留窗口与执行频率，
+但不应关闭清理任务。若清理持续积压，应先检查 PostgreSQL 锁等待和连接池，再适当降低批量大小或安排维护窗口。
+
 ## Kubernetes 发布后验收
 
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：

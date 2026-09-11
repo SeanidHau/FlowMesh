@@ -128,4 +128,39 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         assertThat(refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(user.getId()))
                 .containsExactly(replacementToken);
     }
+
+    /**
+     * 验证清理任务只删除超过保留窗口的失效令牌，不影响仍然有效的令牌。
+     */
+    @Test
+    void shouldDeleteExpiredOrLongRevokedTokensInBatches() {
+        Tenant tenant = tenantRepository.saveAndFlush(
+                new Tenant("tenant-" + UUID.randomUUID(), "测试租户", TenantStatus.ACTIVE)
+        );
+        IamUser user = iamUserRepository.saveAndFlush(
+                new IamUser(tenant, "cleanup-user", "password-hash", "清理测试用户")
+        );
+        Instant now = Instant.now();
+        RefreshToken expired = refreshTokenRepository.saveAndFlush(
+                new RefreshToken(user, "expired-token-hash", now.minusSeconds(7200))
+        );
+        RefreshToken revoked = new RefreshToken(
+                user, "revoked-token-hash", now.plusSeconds(3600)
+        );
+        revoked.revoke(now.minusSeconds(7200));
+        revoked = refreshTokenRepository.saveAndFlush(revoked);
+        RefreshToken active = refreshTokenRepository.saveAndFlush(
+                new RefreshToken(user, "active-token-hash", now.plusSeconds(3600))
+        );
+
+        int deleted = refreshTokenRepository.deleteExpiredOrRevokedBefore(
+                now.minusSeconds(3600), 10
+        );
+
+        assertThat(deleted).isEqualTo(2);
+        assertThat(refreshTokenRepository.findByTokenHash("expired-token-hash")).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHash("revoked-token-hash")).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHash("active-token-hash"))
+                .contains(active);
+    }
 }

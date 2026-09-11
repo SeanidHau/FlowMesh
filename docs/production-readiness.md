@@ -14,6 +14,7 @@
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
+- IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
