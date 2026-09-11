@@ -143,7 +143,7 @@ FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
 HA 报告必须包含 PostgreSQL、Redis、RocketMQ 和对象存储，观测报告必须包含 Prometheus、Alertmanager 和通知投递告警，
 恢复报告必须包含 RTO，备份报告必须包含 RPO，压测报告必须包含 RPS 和 P95，安全回归报告必须包含租户隔离、RLS 和 `403`，
 告警路由报告必须包含 Alertmanager receiver 和通知结果；同时使用 `manifest.md` 与 `checksums.sha256` 记录环境、执行人、执行时间和完整性校验。
-证据包校验是只读的，不会替代真实演练；缺少任一报告、报告失败、校验和不匹配或包含敏感凭据时，生产验收直接失败。
+证据包校验是只读的，不会替代真实演练；缺少任一报告、报告失败、报告中的环境标识或镜像提交与本次验收不一致、校验和不匹配或包含敏感凭据时，生产验收直接失败。
 默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
 可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
 非生产预检如果确实没有对应平台证据，必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false`、

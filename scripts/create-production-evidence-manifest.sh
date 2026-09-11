@@ -140,6 +140,8 @@ fi
 if ! FLOWMESH_EVIDENCE_DIR="${evidence_directory}" \
   FLOWMESH_EVIDENCE_MANIFEST="${manifest_name}" \
   FLOWMESH_EVIDENCE_CHECKSUMS="${checksum_name}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${environment_name}" \
+  FLOWMESH_IMAGE_TAG="${image_tag}" \
   bash "${repo_root}/scripts/validate-production-evidence.sh"; then
   rm -f -- "${manifest_file}" "${checksum_file}"
   echo '生产证据报告未通过完整校验，已移除本次生成的清单和校验和。' >&2

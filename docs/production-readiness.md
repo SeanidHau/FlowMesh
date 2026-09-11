@@ -44,7 +44,7 @@
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
 - 提供只读运行时观测预检：检查 Prometheus/Alertmanager 就绪、六个 FlowMesh 服务目标可见，以及关键告警规则已加载；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false` 才能跳过。
 - 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 才能跳过。
-- 提供只读生产证据包校验和清单生成工具：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告；生成器只创建清单与 SHA-256 校验和，不伪造演练报告，校验器还要求每类报告包含对应检查命令、证据摘要和关键结果，并通过清单与校验和防止缺项或篡改。生产验收默认强制执行该门禁，非生产预检必须显式设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false` 才能跳过。
+- 提供只读生产证据包校验和清单生成工具：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告；生成器只创建清单与 SHA-256 校验和，不伪造演练报告，校验器还要求每类报告包含对应检查命令、证据摘要、关键结果、目标环境标识和本次镜像提交 SHA，并通过清单与校验和防止缺项、跨环境拼接或篡改。生产验收默认强制执行该门禁，非生产预检必须显式设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false` 才能跳过。
 - `.github/workflows/production-acceptance.yml` 会显式将上述三个门禁固定为 `true`，避免生产工作流依赖脚本默认值而被意外放宽；只有非生产手工预检才允许使用对应的 `false` 参数。
 - 生产验收还会将 `FLOWMESH_IMAGE_TAG` 绑定到证据清单中的镜像提交 SHA；旧提交或其他环境生成的证据包不能用于当前版本验收。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。

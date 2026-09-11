@@ -143,6 +143,13 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 
 `kubernetes-smoke.md`、`dependency-ha.md`、`runtime-observability.md`、`service-recovery.md`、`backup-restore.md`、`load-test.md`、`security-regression.md` 和 `alert-routing.md`。
 
+每一份报告都必须在正文中包含完全一致的绑定字段，防止把不同版本或不同集群的报告拼接到同一个清单：
+
+```text
+- 环境标识：`production-cluster-a`
+- 镜像提交：`<与发布相同的 40 位提交 SHA>`
+```
+
 使用以下命令生成清单和校验和。命令不会生成或修改演练报告：
 
 ```bash
@@ -153,7 +160,7 @@ FLOWMESH_IMAGE_TAG=<与发布相同的 40 位提交 SHA> \
 ./scripts/create-production-evidence-manifest.sh
 ```
 
-确认清单生成成功后，从 `main` 分支手动触发 `Production acceptance` 工作流。该工作流会强制开启运行时观测、外部依赖 HA 和生产证据包门禁；任一报告缺失、失败、校验和不一致或包含敏感信息，验收都会失败。
+确认清单生成成功后，从 `main` 分支手动触发 `Production acceptance` 工作流，并填写同一个 `evidence_environment`。该工作流会强制开启运行时观测、外部依赖 HA 和生产证据包门禁；任一报告缺失、环境或镜像绑定不一致、失败、校验和不一致或包含敏感信息，验收都会失败。
 
 ## 6. 回滚与停止条件
 

@@ -19,7 +19,7 @@
 - `validate-production-readiness.sh`：不启动 Docker、不连接外部基础设施，聚合脚本语法、观测、供应链、生产配置和全部生产契约门禁。
 - `run-production-acceptance.sh`：串联生产发布后的只读验收并生成不可覆盖的证据报告。
 - `create-production-evidence-manifest.sh`：为目标平台已生成的证据报告创建不可覆盖的清单和 SHA-256 校验和。
-- `validate-production-evidence.sh`：只读校验目标环境证据包的必需报告、通过状态、校验和和敏感信息边界。
+- `validate-production-evidence.sh`：只读校验目标环境证据包的必需报告、通过状态、目标环境与镜像提交绑定、校验和和敏感信息边界。
 - `validate-runtime-observability.sh`：只读检查目标 Prometheus、Alertmanager、FlowMesh targets 和关键告警规则。
 - `validate-production-ha.sh`：只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的生产 HA 拓扑证据。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
@@ -51,6 +51,8 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 
 目标平台完成各项演练后，使用 `create-production-evidence-manifest.sh` 为已有报告生成
 `manifest.md` 和 `checksums.sha256`；该工具不会创建或修改任何演练报告，且会在报告校验失败时删除本次生成的清单与校验和：
+
+八份报告正文都必须包含与命令参数一致的 `环境标识` 和 `镜像提交` 字段，生成器不会替报告补写这些字段。
 
 ```bash
 FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \

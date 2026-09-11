@@ -60,6 +60,14 @@ case "${require_production_evidence}" in
     ;;
 esac
 
+evidence_environment="${FLOWMESH_EVIDENCE_ENVIRONMENT:-}"
+if [[ "${require_production_evidence}" == true ]]; then
+  if [[ -z "${evidence_environment}" ]]; then
+    echo '生产验收要求 FLOWMESH_EVIDENCE_ENVIRONMENT。' >&2
+    exit 64
+  fi
+fi
+
 report_directory="$(dirname "${report_path}")"
 mkdir -p "${report_directory}"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-production-acceptance.XXXXXX")"
@@ -150,6 +158,7 @@ fi
 if [[ "${require_production_evidence}" == true ]]; then
   run_check '目标环境生产证据包校验' env \
     FLOWMESH_EVIDENCE_DIR="${FLOWMESH_EVIDENCE_DIR:-}" \
+    FLOWMESH_EVIDENCE_ENVIRONMENT="${evidence_environment}" \
     FLOWMESH_IMAGE_TAG="${image_tag}" \
     "${ROOT_DIR}/scripts/validate-production-evidence.sh"
 else

@@ -23,6 +23,7 @@ required_files=(
   alert-routing.md
 )
 test_image_tag=0123456789012345678901234567890123456789
+test_environment=contract-test
 export FLOWMESH_IMAGE_TAG="${test_image_tag}"
 
 for file in "${required_files[@]}"; do
@@ -30,6 +31,8 @@ for file in "${required_files[@]}"; do
 # ${file}
 
 - 证据摘要：contract test evidence
+- 环境标识：\`${test_environment}\`
+- 镜像提交：\`${test_image_tag}\`
 - 结果：\`PASS\`
 EOF
 done
@@ -88,17 +91,29 @@ FLOWMESH_IMAGE_TAG="${test_image_tag}" \
 if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
   FLOWMESH_EVIDENCE_ENVIRONMENT=contract-test \
   FLOWMESH_EVIDENCE_OPERATOR=contract-test \
+  FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${manifest_generator}" >/dev/null 2>&1; then
   echo '证据清单生成器不得覆盖已有清单。' >&2
   exit 1
 fi
 
-FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null
+FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
+FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null
 
 if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
   FLOWMESH_IMAGE_TAG=ffffffffffffffffffffffffffffffffffffffff \
   "${script}" >/dev/null 2>&1; then
   echo '证据包镜像提交与本次验收提交不一致时应拒绝验收。' >&2
+  exit 1
+fi
+
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT=another-cluster FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null 2>&1; then
+  echo '证据包目标环境与本次验收环境不一致时应拒绝验收。' >&2
   exit 1
 fi
 
@@ -109,8 +124,11 @@ cp "${temporary_directory}/manifest.md" "${temporary_directory}/custom-manifest.
 )
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
 FLOWMESH_EVIDENCE_MANIFEST=custom-manifest.md \
+FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
+FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${script}" >/dev/null
 if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" FLOWMESH_EVIDENCE_MANIFEST=../custom-manifest.md \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${script}" >/dev/null 2>&1; then
   echo '证据清单不得通过路径穿越访问。' >&2
   exit 1
@@ -122,7 +140,9 @@ else
   perl -0pi -e 's/结果：`PASS`/结果：`FAIL`/' "${temporary_directory}/load-test.md"
 fi
 rm -f -- "${temporary_directory}/load-test.md.bak"
-if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null 2>&1; then
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null 2>&1; then
   echo '证据包包含失败报告时应拒绝验收。' >&2
   exit 1
 fi
@@ -134,7 +154,9 @@ rm -f -- "${temporary_directory}/load-test.md.bak"
   shasum -a 256 "${required_files[@]}" manifest.md > checksums.sha256
 )
 printf '\nAuthorization: Bearer contract-secret\n' >> "${temporary_directory}/alert-routing.md"
-if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" "${script}" >/dev/null 2>&1; then
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null 2>&1; then
   echo '证据包包含敏感令牌时应拒绝验收。' >&2
   exit 1
 fi

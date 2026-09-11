@@ -24,8 +24,17 @@ evidence_directory="${FLOWMESH_EVIDENCE_DIR:-}"
 require_value FLOWMESH_EVIDENCE_DIR "${evidence_directory}"
 expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
 require_value FLOWMESH_IMAGE_TAG "${expected_image_tag}"
+expected_environment="${FLOWMESH_EVIDENCE_ENVIRONMENT:-}"
+require_value FLOWMESH_EVIDENCE_ENVIRONMENT "${expected_environment}"
 if [[ ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   printf 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA：%s\n' "${expected_image_tag}" >&2
+  exit 2
+fi
+if [[ "${expected_environment}" == *$'\n'* || "${expected_environment}" == *$'\r'* || "${expected_environment}" == *'`'* \
+  || "${expected_environment}" == *'PASSWORD='* || "${expected_environment}" == *'SECRET_KEY='* \
+  || "${expected_environment}" == *'ACCESS_KEY='* || "${expected_environment}" == *'Bearer '* \
+  || "${#expected_environment}" -gt 256 ]]; then
+  echo 'FLOWMESH_EVIDENCE_ENVIRONMENT 包含非法或敏感内容。' >&2
   exit 2
 fi
 [[ -d "${evidence_directory}" ]] || {
@@ -89,6 +98,14 @@ for file in "${required_files[@]}"; do
     printf '生产证据缺少证据摘要：%s\n' "${evidence_file}" >&2
     exit 1
   }
+  grep -F -- "- 环境标识：\`${expected_environment}\`" "${evidence_file}" >/dev/null || {
+    printf '生产证据未绑定当前目标环境 %s：%s\n' "${expected_environment}" "${evidence_file}" >&2
+    exit 1
+  }
+  grep -F -- "- 镜像提交：\`${expected_image_tag}\`" "${evidence_file}" >/dev/null || {
+    printf '生产证据未绑定当前镜像提交 %s：%s\n' "${expected_image_tag}" "${evidence_file}" >&2
+    exit 1
+  }
   case "${file}" in
     kubernetes-smoke.md)
       required_markers=('tests/kubernetes-production-smoke.sh' 'FLOWMESH_IMAGE_TAG' 'Deployment')
@@ -144,11 +161,12 @@ grep -F -- '- 总结果：`PASS`' "${manifest_file}" >/dev/null || {
   exit 1
 }
 
-MANIFEST_FILE="${manifest_file}" EXPECTED_IMAGE_TAG="${expected_image_tag}" ruby -rjson -e '
+MANIFEST_FILE="${manifest_file}" EXPECTED_IMAGE_TAG="${expected_image_tag}" EXPECTED_ENVIRONMENT="${expected_environment}" ruby -rjson -e '
   content = File.read(ENV.fetch("MANIFEST_FILE"))
   expected_image_tag = ENV.fetch("EXPECTED_IMAGE_TAG")
+  expected_environment = ENV.fetch("EXPECTED_ENVIRONMENT")
   required = {
-    "环境标识" => /- 环境标识：`[^`\n]+`/,
+    "环境标识" => /- 环境标识：`#{Regexp.escape(expected_environment)}`/,
     "执行人" => /- 执行人：`[^`\n]+`/,
     "镜像提交" => /- 镜像提交：`#{Regexp.escape(expected_image_tag)}`/,
     "开始时间" => /- 开始时间（UTC）：`[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z`/,
