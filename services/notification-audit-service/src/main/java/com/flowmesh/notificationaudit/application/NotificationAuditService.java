@@ -89,7 +89,7 @@ public class NotificationAuditService {
      */
     @Transactional
     public void handleWorkflowTaskSla(String message) {
-        JsonNode event = readSlaEvent(message);
+        JsonNode event = readEvent(message);
         UUID eventId = EventEnvelopeValidator.requiredUuid(event, "eventId");
         UUID aggregateId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
         String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
@@ -191,21 +191,11 @@ public class NotificationAuditService {
         }
     }
 
-    private JsonNode readSlaEvent(String message) {
-        try {
-            JsonNode event = objectMapper.readTree(message);
-            EventEnvelopeValidator.validate(event, "SupplierActivated");
-            return event;
-        } catch (JsonProcessingException exception) {
-            throw new IllegalArgumentException("供应商启用事件 JSON 无效", exception);
-        }
-    }
-
     private JsonNode readEvent(String message) {
         try {
             return objectMapper.readTree(message);
         } catch (JsonProcessingException exception) {
-            throw new IllegalArgumentException("Workflow SLA 事件 JSON 无效", exception);
+            throw new IllegalArgumentException("通知审计事件 JSON 无效", exception);
         }
     }
 }

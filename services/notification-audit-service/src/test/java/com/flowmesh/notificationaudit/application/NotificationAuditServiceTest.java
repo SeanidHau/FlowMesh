@@ -63,6 +63,48 @@ class NotificationAuditServiceTest {
     }
 
     /**
+     * SLA 催办事件应生成申请人通知和不可变审计记录。
+     */
+    @Test
+    void shouldProjectWorkflowSlaReminder() {
+        UUID eventId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        UUID applicantUserId = UUID.randomUUID();
+        when(auditRepository.existsByEventId(eventId)).thenReturn(false);
+
+        newService().handleWorkflowTaskSla(
+            slaMessage(eventId, applicationId, applicantUserId, "WorkflowTaskSlaReminderRequested")
+        );
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).insert(captor.capture());
+        assertThat(captor.getValue().getRecipientUserId()).isEqualTo(applicantUserId);
+        assertThat(captor.getValue().getNotificationType()).isEqualTo("WORKFLOW_TASK_REMINDER");
+        verify(auditRepository).insertInbox(eventId, "tenant-a", applicationId);
+    }
+
+    /**
+     * SLA 超时升级事件应生成运营升级通知，而不是被错误事件类型校验拒绝。
+     */
+    @Test
+    void shouldProjectWorkflowSlaEscalation() {
+        UUID eventId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        UUID applicantUserId = UUID.randomUUID();
+        when(auditRepository.existsByEventId(eventId)).thenReturn(false);
+
+        newService().handleWorkflowTaskSla(
+            slaMessage(eventId, applicationId, applicantUserId, "WorkflowTaskSlaEscalated")
+        );
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).insert(captor.capture());
+        assertThat(captor.getValue().getRecipientUserId()).isEqualTo(applicantUserId);
+        assertThat(captor.getValue().getNotificationType()).isEqualTo("WORKFLOW_TASK_ESCALATED");
+        verify(auditRepository).insertInbox(eventId, "tenant-a", applicationId);
+    }
+
+    /**
      * 重复事件只允许命中 Inbox 查询，不重复生成通知。
      */
     @Test
@@ -148,6 +190,29 @@ class NotificationAuditServiceTest {
                 "supplierName":"测试供应商"
               }
             }
-            """.formatted(eventId, applicationId, applicantUserId);
+        """.formatted(eventId, applicationId, applicantUserId);
+    }
+
+    private String slaMessage(
+        UUID eventId,
+        UUID applicationId,
+        UUID applicantUserId,
+        String eventType
+    ) {
+        return """
+            {
+              "eventId":"%s",
+              "eventType":"%s",
+              "schemaVersion":1,
+              "tenantId":"tenant-a",
+              "aggregateId":"%s",
+              "occurredAt":"2026-09-11T00:00:00Z",
+              "traceId":"trace-sla",
+              "payload":{
+                "applicantUserId":"%s",
+                "taskKey":"LEGAL_REVIEW"
+              }
+            }
+            """.formatted(eventId, eventType, applicationId, applicantUserId);
     }
 }

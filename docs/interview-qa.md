@@ -19,6 +19,12 @@ A: Workflow 先创建 `RISK_CHECKING` 投影并通过 Outbox 发布 `RiskCheckRe
 Q: risk-service 为什么也需要 Outbox？
 A: 风控结果写入数据库和发布 RocketMQ 事件必须保持最终一致。如果结果已经落库但进程在发送前宕机，直接发送会丢事件；Outbox 让发布器按租约认领、收到 Broker ACK 后确认，失败按指数退避，达到上限后进入死信，Workflow 的事件 Inbox 再吸收重复投递。
 
+Q: 风控拒绝后如何避免迟到的审批事件把申请重新推进？
+A: Supplier 领域对象把 `REJECTED` 视为不可逆终态，审批完成事件在状态推进前会被领域规则拒绝；风控拒绝事件还会校验载荷中的申请人是否与申请记录一致。这样即使消息乱序或重复投递，也不会把已拒绝申请恢复到 `IN_REVIEW` 或 `ENABLED`。
+
+Q: 审批 SLA 催办通知如何保证不会因事件类型校验错误而丢失？
+A: 通知审计服务先解析通用事件信封，再根据 `eventType` 允许 `WorkflowTaskSlaReminderRequested` 或 `WorkflowTaskSlaEscalated`，最后以事件 ID 做幂等投影。两种事件分别生成催办和升级通知，并与审计记录、Inbox 在同一事务中提交。
+
 Q: 为什么拆分成多个服务？
 A:
 - Gateway 负责统一 API 入口和下游路由，不拥有业务数据。
