@@ -116,7 +116,7 @@ docker exec \
   "${CONTAINER}" bash /workspace/scripts/run-workflow-sla.sh
 
 instance_state="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh \
-  -c "SELECT current_task || ':' || version FROM workflow.workflow_instances")"
+  -c "SELECT current_task || ':' || version FROM workflow.workflow_instances WHERE id = '10000000-0000-0000-0000-000000000001'")"
 task_states="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh \
   -c "SELECT string_agg(status, ',' ORDER BY status) FROM workflow.workflow_tasks")"
 operations_count="$(docker exec "${CONTAINER}" psql -At -U postgres -d flowmesh \
