@@ -32,11 +32,24 @@ require_value '^objectStorage:[[:space:]]*$' '对象存储配置块'
 require_value '^  endpoint:[[:space:]]*https://' '生产对象存储必须使用 HTTPS'
 require_value '^fileScan:[[:space:]]*$' '文件扫描配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产文件扫描必须启用'
+require_value '^backup:[[:space:]]*$' 'PostgreSQL 备份配置块'
+require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产 PostgreSQL 备份必须启用'
+require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '备份凭据 Secret'
 require_value '^    replicas:[[:space:]]*2[[:space:]]*$' 'IAM 双副本'
 require_value '^  supplier:[[:space:]]*$' 'supplier 服务配置块'
 require_value '^  workflow:[[:space:]]*$' 'workflow 服务配置块'
 require_value '^  risk:[[:space:]]*$' 'risk 服务配置块'
 require_value '^  notificationAudit:[[:space:]]*$' 'notification-audit 服务配置块'
+
+ruby - "${values_file}" <<'RUBY'
+require "yaml"
+
+values = YAML.load_file(ARGV.fetch(0))
+backup = values.fetch("backup")
+raise "生产 PostgreSQL 备份必须启用" unless backup.fetch("enabled") == true
+raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret", "").to_s.empty?
+puts "生产备份配置结构校验通过。"
+RUBY
 
 if grep -Eq 'host:[[:space:]]*(postgres|redis)$|namesrvAddr:[[:space:]]*rocketmq-namesrv' "${values_file}"; then
   echo '生产 values 仍使用本地依赖服务名（postgres/redis/rocketmq-namesrv）。' >&2

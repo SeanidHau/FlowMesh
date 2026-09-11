@@ -60,6 +60,53 @@ else
 fi
 
 chmod 600 "${backup_dir}/flowmesh.dump" "${backup_dir}/globals.sql" "${backup_dir}/checksums.sha256"
+
+if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
+  # 作用：将已校验的备份文件逐个上传到 S3 兼容对象存储；上传失败会触发统一清理逻辑。
+  command -v aws >/dev/null 2>&1 || {
+    printf '配置了 FLOWMESH_BACKUP_S3_URI，但当前环境未安装 aws 命令。\n' >&2
+    exit 1
+  }
+
+  destination="${FLOWMESH_BACKUP_S3_URI%/}/$(basename "${backup_dir}")"
+  aws_arguments=(s3 cp --only-show-errors)
+  if [[ -n "${FLOWMESH_BACKUP_S3_ENDPOINT:-}" ]]; then
+    aws_arguments+=(--endpoint-url "${FLOWMESH_BACKUP_S3_ENDPOINT}")
+  fi
+  if [[ -n "${AWS_REGION:-}" ]]; then
+    aws_arguments+=(--region "${AWS_REGION}")
+  fi
+
+  server_side_encryption="${FLOWMESH_BACKUP_S3_SSE:-AES256}"
+  case "${server_side_encryption}" in
+    ""|none)
+      ;;
+    AES256|aws:kms)
+      aws_arguments+=(--sse "${server_side_encryption}")
+      if [[ "${server_side_encryption}" == "aws:kms" && -n "${FLOWMESH_BACKUP_S3_KMS_KEY_ID:-}" ]]; then
+        aws_arguments+=(--sse-kms-key-id "${FLOWMESH_BACKUP_S3_KMS_KEY_ID}")
+      fi
+      ;;
+    *)
+      printf '不支持的 FLOWMESH_BACKUP_S3_SSE：%s\n' "${server_side_encryption}" >&2
+      exit 1
+      ;;
+  esac
+
+  for backup_file in flowmesh.dump globals.sql checksums.sha256; do
+    aws "${aws_arguments[@]}" \
+      "${backup_dir}/${backup_file}" \
+      "${destination}/${backup_file}"
+  done
+  printf 'completedAt=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${backup_dir}/_SUCCESS"
+  chmod 600 "${backup_dir}/_SUCCESS"
+  aws "${aws_arguments[@]}" "${backup_dir}/_SUCCESS" "${destination}/_SUCCESS"
+  printf 'PostgreSQL 备份已上传：%s\n' "${destination}"
+  if [[ "${FLOWMESH_BACKUP_CLEANUP_LOCAL:-false}" == "true" ]]; then
+    rm -rf -- "${backup_dir}"
+  fi
+fi
+
 trap - EXIT
 unset PGPASSWORD PGCONNECT_TIMEOUT
 

@@ -45,7 +45,43 @@ networkPolicy:
   egress:
     enabled: false
     externalCidrs: []
-    externalPorts: [3310, 5432, 6379, 9876, 9000, 10909, 10911, 10912]
+    externalPorts: [443, 3310, 5432, 6379, 9876, 9000, 10909, 10911, 10912]
+
+backup:
+  # 本地 Chart 默认不创建定时备份；生产覆盖值会强制配置备份目标。
+  enabled: false
+  schedule: "0 2 * * *"
+  timeZone: "Etc/UTC"
+  image: flowmesh/postgres-backup
+  tag: 0.1.0
+  imagePullPolicy: IfNotPresent
+  serviceAccountName: ""
+  credentialsSecret: ""
+  postgres:
+    host: ""
+    port: 5432
+    database: flowmesh
+    user: flowmesh
+    connectTimeoutSeconds: 5
+  s3:
+    uri: ""
+    endpoint: ""
+    region: us-east-1
+    serverSideEncryption: AES256
+    kmsKeyId: ""
+  cleanupLocal: true
+  startingDeadlineSeconds: 900
+  activeDeadlineSeconds: 3600
+  backoffLimit: 2
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 observability:
   tracing:

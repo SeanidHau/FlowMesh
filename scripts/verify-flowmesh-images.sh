@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 作用：部署前验证六个 FlowMesh 镜像均使用完整提交 SHA，并由受信任的 GitHub Actions 工作流签名。
+# 作用：部署前验证应用和备份镜像均使用完整提交 SHA，并由受信任的 GitHub Actions 工作流签名。
 
 set -euo pipefail
 
@@ -19,6 +19,7 @@ services=(
   workflow-service
   risk-service
   notification-audit-service
+  postgres-backup
 )
 
 for service in "${services[@]}"; do

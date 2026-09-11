@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh tests/fault-drills/*.sh tests/postgres-backup-e2e.sh tests/rocketmq-e2e.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh tests/fault-drills/*.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/rocketmq-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -65,6 +65,11 @@ jobs:
           HELM_TEST_AUDIT_PASSWORD: ci-only-audit-password
           HELM_TEST_OBJECT_STORAGE_SECRET: ci-only-object-storage-secret
         run: |
+          backup_test_args=(
+            --set backup.postgres.host=postgres.ci.internal
+            --set backup.s3.uri=s3://flowmesh-ci-backups
+            --set backup.credentialsSecret=flowmesh-backup-credentials
+          )
           helm lint infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
             --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
@@ -94,7 +99,8 @@ jobs:
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
-            --set global.existingSecret=flowmesh-runtime-secrets
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}"
           helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
@@ -102,7 +108,8 @@ jobs:
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
-            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
@@ -111,6 +118,7 @@ jobs:
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" \
             --set observability.serviceMonitor.enabled=true \
             --set observability.serviceMonitor.labels.release=kube-prometheus-stack | grep -q '^kind: ServiceMonitor$'; then
             echo 'ServiceMonitor must render when explicitly enabled.' >&2
@@ -118,7 +126,8 @@ jobs:
           fi
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
-            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
             echo 'Production chart must fail when immutable image tag is missing.' >&2
             exit 1
           fi
@@ -126,7 +135,8 @@ jobs:
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
-            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
             echo 'Production chart must fail when ingress host or TLS is missing.' >&2
             exit 1
           fi
@@ -136,7 +146,8 @@ jobs:
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
-            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
             echo 'Production chart must fail when external egress CIDRs are missing.' >&2
             exit 1
           fi
@@ -148,6 +159,7 @@ jobs:
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" \
             --set observability.tracing.enabled=true \
             --set observability.tracing.exportEnabled=true >/dev/null 2>&1; then
             echo 'Production chart must fail when OTLP export is enabled without a Collector endpoint.' >&2
@@ -161,9 +173,34 @@ jobs:
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" \
             --set observability.tracing.enabled=true \
             --set observability.tracing.exportEnabled=true \
             --set observability.tracing.endpoint=http://otel-collector.observability:4318/v1/traces >/dev/null
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            --set backup.s3.serverSideEncryption=plaintext \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
+            echo 'Production chart must reject unsupported backup encryption.' >&2
+            exit 1
+          fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            echo 'Production chart must require explicit backup destination settings.' >&2
+            exit 1
+          fi
 
       # 使用项目固定的 Java 21 和 Maven Wrapper 执行完整 Reactor 测试。
       - name: Set up Java 21
@@ -179,6 +216,10 @@ jobs:
       # 使用临时 PostgreSQL 容器验证备份归档不会泄露角色密码，且可以恢复到独立数据库。
       - name: Run PostgreSQL backup recovery test
         run: ./tests/postgres-backup-e2e.sh
+
+      # 不依赖云账号，验证备份上传参数、服务端加密和失败清理逻辑。
+      - name: Run PostgreSQL backup upload contract test
+        run: ./tests/postgres-backup-upload-contract.sh
 
       # 验证 Electron 渲染进程、主进程和生产构建产物。
       - name: Set up Node.js 26
@@ -233,6 +274,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -249,6 +291,8 @@ jobs:
             dockerfile: services/risk-service/Dockerfile
           - service: notification-audit-service
             dockerfile: services/notification-audit-service/Dockerfile
+          - service: postgres-backup
+            dockerfile: infra/backup/Dockerfile
     steps:
       # 检出源码，供 Docker 构建上下文和镜像标签生成使用。
       - name: Check out source
@@ -283,6 +327,8 @@ jobs:
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 

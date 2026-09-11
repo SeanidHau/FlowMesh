@@ -22,6 +22,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | RocketMQ 消费者已暴露处理耗时直方图，Prometheus 已增加消费 P95 延迟告警；观测配置脚本会校验关键告警集合。 |
 | 已完成 | risk-service 提供默认关闭的 `FAIL` / `TIMEOUT` 故障注入，用于复现 RocketMQ 重试、DLQ 和人工处置场景；生产 Helm 显式关闭该开关。 |
 | 已完成 | PostgreSQL 备份脚本不导出角色密码，并通过临时 PostgreSQL 容器 E2E 验证归档完整性、隔离数据库恢复和测试资源清理；CI 会执行该回归。 |
+| 已完成 | PostgreSQL 备份镜像和 Helm CronJob 已支持定时执行、S3 兼容对象存储上传、服务端加密、并发互斥和失败重试；生产渲染要求显式提供外部数据库地址、备份 URI 和凭据 Secret。 |
 | 已完成 | 六个服务提供默认关闭的 Micrometer Tracing 和 OTLP/HTTP 导出配置；生产 Helm 在开启导出但缺少 Collector 地址时拒绝渲染。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
@@ -72,7 +73,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 - Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
 - 外部邮件/短信通道；通知审计服务和独立风险服务已在当前迭代接入。
 - 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地 Prometheus/Grafana 基线。
-- RocketMQ、PostgreSQL 多副本高可用、备份恢复和 Chaos Mesh 故障演练。
+- RocketMQ、PostgreSQL 多副本高可用、对象存储跨故障域复制、备份恢复和 Chaos Mesh 故障演练。
 
 这些组件只有在对应业务场景、数据边界和测试环境明确后再接入，不为了扩充简历技术栈而提前引入。
 

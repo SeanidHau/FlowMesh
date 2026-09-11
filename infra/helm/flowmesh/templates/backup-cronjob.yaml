@@ -1,0 +1,128 @@
+{{- if .Values.backup.enabled }}
+{{- if not .Values.backup.postgres.host }}
+{{- fail "backup.postgres.host is required when PostgreSQL backup is enabled" }}
+{{- end }}
+{{- if not .Values.backup.s3.uri }}
+{{- fail "backup.s3.uri is required when PostgreSQL backup is enabled" }}
+{{- end }}
+{{- if not .Values.backup.credentialsSecret }}
+{{- fail "backup.credentialsSecret is required when PostgreSQL backup is enabled" }}
+{{- end }}
+{{- if not (has .Values.backup.s3.serverSideEncryption (list "none" "AES256" "aws:kms")) }}
+{{- fail "backup.s3.serverSideEncryption must be one of none, AES256 or aws:kms" }}
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-postgres-backup
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  {{- with .Values.backup.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: {{ .Values.backup.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backup.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+            {{- include "flowmesh.labels" . | nindent 12 }}
+            app.kubernetes.io/component: postgres-backup
+        spec:
+          {{- if .Values.backup.serviceAccountName }}
+          serviceAccountName: {{ .Values.backup.serviceAccountName | quote }}
+          automountServiceAccountToken: true
+          {{- else }}
+          automountServiceAccountToken: false
+          {{- end }}
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: postgres-backup
+              image: {{ include "flowmesh.backupImageReference" . | quote }}
+              imagePullPolicy: {{ .Values.backup.imagePullPolicy }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              env:
+                - name: FLOWMESH_PG_HOST
+                  value: {{ .Values.backup.postgres.host | quote }}
+                - name: FLOWMESH_PG_PORT
+                  value: {{ .Values.backup.postgres.port | quote }}
+                - name: FLOWMESH_PG_DATABASE
+                  value: {{ .Values.backup.postgres.database | quote }}
+                - name: FLOWMESH_PG_USER
+                  value: {{ .Values.backup.postgres.user | quote }}
+                - name: FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS
+                  value: {{ .Values.backup.postgres.connectTimeoutSeconds | quote }}
+                - name: FLOWMESH_PG_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.credentialsSecret | quote }}
+                      key: POSTGRES_PASSWORD
+                - name: FLOWMESH_BACKUP_S3_URI
+                  value: {{ .Values.backup.s3.uri | quote }}
+                - name: FLOWMESH_BACKUP_S3_ENDPOINT
+                  value: {{ .Values.backup.s3.endpoint | quote }}
+                - name: FLOWMESH_BACKUP_S3_SSE
+                  value: {{ .Values.backup.s3.serverSideEncryption | quote }}
+                - name: FLOWMESH_BACKUP_S3_KMS_KEY_ID
+                  value: {{ .Values.backup.s3.kmsKeyId | quote }}
+                - name: FLOWMESH_BACKUP_CLEANUP_LOCAL
+                  value: {{ .Values.backup.cleanupLocal | quote }}
+                - name: AWS_REGION
+                  value: {{ .Values.backup.s3.region | quote }}
+                - name: AWS_EC2_METADATA_DISABLED
+                  value: "true"
+                - name: HOME
+                  value: /tmp
+                - name: AWS_CONFIG_FILE
+                  value: /tmp/aws/config
+                - name: AWS_SHARED_CREDENTIALS_FILE
+                  value: /tmp/aws/credentials
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.credentialsSecret | quote }}
+                      key: AWS_ACCESS_KEY_ID
+                      optional: true
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.credentialsSecret | quote }}
+                      key: AWS_SECRET_ACCESS_KEY
+                      optional: true
+                - name: AWS_SESSION_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.credentialsSecret | quote }}
+                      key: AWS_SESSION_TOKEN
+                      optional: true
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: backup
+              emptyDir: {}
+            - name: tmp
+              emptyDir: {}
+{{- end }}

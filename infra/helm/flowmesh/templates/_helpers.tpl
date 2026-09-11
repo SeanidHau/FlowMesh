@@ -40,6 +40,7 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- if and .Values.global.production .Values.observability.tracing.exportEnabled (not .Values.observability.tracing.endpoint) }}
 {{- fail "observability.tracing.endpoint is required when OTLP export is enabled in production mode" }}
 {{- end }}
+
 - name: FLOWMESH_TRACING_ENABLED
   value: {{ .Values.observability.tracing.enabled | quote }}
 - name: FLOWMESH_OTEL_EXPORT_ENABLED
@@ -52,4 +53,14 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
   value: {{ .Values.observability.tracing.connectTimeout | quote }}
 - name: FLOWMESH_OTEL_EXPORT_TIMEOUT
   value: {{ .Values.observability.tracing.exportTimeout | quote }}
+{{- end }}
+
+{{/* 作用：统一生成备份镜像引用，并在生产模式阻止使用可变默认标签。 */}}
+{{- define "flowmesh.backupImageReference" -}}
+{{- $registry := trimSuffix "/" (default "" .Values.global.imageRegistry) -}}
+{{- $tag := default .Values.backup.tag .Values.global.imageTag -}}
+{{- if .Values.global.production }}
+{{- $tag = required "global.imageTag is required in production mode" .Values.global.imageTag -}}
+{{- end }}
+{{- if $registry }}{{ printf "%s/%s" $registry .Values.backup.image }}{{ else }}{{ .Values.backup.image }}{{ end }}:{{ $tag }}
 {{- end }}

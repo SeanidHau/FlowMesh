@@ -38,6 +38,10 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
+  --set backup.postgres.host="postgres-primary.database.svc" \
+  --set backup.s3.uri="s3://flowmesh-production-backups" \
+  --set backup.credentialsSecret="flowmesh-backup-credentials" \
   --set ingress.host="api.example.com" \
   --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
   --set 'ingress.tls[0].hosts[0]=api.example.com' \
@@ -54,6 +58,10 @@ Collector 的 OTLP/HTTP traces 地址：
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
+  --set backup.postgres.host="postgres-primary.database.svc" \
+  --set backup.s3.uri="s3://flowmesh-production-backups" \
+  --set backup.credentialsSecret="flowmesh-backup-credentials" \
   --set observability.tracing.enabled=true \
   --set observability.tracing.exportEnabled=true \
   --set observability.tracing.endpoint="http://otel-collector.observability:4318/v1/traces" \
@@ -69,6 +77,32 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 `SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
 `OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
+
+生产环境还必须创建备份凭据 Secret。该 Secret 至少包含 `POSTGRES_PASSWORD`；如果集群不使用
+云厂商工作负载身份，还需要包含 `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`，临时凭据可以额外
+提供 `AWS_SESSION_TOKEN`。`backup.serviceAccountName` 用于绑定工作负载身份，不能把长期云凭据
+写入 Helm values。
+
+启用生产备份时，`backup.postgres.host` 和 `backup.s3.uri` 必须指向真实外部服务。CronJob 使用
+`concurrencyPolicy: Forbid`，单次执行有明确截止时间，失败会按 `backoffLimit` 重试；备份完成后才
+清理临时卷。示例：
+
+```bash
+helm upgrade --install flowmesh infra/helm/flowmesh \
+  -f infra/helm/flowmesh/values-production.yaml \
+  --set-string global.imageTag="$GITHUB_SHA" \
+  --set backup.postgres.host="postgres-primary.database.svc" \
+  --set backup.s3.uri="s3://flowmesh-production-backups" \
+  --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set backup.serviceAccountName="flowmesh-backup" \
+  --set ingress.host="api.example.com" \
+  --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
+  --set 'ingress.tls[0].hosts[0]=api.example.com' \
+  --set global.existingSecret=flowmesh-runtime-secrets
+```
+
+对象存储地址和 PostgreSQL 地址属于部署环境配置，不能使用 Compose 中的 `postgres`、`localhost`
+或单节点 MinIO 地址冒充生产备份目标。
 
 检查部署状态：
 
@@ -96,6 +130,10 @@ Workflow 额外接受 Supplier 的内部状态回写请求；出站策略只允�
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
+  --set backup.postgres.host="postgres-primary.database.svc" \
+  --set backup.s3.uri="s3://flowmesh-production-backups" \
+  --set backup.credentialsSecret="flowmesh-backup-credentials" \
   --set observability.serviceMonitor.enabled=true \
   --set observability.serviceMonitor.labels.release=kube-prometheus-stack \
   --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \

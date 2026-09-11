@@ -23,6 +23,14 @@ PostgreSQL 备份恢复回归：
 
 该脚本只使用临时 PostgreSQL 容器，验证 custom-format 备份、离线校验、角色密码不落盘和恢复到独立数据库；退出时删除测试资源。
 
+备份对象存储上传分支的离线契约测试：
+
+```bash
+./tests/postgres-backup-upload-contract.sh
+```
+
+该脚本使用本地替身命令验证 S3 上传参数、KMS 服务端加密和失败后的部分目录清理，不访问真实云账号。
+
 性能与故障演练：
 
 ```bash

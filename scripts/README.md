@@ -7,8 +7,9 @@
 - `backup-postgres.sh`：导出 PostgreSQL 数据库和角色定义。
 - `restore-postgres.sh`：将 PostgreSQL custom-format 备份恢复到目标数据库。
 - `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
+- `infra/backup/entrypoint.sh`：在备份容器中调用 PostgreSQL 备份和对象存储上传流程。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
-- `verify-flowmesh-images.sh`：部署前验证六个提交 SHA 镜像均具备受信任 GitHub Actions 签名。
+- `verify-flowmesh-images.sh`：部署前验证六个应用镜像和一个备份镜像均具备受信任 GitHub Actions 签名。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
 
@@ -30,7 +31,12 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 ./scripts/validate-observability.sh
 ```
 
-备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境应将备份目录同步到独立、加密且具备生命周期策略的对象存储；恢复前必须完成审批和目标数据库隔离确认。
+备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境使用 Helm `CronJob` 定时执行备份。备份镜像
+包含 PostgreSQL 客户端和 AWS CLI，脚本会先创建 custom-format 归档，再将三个归档文件上传到 S3 兼容对象存储，
+最后上传 `_SUCCESS` 标记。恢复工具或平台只应使用存在 `_SUCCESS` 标记的备份前缀。
+默认使用 `AES256` 服务端加密，也可以通过 `FLOWMESH_BACKUP_S3_SSE=aws:kms` 和
+`FLOWMESH_BACKUP_S3_KMS_KEY_ID` 使用 KMS 密钥。恢复前必须完成审批和目标数据库隔离确认；对象存储仍需
+由平台配置跨故障域复制、生命周期和访问审计策略。
 
 生产部署前执行镜像签名校验：
 

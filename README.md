@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+核心业务 MVP-4 已完成，并已形成生产化基线：在上述基础上接入统一 API Gateway、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、Redis 登录限流、PostgreSQL 定时备份归档以及 Compose、Helm、CI 验证。当前仍需在目标集群完成外部依赖 HA、生产观测后端和恢复演练；Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -23,6 +23,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
 | 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；仓库提供 Kyverno 集群准入策略。 |
 | OpenTelemetry Trace | 已提供可选出口 | 六个服务支持 Micrometer Tracing 和 OTLP/HTTP 导出；默认关闭，目标平台仍需提供 Collector、存储和查询后端。 |
+| PostgreSQL 备份 | 已实现 | 提供备份镜像、Helm CronJob、S3 兼容对象存储上传、服务端加密、失败重试和恢复回归；生产平台仍需配置复制、生命周期和 RTO/RPO。 |
 
 ## 项目目标
 

@@ -16,6 +16,43 @@ networkPolicy:
   egress:
     enabled: true
     externalCidrs: []
+    externalPorts: [443, 3310, 5432, 6379, 9876, 9000, 10909, 10911, 10912]
+
+backup:
+  # 生产环境必须提供外部 PostgreSQL 地址、对象存储 URI 和凭据 Secret。
+  enabled: true
+  schedule: "0 2 * * *"
+  timeZone: "Etc/UTC"
+  image: flowmesh/postgres-backup
+  tag: ""
+  imagePullPolicy: IfNotPresent
+  serviceAccountName: ""
+  credentialsSecret: flowmesh-backup-credentials
+  postgres:
+    host: ""
+    port: 5432
+    database: flowmesh
+    user: flowmesh
+    connectTimeoutSeconds: 5
+  s3:
+    uri: ""
+    endpoint: ""
+    region: us-east-1
+    serverSideEncryption: AES256
+    kmsKeyId: ""
+  cleanupLocal: true
+  startingDeadlineSeconds: 900
+  activeDeadlineSeconds: 3600
+  backoffLimit: 2
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 observability:
   # 未接入 Collector 时保持关闭；启用导出时必须通过 --set 注入真实 OTLP/HTTP 地址。

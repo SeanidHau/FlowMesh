@@ -18,7 +18,7 @@ cosign verify \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   "ghcr.io/seanidhau/flowmesh/iam-service:${GITHUB_SHA}"
 
-# 发布前批量校验六个应用镜像
+# 发布前批量校验六个应用镜像和一个备份镜像
 FLOWMESH_IMAGE_TAG="${GITHUB_SHA}" ./scripts/verify-flowmesh-images.sh
 ```
 
@@ -164,6 +164,23 @@ export FLOWMESH_PG_PASSWORD='由 Secret Manager 注入'
 export FLOWMESH_BACKUP_ROOT='./backups/postgres'
 ./scripts/backup-postgres.sh
 ```
+
+需要上传到 S3 兼容对象存储时，在执行备份前设置上传参数。脚本会在归档创建成功后上传整个时间戳目录；
+上传失败时会删除本次未完成的目录，避免把部分归档误当成可恢复备份：
+
+```bash
+export FLOWMESH_BACKUP_S3_URI='s3://flowmesh-production-backups'
+export AWS_REGION='cn-shanghai'
+export FLOWMESH_BACKUP_S3_SSE='aws:kms'
+export FLOWMESH_BACKUP_S3_KMS_KEY_ID='alias/flowmesh-backup'
+export FLOWMESH_BACKUP_CLEANUP_LOCAL=true
+./scripts/backup-postgres.sh
+```
+
+生产环境通过 Helm CronJob 调度同一脚本。脚本会在三个归档文件上传成功后再上传 `_SUCCESS` 标记；
+CronJob 使用独立备份镜像，禁止同一时间运行多个备份，
+并在失败时按 `backoffLimit` 重试。备份凭据应通过 Kubernetes Secret 或云厂商工作负载身份提供，
+不能写入 values 文件。
 
 备份完成后必须在同一台具备 PostgreSQL 客户端工具和 SHA-256 校验工具的机器上校验归档目录。备份脚本会生成
 `checksums.sha256`，并使用 `--no-role-passwords` 导出全局对象，避免角色密码进入备份文件。校验步骤同时检查文件摘要和 custom-format 归档目录：
