@@ -15,7 +15,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 状态 | 内容 |
 | --- | --- |
 | 已完成 | MVP-4 全部需求：消息契约与幂等、Outbox ACK/退避/死信、多实例认领、DLQ 查询/重放/审计、跨服务对账、业务与消息指标、Trace 标识、数据库和 RocketMQ 就绪探针、PostgreSQL 集成测试、真实 RocketMQ E2E、CI 和资源回收。 |
-| 当前迭代 | Redis 登录尝试限流已完成；Redis 故障时认证链路降级放行并记录告警，不改变数据库权威性。 |
+| 当前迭代 | Redis 登录尝试限流已完成；本地 Redis 故障时认证链路降级放行并记录告警，生产 Helm 默认 fail-closed 并返回 `503`，不改变数据库权威性。 |
 | 当前迭代 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
 | 当前迭代 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
 | 当前迭代 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知。 |

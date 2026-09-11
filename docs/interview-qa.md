@@ -216,6 +216,9 @@ A: Chart 对 JWT 签名密钥、五个业务数据库密码和对象存储密钥
 
 CI 中使用仅用于校验的临时值执行 `helm lint` 和 `helm template`，同时验证缺少凭据时渲染必须失败。真实密钥不会提交到仓库。
 
+Q: 生产镜像如何保证来源可追溯且没有明显漏洞？
+A: 主分支 CI 为六个服务发布完整 Git 提交 SHA 标签，先用 Trivy 扫描不可变标签，再使用 GitHub OIDC 生成 Cosign keyless 签名。Helm 发布前通过 `verify-flowmesh-images.sh` 校验六个镜像的提交标签和签名；目标集群还需要配置签名准入和持续漏洞扫描。
+
 Q: 配置 `global.existingSecret` 后，Chart 会自动创建这个 Secret 吗？
 A: 不会。设置 `existingSecret` 表示 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它。这样可以避免 Helm release manifest 包含生产凭据；部署前必须验证 Secret 存在且包含 `JWT_SIGNING_KEY`、五个业务数据库密码和对象存储密钥等必需键。
 

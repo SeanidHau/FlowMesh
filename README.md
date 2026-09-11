@@ -17,10 +17,11 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标。 |
 | PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
-| Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；Redis 故障时降级放行。 |
+| Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
 | Prometheus、Grafana | 本地基线已实现 | 提供 Prometheus 抓取配置、告警规则和 Grafana 概览 Dashboard；生产环境仍需接入托管观测平台。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
+| 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；集群准入策略仍需配置。 |
 | OpenTelemetry Trace 后端 | 计划中 | 服务已输出 Trace ID；完整 Trace 采集、存储和查询后端仍待接入。 |
 
 ## 项目目标

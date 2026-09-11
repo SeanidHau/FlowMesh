@@ -9,6 +9,19 @@
 - Kubernetes 演示使用 kind 和 Helm。
 - 真实凭据存储在 `.env`、Kubernetes Secret 或 GitHub Actions Secrets，不进入仓库。
 
+生产镜像必须使用完整 Git 提交 SHA 标签。主分支 CI 会先扫描该不可变标签，再生成 Cosign
+keyless 签名；部署前可按工作流身份校验签名：
+
+```bash
+cosign verify \
+  --certificate-identity-regexp 'https://github.com/SeanidHau/FlowMesh/.github/workflows/ci.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "ghcr.io/seanidhau/flowmesh/iam-service:${GITHUB_SHA}"
+
+# 发布前批量校验六个应用镜像
+FLOWMESH_IMAGE_TAG="${GITHUB_SHA}" ./scripts/verify-flowmesh-images.sh
+```
+
 ## 启动本地环境
 
 1. 复制环境变量示例并设置 `JWT_SIGNING_KEY`。

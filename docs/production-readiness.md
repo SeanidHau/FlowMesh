@@ -17,7 +17,7 @@
 - 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
-- CI 在 PR 构建六项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
+- CI 在 PR 构建六项服务镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 
 验证命令：
@@ -48,7 +48,7 @@ helm lint infra/helm/flowmesh \
 
 - Gateway 的统一限流、审计和服务间网络策略；Helm 已提供并校验 TLS Ingress 路由模板，目标集群仍需提供 Ingress Controller 和证书 Secret。
 - Helm 生产覆盖值已提供业务服务入口 NetworkPolicy；仍需在目标 CNI 和真实集群完成连通性演练。
-- 镜像仓库、镜像签名和运行时漏洞扫描。
+- 生产集群的镜像签名准入和持续运行时漏洞扫描；CI 已完成提交 SHA 镜像扫描与签名，但目标集群仍需配置准入策略和持续扫描平台。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 
 ### 可观测性与恢复
