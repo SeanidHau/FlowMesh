@@ -23,6 +23,15 @@ PostgreSQL 备份恢复回归：
 
 该脚本只使用临时 PostgreSQL 容器，验证 custom-format 备份、离线校验、角色密码不落盘和恢复到独立数据库；退出时删除测试资源。
 
+恢复连接参数的离线契约测试：
+
+```bash
+./tests/postgres-restore-contract.sh
+```
+
+该测试使用命令替身确认恢复脚本会传递 `FLOWMESH_PG_SSLMODE` 和
+`FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS`，并拒绝无效的 TLS 模式或连接超时。
+
 备份对象存储上传分支的离线契约测试：
 
 ```bash

@@ -426,6 +426,18 @@ FLOWMESH_PG_SSLMODE='verify-full' \
 `flowmesh_retention` 和 `flowmesh_workflow_sla` 分离；如果目标平台通过 `FLOWMESH_PG_USER` 和
 `FLOWMESH_PG_PASSWORD` 注入同一组值，也可以省略备份账号专用变量，但生产环境应优先显式配置专用账号。
 
+恢复前必须确认目标数据库隔离、审批结果和备份校验均已通过。恢复脚本会沿用
+`FLOWMESH_PG_SSLMODE` 和 `FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS`，生产环境至少使用
+`require`，目标平台提供受控 CA 后使用 `verify-full`：
+
+```bash
+FLOWMESH_CONFIRM_RESTORE=YES \
+FLOWMESH_PG_PASSWORD="$RESTORE_DB_PASSWORD" \
+FLOWMESH_PG_SSLMODE=verify-full \
+FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS=5 \
+./scripts/restore-postgres.sh ./backups/postgres/<timestamp>
+```
+
 ### 材料对象生命周期
 
 材料桶必须是 FlowMesh 专用桶。生产初始化或变更时执行一次生命周期配置：

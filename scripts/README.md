@@ -64,6 +64,7 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 通过 `FLOWMESH_PG_SSLMODE` 控制 PostgreSQL 传输加密；生产覆盖值默认使用 `require`，目标平台提供 CA 后可改为
 `verify-full`。备份镜像包含 PostgreSQL 客户端和 AWS CLI，脚本会先创建 custom-format 归档，再将三个归档文件上传到 S3 兼容对象存储，
 最后上传 `_SUCCESS` 标记。恢复工具或平台只应使用存在 `_SUCCESS` 标记的备份前缀。
+恢复脚本会校验并使用 `FLOWMESH_PG_SSLMODE`、`FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS`，生产环境不得省略连接加密配置。
 生产 Helm 默认开启远端对象校验：三个归档对象均通过 S3 `head-object` 确认可见后，才会上传 `_SUCCESS` 标记；
 因此恢复流程不会把部分上传目录当成完整备份。
 默认使用 `AES256` 服务端加密，也可以通过 `FLOWMESH_BACKUP_S3_SSE=aws:kms` 和

@@ -16,6 +16,22 @@ if [[ -z "${backup_dir}" || ! -f "${backup_dir}/flowmesh.dump" || ! -f "${backup
   exit 2
 fi
 
+ssl_mode="${FLOWMESH_PG_SSLMODE:-disable}"
+case "${ssl_mode}" in
+  disable|allow|prefer|require|verify-ca|verify-full)
+    ;;
+  *)
+    printf '不支持的 FLOWMESH_PG_SSLMODE：%s\n' "${ssl_mode}" >&2
+    exit 1
+    ;;
+esac
+
+connect_timeout="${FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS:-5}"
+if [[ ! "${connect_timeout}" =~ ^[1-9][0-9]*$ ]]; then
+  printf 'FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS 必须是正整数：%s\n' "${connect_timeout}" >&2
+  exit 1
+fi
+
 # 作用：恢复前先验证备份清单，避免将损坏归档写入目标数据库。
 "$(dirname "$0")/verify-postgres-backup.sh" "${backup_dir}"
 
@@ -25,6 +41,12 @@ host="${FLOWMESH_PG_HOST:-localhost}"
 port="${FLOWMESH_PG_PORT:-5432}"
 user="${FLOWMESH_PG_USER:-flowmesh}"
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD}"
+export PGCONNECT_TIMEOUT="${connect_timeout}"
+export PGSSLMODE="${ssl_mode}"
+cleanup_client_environment() {
+  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
+}
+trap cleanup_client_environment EXIT
 
 pg_restore \
   --exit-on-error \
@@ -36,5 +58,7 @@ pg_restore \
   --username="${user}" \
   "${backup_dir}/flowmesh.dump"
 
-unset PGPASSWORD
+# 作用：恢复完成或失败后清理 PostgreSQL 客户端环境变量，避免凭据和连接参数泄漏到后续命令。
+cleanup_client_environment
+trap - EXIT
 printf 'PostgreSQL 数据已恢复。角色定义请由数据库管理员审核后执行 globals.sql。\n'
