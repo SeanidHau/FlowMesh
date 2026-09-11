@@ -79,6 +79,42 @@ for file in "${required_files[@]}"; do
     printf '生产证据未明确记录 PASS：%s\n' "${evidence_file}" >&2
     exit 1
   }
+  grep -F -- '- 证据摘要：' "${evidence_file}" >/dev/null || {
+    printf '生产证据缺少证据摘要：%s\n' "${evidence_file}" >&2
+    exit 1
+  }
+  case "${file}" in
+    kubernetes-smoke.md)
+      required_markers=('tests/kubernetes-production-smoke.sh' 'FLOWMESH_IMAGE_TAG' 'Deployment')
+      ;;
+    dependency-ha.md)
+      required_markers=('scripts/validate-production-ha.sh' 'PostgreSQL' 'Redis' 'RocketMQ' '对象存储')
+      ;;
+    runtime-observability.md)
+      required_markers=('scripts/validate-runtime-observability.sh' 'Prometheus' 'Alertmanager' 'FlowMeshNotificationDelivery')
+      ;;
+    service-recovery.md)
+      required_markers=('tests/fault-drills/verify-service-recovery.sh' 'RTO' '健康检查')
+      ;;
+    backup-restore.md)
+      required_markers=('scripts/restore-postgres.sh' 'RPO' '恢复')
+      ;;
+    load-test.md)
+      required_markers=('tests/k6/supplier-onboarding.js' 'RPS' 'P95')
+      ;;
+    security-regression.md)
+      required_markers=('tenant' 'RLS' '403')
+      ;;
+    alert-routing.md)
+      required_markers=('Alertmanager' 'receiver' '通知')
+      ;;
+  esac
+  for marker in "${required_markers[@]}"; do
+    grep -F -- "${marker}" "${evidence_file}" >/dev/null || {
+      printf '生产证据缺少 %s 所需内容：%s\n' "${marker}" "${evidence_file}" >&2
+      exit 1
+    }
+  done
 done
 
 grep -F -- '- 环境标识：' "${manifest_file}" >/dev/null || {

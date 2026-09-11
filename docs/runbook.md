@@ -119,7 +119,10 @@ FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
 生产验收默认要求 `FLOWMESH_EVIDENCE_DIR` 指向已归档的目标环境证据包；
 证据包必须包含 `kubernetes-smoke.md`、`dependency-ha.md`、`runtime-observability.md`、`service-recovery.md`、
 `backup-restore.md`、`load-test.md`、`security-regression.md` 和 `alert-routing.md`，每份报告必须记录
-`结果：\`PASS\``，并使用 `manifest.md` 与 `checksums.sha256` 记录环境、执行人、执行时间和完整性校验。
+`结果：\`PASS\``、证据摘要和对应检查命令，并包含与报告类型匹配的关键结果：Kubernetes 报告必须包含提交镜像和 Deployment，
+HA 报告必须包含 PostgreSQL、Redis、RocketMQ 和对象存储，观测报告必须包含 Prometheus、Alertmanager 和通知投递告警，
+恢复报告必须包含 RTO，备份报告必须包含 RPO，压测报告必须包含 RPS 和 P95，安全回归报告必须包含租户隔离、RLS 和 `403`，
+告警路由报告必须包含 Alertmanager receiver 和通知结果；同时使用 `manifest.md` 与 `checksums.sha256` 记录环境、执行人、执行时间和完整性校验。
 证据包校验是只读的，不会替代真实演练；缺少任一报告、报告失败、校验和不匹配或包含敏感凭据时，生产验收直接失败。
 默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
 可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
@@ -232,7 +235,7 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 外部通知投递记录按对应窗口清理。任务失败时先检查 CronJob 日志、数据库锁等待和维护账号权限；
 不要直接执行未经过评审的删除 SQL。
 
-外部通知投递默认关闭。启用前必须在 `flowmesh_audit` 数据库中预置
+本地默认关闭外部通知投递；生产 values 默认启用。生产发布前必须在 `flowmesh_audit` 数据库中预置
 `flowmesh_audit_delivery` 角色，并将 `flowmesh_audit` 业务账号设为 `NOINHERIT`，再允许迁移账号在迁移期间
 `SET ROLE` 到该 `NOSUPERUSER NOINHERIT BYPASSRLS` 角色。Helm 通过
 `services.notificationAudit.notificationDelivery.enabled=true`、HTTPS Webhook 地址和运行时 Secret

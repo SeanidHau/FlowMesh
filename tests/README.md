@@ -97,9 +97,9 @@ Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 SL
 `PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。
 
 目标生产环境的发布后只读验收可通过 `scripts/run-production-acceptance.sh` 统一执行；脚本会把镜像签名、Kubernetes smoke、
-外部依赖预检和生命周期角色预检的结果写入不可覆盖的 Markdown 报告。设置
-`FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=true` 后，还会通过
-`scripts/validate-production-evidence.sh` 校验目标环境的完整证据包。
+外部依赖预检、生命周期角色预检、运行时观测和目标环境证据包校验的结果写入不可覆盖的 Markdown 报告。
+生产验收默认执行这些检查；非生产预检只有在显式设置对应 `FLOWMESH_REQUIRE_*` 变量为 `false` 时才会跳过，
+并通过 `scripts/validate-production-evidence.sh` 校验目标环境的完整证据包。
 
 生产证据包离线契约检查：
 

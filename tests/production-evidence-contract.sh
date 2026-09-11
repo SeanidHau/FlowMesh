@@ -25,9 +25,54 @@ for file in "${required_files[@]}"; do
   cat > "${temporary_directory}/${file}" <<EOF
 # ${file}
 
+- 证据摘要：contract test evidence
 - 结果：\`PASS\`
 EOF
 done
+
+cat >> "${temporary_directory}/kubernetes-smoke.md" <<'EOF'
+- 检查命令：`tests/kubernetes-production-smoke.sh`
+- FLOWMESH_IMAGE_TAG：`flowmesh-test-image`
+- 镜像提交：`0123456789012345678901234567890123456789`
+- Deployment：六个 FlowMesh Deployment 已通过检查。
+EOF
+cat >> "${temporary_directory}/dependency-ha.md" <<'EOF'
+- 检查命令：`scripts/validate-production-ha.sh`
+- PostgreSQL：主库和复制副本通过检查。
+- Redis：主从拓扑通过检查。
+- RocketMQ：NameServer TLS 端点通过检查。
+- 对象存储：HTTPS 端点通过检查。
+EOF
+cat >> "${temporary_directory}/runtime-observability.md" <<'EOF'
+- 检查命令：`scripts/validate-runtime-observability.sh`
+- Prometheus：服务目标和告警规则通过检查。
+- Alertmanager：就绪状态通过检查。
+- FlowMeshNotificationDelivery：通知投递告警已加载。
+EOF
+cat >> "${temporary_directory}/service-recovery.md" <<'EOF'
+- 检查命令：`tests/fault-drills/verify-service-recovery.sh`
+- 健康检查：服务恢复后返回成功状态。
+- RTO：恢复时间符合目标。
+EOF
+cat >> "${temporary_directory}/backup-restore.md" <<'EOF'
+- 检查命令：`scripts/restore-postgres.sh`
+- 恢复：归档已恢复并读取探针数据。
+- RPO：数据丢失窗口符合目标。
+EOF
+cat >> "${temporary_directory}/load-test.md" <<'EOF'
+- 检查命令：`tests/k6/supplier-onboarding.js`
+- RPS：吞吐达到目标。
+- P95：延迟符合目标。
+EOF
+cat >> "${temporary_directory}/security-regression.md" <<'EOF'
+- 检查命令：跨 tenant 访问回归测试。
+- RLS：跨租户数据不可见。
+- 403：越权请求被拒绝。
+EOF
+cat >> "${temporary_directory}/alert-routing.md" <<'EOF'
+- 检查命令：Alertmanager receiver 路由演练。
+- 通知：告警触发和恢复通知均已收到。
+EOF
 
 cat > "${temporary_directory}/manifest.md" <<'EOF'
 # FlowMesh 生产证据清单

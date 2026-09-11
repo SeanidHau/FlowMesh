@@ -39,11 +39,11 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 ./scripts/validate-observability.sh
 ```
 
-目标环境发布后可使用 `run-production-acceptance.sh` 串联镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检；
-设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 后，还会检查目标 Prometheus、Alertmanager、六个 FlowMesh 服务目标和关键告警规则，
-设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=true` 后，还会检查 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，
-设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=true` 后，还会校验目标环境证据包中的 Kubernetes、依赖 HA、运行时观测、恢复、备份恢复、压测、跨租户安全回归和告警路由报告，
-并将每项结果写入不可覆盖的 Markdown 报告。该脚本只读，不执行集群写操作或故障切换；具体变量和示例见 [运行手册](../docs/runbook.md)。
+目标环境发布后可使用 `run-production-acceptance.sh` 串联镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检；生产验收默认还会检查目标 Prometheus、Alertmanager、六个 FlowMesh 服务目标和关键告警规则，
+检查 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，
+并校验目标环境证据包中的 Kubernetes、依赖 HA、运行时观测、恢复、备份恢复、压测、跨租户安全回归和告警路由报告，
+再将每项结果写入不可覆盖的 Markdown 报告。非生产预检只有在显式设置对应 `FLOWMESH_REQUIRE_*` 变量为 `false` 时才会跳过检查。
+该脚本只读，不执行集群写操作或故障切换；具体变量和示例见 [运行手册](../docs/runbook.md)。
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境使用 Helm `CronJob` 定时执行备份。备份镜像
 通过 `FLOWMESH_PG_SSLMODE` 控制 PostgreSQL 传输加密；生产覆盖值默认使用 `require`，目标平台提供 CA 后可改为
