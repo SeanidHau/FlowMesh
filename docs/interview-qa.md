@@ -220,10 +220,13 @@ A: Chart 对 JWT 签名密钥、五个业务数据库密码和对象存储密钥
 CI 中使用仅用于校验的临时值执行 `helm lint` 和 `helm template`，同时验证缺少凭据时渲染必须失败。真实密钥不会提交到仓库。
 
 Q: 生产镜像如何保证来源可追溯且没有明显漏洞？
-A: 主分支 CI 为六个应用服务和一个备份镜像发布完整 Git 提交 SHA 标签，先用 Trivy 扫描不可变标签，再使用 GitHub OIDC 生成 Cosign keyless 签名。Helm 发布前通过 `verify-flowmesh-images.sh` 校验七个镜像的提交标签和签名，Kyverno 策略还会在集群准入阶段拒绝未签名镜像；目标集群仍需配置持续漏洞扫描。
+A: 主分支 CI 为六个应用服务、一个备份镜像和一个生命周期维护镜像发布完整 Git 提交 SHA 标签，先用 Trivy 扫描不可变标签，再使用 GitHub OIDC 生成 Cosign keyless 签名。Helm 发布前通过 `verify-flowmesh-images.sh` 校验八个镜像的提交标签和签名，Kyverno 策略还会在集群准入阶段拒绝未签名镜像；目标集群仍需配置持续漏洞扫描。
 
 Q: 配置 `global.existingSecret` 后，Chart 会自动创建这个 Secret 吗？
 A: 不会。设置 `existingSecret` 表示 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它。这样可以避免 Helm release manifest 包含生产凭据；部署前必须验证 Secret 存在且包含 `JWT_SIGNING_KEY`、五个业务数据库密码和对象存储密钥等必需键。
+
+Q: 项目如何处理 Outbox、DLQ、Inbox 和幂等记录的长期增长？
+A: 生产环境通过独立的 `flowmesh_retention` 非超级用户 CronJob 执行固定白名单清理：已发布 Outbox 保留 90 天，DLQ 保留 30 天，重放审计、Inbox 和请求幂等记录保留 90 天。任务使用 `FOR UPDATE SKIP LOCKED` 和批量上限，强制 RLS 表由专用 `BYPASSRLS` 维护角色处理；待发送 Outbox、业务申请、审批快照和审计事件不在清理范围内，并通过契约测试和 PostgreSQL E2E 验证。
 
 Q: 为什么使用 Docker Compose 和 Helm 两套部署方式？
 A: Docker Compose 面向本地开发和演示，负责启动 PostgreSQL、RocketMQ 和应用服务，降低本地运行门槛。Helm 面向 Kubernetes 部署，提供 Deployment、Service、Secret 引用、健康探针、资源配置和副本数配置。

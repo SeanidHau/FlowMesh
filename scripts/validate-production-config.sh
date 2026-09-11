@@ -48,6 +48,9 @@ require_value '^    clientIpHeader:[[:space:]]*[^[:space:]]+' 'Gateway 可信客
 require_value '^backup:[[:space:]]*$' 'PostgreSQL 备份配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产 PostgreSQL 备份必须启用'
 require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '备份凭据 Secret'
+require_value '^retention:[[:space:]]*$' '数据生命周期清理配置块'
+require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产数据生命周期清理必须启用'
+require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '生命周期维护凭据 Secret'
 require_value '^    replicas:[[:space:]]*2[[:space:]]*$' 'IAM 双副本'
 require_value '^  supplier:[[:space:]]*$' 'supplier 服务配置块'
 require_value '^  workflow:[[:space:]]*$' 'workflow 服务配置块'
@@ -71,6 +74,15 @@ raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEna
 backup_postgresql = backup.fetch("postgres")
 raise "生产 PostgreSQL 备份不得使用明文连接" if backup_postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 备份必须配置 sslMode" if backup_postgresql.fetch("sslMode", "").to_s.empty?
+retention = values.fetch("retention")
+raise "生产数据生命周期清理必须启用" unless retention.fetch("enabled") == true
+raise "生产生命周期清理必须配置凭据 Secret" if retention.fetch("credentialsSecret", "").to_s.empty?
+raise "生产生命周期清理必须使用 YES 确认值" unless retention.fetch("confirmation") == "YES"
+raise "生产生命周期清理不得使用明文连接" if retention.dig("postgres", "sslMode") == "disable"
+raise "生产生命周期清理必须配置 sslMode" if retention.dig("postgres", "sslMode").to_s.empty?
+%w[outboxRetentionDays dlqRetentionDays inboxRetentionDays batchSize].each do |field|
+  raise "生产生命周期清理 #{field} 必须是正整数" unless retention.fetch(field).to_i.positive?
+end
 puts "生产备份配置结构校验通过。"
 RUBY
 

@@ -102,3 +102,13 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}
 {{- if $registry }}{{ printf "%s/%s" $registry .Values.backup.image }}{{ else }}{{ .Values.backup.image }}{{ end }}:{{ $tag }}
 {{- end }}
+
+{{/* 作用：统一生成生命周期维护镜像引用，并在生产模式阻止使用可变默认标签。 */}}
+{{- define "flowmesh.retentionImageReference" -}}
+{{- $registry := trimSuffix "/" (default "" .Values.global.imageRegistry) -}}
+{{- $tag := default .Values.retention.tag .Values.global.imageTag -}}
+{{- if .Values.global.production }}
+{{- $tag = required "global.imageTag is required in production mode" .Values.global.imageTag -}}
+{{- end }}
+{{- if $registry }}{{ printf "%s/%s" $registry .Values.retention.image }}{{ else }}{{ .Values.retention.image }}{{ end }}:{{ $tag }}
+{{- end }}

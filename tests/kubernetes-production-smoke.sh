@@ -14,6 +14,7 @@ expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-false}"
 deployment_selector="app.kubernetes.io/instance=${release}"
 backup_cronjob="${release}-flowmesh-postgres-backup"
+retention_cronjob="${release}-flowmesh-retention"
 
 if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
@@ -133,6 +134,13 @@ keys = JSON.parse(ENV.fetch("BACKUP_SECRET_JSON")).fetch("data").keys
 raise "备份凭据 Secret 缺少 POSTGRES_PASSWORD" unless keys.include?("POSTGRES_PASSWORD")
 '
 
+retention_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_RETENTION_SECRET_NAME:-flowmesh-retention-credentials}" -o json)"
+RETENTION_SECRET_JSON="${retention_secret_json}" ruby -e '
+require "json"
+keys = JSON.parse(ENV.fetch("RETENTION_SECRET_JSON")).fetch("data").keys
+raise "生命周期维护 Secret 缺少 RETENTION_DB_PASSWORD" unless keys.include?("RETENTION_DB_PASSWORD")
+'
+
 cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${backup_cronjob}" -o json)"
 CRONJOB_JSON="${cronjob_json}" ruby -e '
 require "json"
@@ -146,6 +154,22 @@ container = job_spec.fetch("template").fetch("spec").fetch("containers").first
 ssl_mode = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLMODE" }
 raise "备份 CronJob 未设置 PostgreSQL SSL 模式" unless ssl_mode && ssl_mode.fetch("value") != "disable"
 puts "备份 CronJob 参数校验通过。"
+'
+
+retention_cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${retention_cronjob}" -o json)"
+RETENTION_CRONJOB_JSON="${retention_cronjob_json}" ruby -e '
+require "json"
+cronjob = JSON.parse(ENV.fetch("RETENTION_CRONJOB_JSON"))
+spec = cronjob.fetch("spec")
+raise "生命周期清理 CronJob 未设置 concurrencyPolicy=Forbid" unless spec.fetch("concurrencyPolicy") == "Forbid"
+job_spec = spec.fetch("jobTemplate").fetch("spec")
+pod = job_spec.fetch("template").fetch("spec")
+raise "生命周期清理 CronJob 不得自动挂载 ServiceAccount Token" unless pod.fetch("automountServiceAccountToken") == false
+container = pod.fetch("containers").first
+env = container.fetch("env").to_h { |entry| [entry.fetch("name"), entry.fetch("value", nil)] }
+raise "生命周期清理必须使用 YES 确认值" unless env.fetch("FLOWMESH_RETENTION_CONFIRM") == "YES"
+raise "生命周期清理必须使用 PostgreSQL TLS" unless env.fetch("FLOWMESH_PG_SSLMODE") == "require"
+puts "生命周期清理 CronJob 参数校验通过。"
 '
 
 if [[ "${expect_prometheus_rule}" == "true" ]]; then

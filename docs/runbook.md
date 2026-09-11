@@ -18,7 +18,7 @@ cosign verify \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   "ghcr.io/seanidhau/flowmesh/iam-service:${GITHUB_SHA}"
 
-# 发布前批量校验六个应用镜像和一个备份镜像
+# 发布前批量校验六个应用镜像、备份镜像和生命周期维护镜像
 FLOWMESH_IMAGE_TAG="${GITHUB_SHA}" ./scripts/verify-flowmesh-images.sh
 ```
 
@@ -124,7 +124,7 @@ FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
 故障切换、备份恢复或 RTO/RPO 验收，这些仍需按目标平台剧本执行并留存结果。
 
 默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS、PostgreSQL TLS 和 PostgreSQL
-备份 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
+备份 CronJob、生命周期清理 Secret 和 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
 
 ```bash
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
@@ -181,6 +181,18 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 1. 检查 IAM、supplier、workflow、RocketMQ 和 PostgreSQL 的健康状态。
 2. 检查 Outbox 待投递数量、失败次数和 `dead_lettered_at` 非空记录。
 3. 使用 `traceId`、`tenantId`、`applicationId` 或 `eventId` 在日志中定位问题。
+
+### 消息与幂等数据生命周期
+
+生产 Helm 会每日运行 `flowmesh-retention` CronJob。任务使用独立的 `flowmesh_retention` 账号，并按以下默认窗口清理：
+
+- 已发布 Outbox：90 天。
+- 已进入 DLQ 的 Outbox：30 天，以 `dead_lettered_at` 计算。
+- 重放审计、Inbox 和请求幂等记录：90 天。
+
+任务使用 `FOR UPDATE SKIP LOCKED` 和固定批量上限，多个任务实例不会争抢同一批记录。待发送
+Outbox、业务申请、审批快照、`audit_events` 和通知不在清理范围内。任务失败时先检查 CronJob 日志、
+数据库锁等待和维护账号权限；不要直接执行未经过评审的删除 SQL。
 
 ## DLQ 重放
 

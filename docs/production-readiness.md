@@ -16,6 +16,7 @@
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
+- 提供独立的 PostgreSQL 生命周期维护镜像和 Helm CronJob，使用非超级用户 `flowmesh_retention` 清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录；SQL 使用固定表白名单、批量上限和 `FOR UPDATE SKIP LOCKED`，并通过 PostgreSQL E2E 验证强制 RLS 表的清理边界。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
@@ -26,7 +27,7 @@
 - 生产应用和备份 PostgreSQL 连接默认使用 `sslmode=require`，Redis 连接默认启用 TLS；目标平台配置 CA 后可进一步使用 PostgreSQL `verify-full` 完成服务端身份校验。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
-- CI 在 PR 构建六个应用镜像和一个备份镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
+- CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
 - Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟和确认失败告警；生产环境仍需配置 Alertmanager 路由和值班通知。
@@ -68,6 +69,7 @@ helm lint infra/helm/flowmesh \
 - 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard 和本地 Alertmanager 路由基线；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
 - PostgreSQL 备份已经提供 Helm CronJob、S3 上传、服务端加密、失败重试和 CI 恢复回归；目标平台仍需配置对象存储跨故障域复制、生命周期、定期恢复验证和实际 RTO/RPO 记录。
+- PostgreSQL 消息与幂等记录的保留策略已提供 Helm CronJob 和 CI/E2E 验证；目标平台仍需确认 `flowmesh_retention` 角色已预置、Secret 已轮换，并按实际合规要求调整 90/30 天窗口。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 
 ### 业务闭环

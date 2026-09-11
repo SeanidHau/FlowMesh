@@ -11,7 +11,8 @@
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
 - `validate-production-dependencies.sh`：在目标生产网络内只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的连接安全与基础可达性。
 - `configure-object-storage-lifecycle.sh`：为专用材料桶启用版本化，并配置逻辑删除对象的非当前版本保留期。
-- `verify-flowmesh-images.sh`：部署前验证六个应用镜像和一个备份镜像均具备受信任 GitHub Actions 签名。
+- `cleanup-flowmesh-retention.sh`：使用专用维护账号按白名单批量清理终态消息、死信、重放审计、Inbox 和幂等记录。
+- `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
 
@@ -53,3 +54,8 @@ FLOWMESH_OBJECT_STORAGE_NONCURRENT_RETENTION_DAYS=7 \
 ```bash
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" ./scripts/verify-flowmesh-images.sh
 ```
+
+生命周期清理通过独立的 `flowmesh_retention` 账号执行。该账号不是超级用户，但必须具备
+`BYPASSRLS`，并由各服务迁移仅授予消息和幂等表的 `SELECT/DELETE` 权限，以及仅用于 `FOR UPDATE`
+行锁键列的列级 `UPDATE` 权限。生产 Helm 会创建每日
+CronJob；执行前必须在目标数据库预置该账号，并将密码放入独立 Secret，不要复用备份账号。

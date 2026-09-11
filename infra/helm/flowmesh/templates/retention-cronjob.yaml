@@ -1,0 +1,93 @@
+{{- if .Values.retention.enabled }}
+{{- if not .Values.retention.postgres.host }}
+{{- fail "retention.postgres.host is required when retention cleanup is enabled" }}
+{{- end }}
+{{- if not .Values.retention.credentialsSecret }}
+{{- fail "retention.credentialsSecret is required when retention cleanup is enabled" }}
+{{- end }}
+{{- if ne .Values.retention.confirmation "YES" }}
+{{- fail "retention.confirmation must be YES when retention cleanup is enabled" }}
+{{- end }}
+{{- if or (le (.Values.retention.outboxRetentionDays | int) 0) (le (.Values.retention.dlqRetentionDays | int) 0) (le (.Values.retention.inboxRetentionDays | int) 0) (le (.Values.retention.batchSize | int) 0) }}
+{{- fail "retention retention windows and batchSize must be positive" }}
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-retention
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: retention
+spec:
+  schedule: {{ .Values.retention.schedule | quote }}
+  {{- with .Values.retention.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            {{- include "flowmesh.labels" . | nindent 12 }}
+            app.kubernetes.io/component: retention
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: retention
+              image: {{ include "flowmesh.retentionImageReference" . | quote }}
+              imagePullPolicy: {{ .Values.retention.imagePullPolicy }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              env:
+                - name: FLOWMESH_PG_HOST
+                  value: {{ .Values.retention.postgres.host | quote }}
+                - name: FLOWMESH_PG_PORT
+                  value: {{ .Values.retention.postgres.port | quote }}
+                - name: FLOWMESH_PG_DATABASE
+                  value: {{ .Values.retention.postgres.database | quote }}
+                - name: FLOWMESH_PG_SSLMODE
+                  value: {{ .Values.retention.postgres.sslMode | quote }}
+                - name: FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS
+                  value: {{ .Values.retention.postgres.connectTimeoutSeconds | quote }}
+                - name: FLOWMESH_RETENTION_DB_USER
+                  value: {{ .Values.retention.dbUser | quote }}
+                - name: FLOWMESH_RETENTION_DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.retention.credentialsSecret | quote }}
+                      key: RETENTION_DB_PASSWORD
+                - name: FLOWMESH_RETENTION_CONFIRM
+                  value: {{ .Values.retention.confirmation | quote }}
+                - name: FLOWMESH_RETENTION_OUTBOX_DAYS
+                  value: {{ .Values.retention.outboxRetentionDays | quote }}
+                - name: FLOWMESH_RETENTION_DLQ_DAYS
+                  value: {{ .Values.retention.dlqRetentionDays | quote }}
+                - name: FLOWMESH_RETENTION_INBOX_DAYS
+                  value: {{ .Values.retention.inboxRetentionDays | quote }}
+                - name: FLOWMESH_RETENTION_BATCH_SIZE
+                  value: {{ .Values.retention.batchSize | quote }}
+              resources:
+                {{- toYaml .Values.retention.resources | nindent 16 }}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
+{{- end }}

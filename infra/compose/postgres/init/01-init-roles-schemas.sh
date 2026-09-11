@@ -10,6 +10,7 @@ set -e
 : "${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be provided}"
 : "${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be provided}"
 : "${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be provided}"
+: "${RETENTION_DB_PASSWORD:?RETENTION_DB_PASSWORD must be provided}"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
   -- 创建 IAM 服务业务账号（NOSUPERUSER，仅拥有 iam schema）
@@ -49,6 +50,14 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_workflow') THEN
       CREATE ROLE flowmesh_workflow LOGIN PASSWORD '${WORKFLOW_DB_PASSWORD}' NOSUPERUSER;
+    END IF;
+  END \$\$;
+
+  -- 生命周期维护账号仅绕过 RLS，不具备超级用户、建库或建角色权限；表级权限由各服务迁移授予。
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_retention') THEN
+      CREATE ROLE flowmesh_retention LOGIN PASSWORD '${RETENTION_DB_PASSWORD}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
     END IF;
   END \$\$;
 

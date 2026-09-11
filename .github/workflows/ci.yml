@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh infra/backup/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/production-dependencies-preflight-contract.sh tests/rocketmq-e2e.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-dependencies-preflight-contract.sh tests/retention-cleanup-contract.sh tests/rocketmq-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -56,6 +56,9 @@ jobs:
 
       - name: Validate object storage lifecycle contract
         run: bash tests/object-storage-lifecycle-contract.sh
+
+      - name: Validate retention cleanup contract
+        run: bash tests/retention-cleanup-contract.sh
 
       # 使用非生产测试值校验 Chart 语法、合法凭据渲染和缺失凭据失败保护。
       - name: Set up Helm
@@ -78,6 +81,8 @@ jobs:
             --set backup.postgres.host=postgres.ci.internal
             --set backup.s3.uri=s3://flowmesh-ci-backups
             --set backup.credentialsSecret=flowmesh-backup-credentials
+            --set retention.postgres.host=postgres.ci.internal
+            --set retention.credentialsSecret=flowmesh-retention-credentials
           )
           helm lint infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
@@ -319,6 +324,10 @@ jobs:
       - name: Run PostgreSQL backup upload contract test
         run: ./tests/postgres-backup-upload-contract.sh
 
+      # 使用临时 PostgreSQL 容器验证消息、死信、Inbox 和幂等记录的生命周期清理。
+      - name: Run PostgreSQL retention cleanup test
+        run: ./tests/postgres-retention-e2e.sh
+
       # 验证 Electron 渲染进程、主进程和生产构建产物。
       - name: Set up Node.js 26
         uses: actions/setup-node@v4
@@ -391,6 +400,8 @@ jobs:
             dockerfile: services/notification-audit-service/Dockerfile
           - service: postgres-backup
             dockerfile: infra/backup/Dockerfile
+          - service: postgres-retention
+            dockerfile: infra/retention/Dockerfile
     steps:
       # 检出源码，供 Docker 构建上下文和镜像标签生成使用。
       - name: Check out source

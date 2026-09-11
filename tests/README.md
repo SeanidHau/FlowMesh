@@ -31,6 +31,16 @@ PostgreSQL 备份恢复回归：
 
 该脚本使用本地替身命令验证 S3 上传参数、KMS 服务端加密和失败后的部分目录清理，不访问真实云账号。
 
+PostgreSQL 生命周期清理验证：
+
+```bash
+./tests/retention-cleanup-contract.sh
+./tests/postgres-retention-e2e.sh
+```
+
+前者不连接数据库，验证删除表白名单、确认门禁和锁语义；后者使用临时 PostgreSQL 容器验证
+90/30 天窗口、终态判断和强制 RLS 表清理。执行后脚本会删除测试容器。
+
 对象存储生命周期配置契约测试：
 
 ```bash

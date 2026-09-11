@@ -81,6 +81,35 @@ backup:
       cpu: 500m
       memory: 512Mi
 
+retention:
+  # 生命周期任务使用单独的非超级用户维护账号，不复用备份账号。
+  enabled: true
+  schedule: "30 2 * * *"
+  timeZone: "Etc/UTC"
+  image: flowmesh/postgres-retention
+  tag: ""
+  imagePullPolicy: IfNotPresent
+  credentialsSecret: flowmesh-retention-credentials
+  dbUser: flowmesh_retention
+  postgres:
+    host: ""
+    port: 5432
+    database: flowmesh
+    sslMode: require
+    connectTimeoutSeconds: 5
+  confirmation: "YES"
+  outboxRetentionDays: 90
+  dlqRetentionDays: 30
+  inboxRetentionDays: 90
+  batchSize: 1000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 observability:
   # 未接入 Collector 时保持关闭；启用导出时必须通过 --set 注入真实 OTLP/HTTP 地址。
   tracing:

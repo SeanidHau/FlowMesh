@@ -20,6 +20,7 @@ services=(
   risk-service
   notification-audit-service
   postgres-backup
+  postgres-retention
 )
 
 for service in "${services[@]}"; do

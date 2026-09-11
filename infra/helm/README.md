@@ -42,6 +42,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set retention.postgres.host="postgres-primary.database.svc" \
+  --set retention.credentialsSecret="flowmesh-retention-credentials" \
   --set ingress.host="api.example.com" \
   --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
   --set 'ingress.tls[0].hosts[0]=api.example.com' \
@@ -94,6 +96,16 @@ IAM 默认每小时清理保留超过 30 天的过期或撤销 Refresh Token；�
 云厂商工作负载身份，还需要包含 `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`，临时凭据可以额外
 提供 `AWS_SESSION_TOKEN`。`backup.serviceAccountName` 用于绑定工作负载身份，不能把长期云凭据
 写入 Helm values。
+
+生产环境还必须预先创建生命周期维护账号 `flowmesh_retention` 和独立凭据 Secret。该账号必须是
+非超级用户、具备 `BYPASSRLS`，并由服务迁移授予清理表的最小 `SELECT/DELETE` 权限，以及仅用于
+`FOR UPDATE` 行锁键列的列级 `UPDATE` 权限；Secret 至少包含 `RETENTION_DB_PASSWORD`。生命周期 CronJob 默认每天运行一次，清理已发布 Outbox、DLQ、重放审计、Inbox
+和请求幂等记录，不复用备份账号。发布时必须显式提供：
+
+```bash
+--set retention.postgres.host="postgres-primary.database.svc" \
+--set retention.credentialsSecret="flowmesh-retention-credentials"
+```
 
 启用生产备份时，`backup.postgres.host` 和 `backup.s3.uri` 必须指向真实外部服务。CronJob 使用
 `concurrencyPolicy: Forbid`，单次执行有明确截止时间，失败会按 `backoffLimit` 重试；备份完成后才

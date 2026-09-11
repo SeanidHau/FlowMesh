@@ -99,6 +99,35 @@ backup:
       cpu: 500m
       memory: 512Mi
 
+retention:
+  # 本地 Chart 默认不创建数据清理任务；生产覆盖值会启用专用维护账号。
+  enabled: false
+  schedule: "30 2 * * *"
+  timeZone: "Etc/UTC"
+  image: flowmesh/postgres-retention
+  tag: 0.1.0
+  imagePullPolicy: IfNotPresent
+  credentialsSecret: ""
+  dbUser: flowmesh_retention
+  postgres:
+    host: ""
+    port: 5432
+    database: flowmesh
+    sslMode: disable
+    connectTimeoutSeconds: 5
+  confirmation: "YES"
+  outboxRetentionDays: 90
+  dlqRetentionDays: 30
+  inboxRetentionDays: 90
+  batchSize: 1000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 observability:
   tracing:
     enabled: false

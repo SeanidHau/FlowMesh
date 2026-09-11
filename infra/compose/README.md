@@ -3,6 +3,7 @@
 本目录保存 FlowMesh 的本地基础设施与服务编排文件。当前 Compose 提供 PostgreSQL、Redis、MinIO、
 RocketMQ 单节点拓扑和六个 Java 应用服务，并在首次启动 PostgreSQL 时创建各应用服务使用的独立
 Schema 与 NOSUPERUSER 账号。Prometheus 和 Grafana 通过 `observability` profile 按需启动。
+PostgreSQL 初始化时还会创建 `flowmesh_retention` 维护账号；该账号仅用于清理明确授权的生命周期表。
 
 本地环境使用仓库根目录的 `.env`。先复制 `.env.example`，再填写本地凭据。不要提交 `.env`。
 
