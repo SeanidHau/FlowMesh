@@ -262,6 +262,22 @@ FLOWMESH_DRILL_REPORT=./artifacts/risk-service-recovery-$(date +%Y%m%d%H%M%S).md
 影响范围和是否触发告警。脚本会先验证停止后健康检查确实失败，再使用单调时钟测量恢复时间；
 该演练只验证应用进程停止后的恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储已具备故障切换能力。
 
+目标 Kubernetes 集群使用独立的 Pod 自愈演练脚本。脚本只允许对六个 FlowMesh 应用组件执行操作，
+会删除一个 Pod，并同时验证旧 Pod 消失、Deployment 的 `ReadyReplicas` 恢复到期望副本数以及健康检查成功。
+生产执行必须设置目标 RTO、使用独立报告路径，并由值班人员显式确认：
+
+```bash
+FLOWMESH_K8S_CHAOS_CONFIRM=YES \
+FLOWMESH_HELM_RELEASE=flowmesh \
+FLOWMESH_DRILL_EXPECTED_RTO_SECONDS=60 \
+FLOWMESH_K8S_DRILL_REPORT=./artifacts/flowmesh-gateway-k8s-recovery-$(date +%Y%m%d%H%M%S).md \
+./tests/fault-drills/verify-kubernetes-service-recovery.sh \
+  gateway flowmesh https://api.example.com/actuator/health
+```
+
+该脚本只证明应用 Pod 自愈和入口健康检查恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储的故障切换能力；
+目标平台必须将报告纳入生产证据包，并补充错误率、消息积压和告警通知结果。
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：

@@ -100,7 +100,7 @@ for file in "${required_files[@]}"; do
       required_markers=('scripts/validate-runtime-observability.sh' 'Prometheus' 'Alertmanager' 'FlowMeshNotificationDelivery')
       ;;
     service-recovery.md)
-      required_markers=('tests/fault-drills/verify-service-recovery.sh' 'RTO' '健康检查')
+      required_markers=('tests/fault-drills/verify-kubernetes-service-recovery.sh' 'kubectl delete pod' 'RTO' '健康检查')
       ;;
     backup-restore.md)
       required_markers=('scripts/restore-postgres.sh' 'RPO' '恢复')

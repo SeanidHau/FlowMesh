@@ -54,7 +54,8 @@ cat >> "${temporary_directory}/runtime-observability.md" <<'EOF'
 - FlowMeshNotificationDelivery：通知投递告警已加载。
 EOF
 cat >> "${temporary_directory}/service-recovery.md" <<'EOF'
-- 检查命令：`tests/fault-drills/verify-service-recovery.sh`
+- 检查命令：`tests/fault-drills/verify-kubernetes-service-recovery.sh`
+- 检查命令：`kubectl delete pod flowmesh-gateway-abc --namespace flowmesh --wait=false`
 - 健康检查：服务恢复后返回成功状态。
 - RTO：恢复时间符合目标。
 EOF

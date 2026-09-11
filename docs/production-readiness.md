@@ -92,6 +92,7 @@ helm lint infra/helm/flowmesh \
 - risk-service 已提供默认关闭的 `FAIL` / `TIMEOUT` 受控故障注入，用于验证消息重试、DLQ 和人工处置；生产 Helm 会显式关闭该开关。
 - 高并发压测、故障注入和跨租户安全回归。仓库已提供 k6 压测脚本和显式确认的服务恢复演练脚本，但必须在目标环境执行并留存结果。
 - 提供只读 Kubernetes 生产 smoke test，验证六个 Deployment、提交 SHA 镜像、安全上下文、探针、资源限制、PDB/HPA/NetworkPolicy、Gateway Ingress 边界、运行时 Secret 必需键、实际 Pod 的 PostgreSQL/Redis/RocketMQ TLS 配置和备份 CronJob；目标环境仍需实际执行并留存输出。
+- 提供 Kubernetes 应用故障恢复演练脚本：仅允许对白名单组件删除 Pod，验证旧 Pod 消失、Deployment `ReadyReplicas` 恢复、入口健康检查和目标 RTO；本地 Compose 故障脚本不再作为生产 Kubernetes 恢复证据。
 - 提供只读生产验收编排脚本，统一执行镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检，并生成不可覆盖的 Markdown 证据报告。
 - 提供仅手动触发、绑定 GitHub `production` Environment 审批的自托管 Runner 验收工作流；工作流只执行上述只读验收并上传报告，不包含部署、迁移、故障切换或 `FLOWMESH_REQUIRE_*` 绕过路径，并且只允许从 `main` 分支执行。
 - 提供独立生产发布入口：签名校验、生产配置校验、`helm upgrade --install --atomic --wait` 和发布后 Kubernetes smoke 必须串联执行；smoke 失败时自动回滚到升级前 revision，首次安装失败则卸载应用资源并保留 Helm 历史；运行时凭据只通过预先创建的 Secret 引用，不通过命令行传递。

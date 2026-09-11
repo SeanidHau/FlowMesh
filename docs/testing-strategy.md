@@ -39,10 +39,11 @@
 Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，并验证生产备份目标、加密算法和缺失参数门禁，不提交任何真实密钥。
 `tests/postgres-backup-upload-contract.sh` 使用本地替身命令验证 S3 上传参数、`_SUCCESS` 完成标记和失败清理，不访问真实云账号。
 
-压测使用 `tests/k6/supplier-onboarding.js`，故障恢复使用
-`tests/fault-drills/verify-service-recovery.sh`；两者都要求在隔离环境记录吞吐、p95、恢复耗时和消息积压变化，不能把脚本存在当作演练结果。
+压测使用 `tests/k6/supplier-onboarding.js`，本地 Compose 故障恢复使用
+`tests/fault-drills/verify-service-recovery.sh`，目标 Kubernetes 故障恢复使用
+`tests/fault-drills/verify-kubernetes-service-recovery.sh`；两者都要求在隔离环境记录吞吐、p95、恢复耗时和消息积压变化，不能把脚本存在当作演练结果。
 故障恢复脚本支持 `FLOWMESH_DRILL_EXPECTED_RTO_SECONDS` 目标门禁和
-`FLOWMESH_DRILL_REPORT` Markdown 证据报告；`tests/fault-drills/verify-service-recovery-contract.sh` 在无 Docker 环境下验证其安全门禁。
+Markdown 证据报告；两个故障演练契约脚本均可在无 Docker 环境下验证安全门禁。
 
 - Docker 只在 Testcontainers 或 Compose 验证期间启动。
 - 验证结束后停止本任务启动的 Compose 容器，并退出 Docker Desktop，避免后台持续占用资源。
