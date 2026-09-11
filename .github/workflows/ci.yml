@@ -57,6 +57,9 @@ jobs:
       - name: Validate Kubernetes recovery drill contract
         run: bash tests/fault-drills/verify-kubernetes-service-recovery-contract.sh
 
+      - name: Validate production recovery drill workflow contract
+        run: bash tests/production-recovery-drill-workflow-contract.sh
+
       - name: Validate production acceptance contract
         run: bash tests/production-acceptance-contract.sh
 

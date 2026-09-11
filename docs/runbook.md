@@ -278,6 +278,10 @@ FLOWMESH_K8S_DRILL_REPORT=./artifacts/flowmesh-gateway-k8s-recovery-$(date +%Y%m
 该脚本只证明应用 Pod 自愈和入口健康检查恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储的故障切换能力；
 目标平台必须将报告纳入生产证据包，并补充错误率、消息积压和告警通知结果。
 
+如果目标平台配置了带 `flowmesh-production` 标签的自托管 Runner，可以使用 GitHub Actions 的
+`Production recovery drill` 工作流执行同一脚本。该工作流绑定 `production` Environment，要求从 `main` 分支运行、
+输入目标 RTO 并精确输入 `YES`，不会在工作流文件中直接执行 `kubectl delete`；执行结果会归档 30 天。
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：

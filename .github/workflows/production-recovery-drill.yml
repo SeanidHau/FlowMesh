@@ -1,0 +1,97 @@
+name: Production recovery drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: '要演练的 FlowMesh 应用组件'
+        required: true
+        type: choice
+        options:
+          - gateway
+          - iam
+          - supplier
+          - workflow
+          - risk
+          - notification-audit
+      namespace:
+        description: 'FlowMesh Kubernetes 命名空间'
+        required: true
+        default: flowmesh
+        type: string
+      release:
+        description: 'FlowMesh Helm Release 名称'
+        required: true
+        default: flowmesh
+        type: string
+      health_url:
+        description: '演练期间访问的健康检查 URL'
+        required: true
+        type: string
+      expected_rto_seconds:
+        description: '目标 RTO 秒数'
+        required: true
+        default: '60'
+        type: string
+      confirm:
+        description: '必须精确输入 YES，确认删除一个生产 Pod'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flowmesh-production-recovery-drill
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    name: Kubernetes recovery drill
+    runs-on: [self-hosted, linux, flowmesh-production]
+    environment: production
+    timeout-minutes: 15
+    steps:
+      # 该工作流具有破坏性，只能在 production Environment 审批后执行。
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Require main branch
+        run: |
+          set -Eeuo pipefail
+          [[ "${GITHUB_REF}" == 'refs/heads/main' ]] || {
+            echo '生产恢复演练只能从 main 分支执行。' >&2
+            exit 1
+          }
+
+      - name: Check runner prerequisites
+        run: |
+          set -Eeuo pipefail
+          for command_name in bash kubectl curl; do
+            command -v "${command_name}" >/dev/null || {
+              echo "生产恢复演练 Runner 缺少命令：${command_name}" >&2
+              exit 127
+            }
+          done
+
+      - name: Run Kubernetes recovery drill
+        env:
+          FLOWMESH_K8S_CHAOS_CONFIRM: ${{ inputs.confirm }}
+          FLOWMESH_HELM_RELEASE: ${{ inputs.release }}
+          FLOWMESH_DRILL_EXPECTED_RTO_SECONDS: ${{ inputs.expected_rto_seconds }}
+          FLOWMESH_K8S_DRILL_REPORT: ${{ runner.temp }}/flowmesh-kubernetes-recovery-drill.md
+        run: |
+          set -Eeuo pipefail
+          ./tests/fault-drills/verify-kubernetes-service-recovery.sh \
+            "${{ inputs.component }}" \
+            "${{ inputs.namespace }}" \
+            "${{ inputs.health_url }}"
+
+      - name: Upload recovery drill report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowmesh-production-recovery-drill
+          path: ${{ runner.temp }}/flowmesh-kubernetes-recovery-drill.md
+          if-no-files-found: warn
+          retention-days: 30
