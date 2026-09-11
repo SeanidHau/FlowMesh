@@ -27,6 +27,9 @@ bash "${root_dir}/scripts/validate-production-config.sh" \
 echo '校验服务 readiness 依赖……'
 bash "${root_dir}/tests/readiness-dependency-contract.sh"
 
+echo '校验 Gateway 请求体边界……'
+bash "${root_dir}/tests/gateway-request-size-contract.sh"
+
 while IFS= read -r contract; do
   echo "执行生产契约：${contract#"${root_dir}/"}"
   bash "${contract}"

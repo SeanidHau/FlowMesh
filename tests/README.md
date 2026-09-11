@@ -56,6 +56,14 @@ PostgreSQL 生命周期清理验证：
 ./tests/notification-delivery-contract.sh
 ```
 
+Gateway 请求体边界契约：
+
+```bash
+./tests/gateway-request-size-contract.sh
+```
+
+该测试验证认证、流程、通知和供应商材料上传路由均配置入口请求体上限，避免新增路由时遗漏资源保护。
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

@@ -11,6 +11,7 @@
 - 生产 values 提供 gateway 和五个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
 - 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**`、`/api/workflow/**` 和 `/api/notification/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Gateway 已使用 Redis Lua 令牌桶对所有业务路由执行分布式限流，并暴露允许、拒绝和 Redis 故障指标；生产入口必须覆写配置的客户端地址请求头，避免公网请求伪造限流身份。
+- Gateway 已按业务路由配置请求体上限：认证、流程和通知接口默认为 1 MB，供应商材料上传默认为 21 MB；入口限制与下游 Spring multipart 限制保持一致，防止超大请求先占用下游资源。
 - Gateway readiness 已在 `production` profile 纳入 Redis 健康检查；Redis 不可用时实例不会继续接收入口流量。IAM 的 `production` profile 也将 Redis 纳入 readiness，避免登录限流依赖失效后继续接收认证请求；本地和测试 profile 不强制依赖 Redis。
 - 生产 Helm 为 Gateway 单独渲染入站 NetworkPolicy，只允许指定 Ingress Controller 命名空间和监控命名空间访问，避免绕过 TLS、审计和入口限流直接调用 Gateway Service。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。

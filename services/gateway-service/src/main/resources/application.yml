@@ -29,24 +29,40 @@ spring:
               predicates:
                 - Path=/api/iam/**
               filters:
+                # 作用：在入口拒绝超出认证接口边界的请求体，避免大请求占用 Gateway 内存和连接。
+                - name: RequestSize
+                  args:
+                    maxSize: ${FLOWMESH_GATEWAY_AUTH_MAX_REQUEST_SIZE:1MB}
                 - StripPrefix=2
             - id: supplier-service
               uri: ${FLOWMESH_SUPPLIER_URL:http://localhost:8082}
               predicates:
                 - Path=/api/supplier/**
               filters:
+                # 作用：允许材料上传的最大 multipart 请求体，但仍在 Gateway 处先于下游拒绝异常大请求。
+                - name: RequestSize
+                  args:
+                    maxSize: ${FLOWMESH_GATEWAY_SUPPLIER_MAX_REQUEST_SIZE:21MB}
                 - StripPrefix=2
             - id: workflow-service
               uri: ${FLOWMESH_WORKFLOW_URL:http://localhost:8083}
               predicates:
                 - Path=/api/workflow/**
               filters:
+                # 作用：流程命令和查询均为小请求，限制请求体可降低入口资源消耗风险。
+                - name: RequestSize
+                  args:
+                    maxSize: ${FLOWMESH_GATEWAY_WORKFLOW_MAX_REQUEST_SIZE:1MB}
                 - StripPrefix=2
             - id: notification-audit-service
               uri: ${FLOWMESH_NOTIFICATION_AUDIT_URL:http://localhost:8085}
               predicates:
                 - Path=/api/notification/**
               filters:
+                # 作用：通知查询和已读操作不需要大请求体，统一在 Gateway 限制其大小。
+                - name: RequestSize
+                  args:
+                    maxSize: ${FLOWMESH_GATEWAY_NOTIFICATION_MAX_REQUEST_SIZE:1MB}
                 - StripPrefix=2
 
 server:

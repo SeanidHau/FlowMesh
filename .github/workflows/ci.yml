@@ -98,6 +98,9 @@ jobs:
       - name: Validate application security boundaries
         run: bash tests/security-boundary-contract.sh
 
+      - name: Validate Gateway request size boundaries
+        run: bash tests/gateway-request-size-contract.sh
+
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 
