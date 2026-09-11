@@ -49,8 +49,10 @@ POSTGRES_DB=flowmesh
 IAM_DB_PASSWORD=flowmesh-e2e-iam
 SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier
 WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow
+WORKFLOW_SLA_DB_PASSWORD=flowmesh-e2e-workflow-sla
 RISK_DB_PASSWORD=flowmesh-e2e-risk
 AUDIT_DB_PASSWORD=flowmesh-e2e-audit
+RETENTION_DB_PASSWORD=flowmesh-e2e-retention
 REDIS_PASSWORD=flowmesh-e2e-redis
 GRAFANA_ADMIN_PASSWORD=flowmesh-e2e-grafana
 MINIO_ROOT_USER=flowmesh-e2e-minio
@@ -259,6 +261,57 @@ for attempt in $(seq 1 60); do
   sleep 2
 done
 
+REJECTED_APPLICATION_ID="$(curl --fail --silent --show-error \
+  -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: rocketmq-e2e-risk-rejection' \
+  -d '{"supplierName":"RocketMQ E2E reject supplier"}' \
+  "${API_BASE}/api/supplier/api/v1/supplier-applications" | json_field id)"
+
+REJECTED_WORKFLOW_URL="${API_BASE}/api/workflow/api/v1/workflow-instances/${REJECTED_APPLICATION_ID}"
+for attempt in $(seq 1 60); do
+  if rejected_workflow_snapshot="$(curl --fail --silent --show-error \
+    -H "Authorization: Bearer ${PURCHASER_TOKEN}" "${REJECTED_WORKFLOW_URL}")"; then
+    rejected_workflow_status="$(printf '%s' "${rejected_workflow_snapshot}" | python3 -c \
+      'import json, sys; print(json.load(sys.stdin).get("status"))')"
+    if [ "${rejected_workflow_status}" = "REJECTED" ]; then
+      break
+    fi
+  fi
+  if [ "${attempt}" -eq 60 ]; then
+    echo "RocketMQ 风控拒绝未能将 workflow 推进到 REJECTED。" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+for attempt in $(seq 1 60); do
+  rejected_application_status="$(curl --fail --silent --show-error \
+    -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
+    "${API_BASE}/api/supplier/api/v1/supplier-applications/${REJECTED_APPLICATION_ID}" | json_field status)"
+  if [ "${rejected_application_status}" = "REJECTED" ]; then
+    break
+  fi
+  if [ "${attempt}" -eq 60 ]; then
+    echo "WorkflowRiskRejected 未能将 supplier 申请推进到 REJECTED。当前状态：${rejected_application_status}" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+for attempt in $(seq 1 60); do
+  if curl --fail --silent --show-error \
+    -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
+    "${API_BASE}/api/notification/api/v1/notifications" | grep -q '未通过风控'; then
+    break
+  fi
+  if [ "${attempt}" -eq 60 ]; then
+    echo "WorkflowRiskRejected 未能生成申请人风控拒绝通知。" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
 DEAD_LETTER_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
 docker compose "${COMPOSE_ARGS[@]}" exec -T postgres psql -U flowmesh -d flowmesh \
   -v ON_ERROR_STOP=1 -c "
@@ -318,4 +371,4 @@ curl --fail --silent --show-error http://localhost:8084/actuator/prometheus \
 curl --fail --silent --show-error http://localhost:8085/actuator/prometheus \
   | grep -q 'flowmesh_messaging_consumed'
 
-echo "RocketMQ E2E 通过：${APPLICATION_ID} 已完成四级审批并进入 ENABLED。"
+echo "RocketMQ E2E 通过：${APPLICATION_ID} 已完成四级审批并进入 ENABLED，${REJECTED_APPLICATION_ID} 已完成风控拒绝闭环。"
