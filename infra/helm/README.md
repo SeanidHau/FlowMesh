@@ -68,4 +68,22 @@ Seccomp 配置、资源请求/限制、启动/就绪/存活探针、拓扑分散
 生产覆盖值只部署应用服务，PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 必须由云托管服务或
 经过 HA 验证的独立集群提供；发布前执行 `bash scripts/validate-production-config.sh`。
 生产覆盖值还会启用 NetworkPolicy：IAM、Supplier 和 Workflow 只接受 Gateway 的入口流量，
-Workflow 额外接受 Supplier 的内部状态回写请求；启用前应确认集群 CNI 支持 NetworkPolicy。
+Workflow 额外接受 Supplier 的内部状态回写请求；出站策略只允许同一发布内服务、集群 DNS
+以及通过 `networkPolicy.egress.externalCidrs` 注入的外部依赖 CIDR 和固定端口。启用前应确认
+集群 CNI 支持 NetworkPolicy，并根据 PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 的实际地址注入 CIDR。
+
+如果目标集群安装了 Prometheus Operator，可通过以下参数启用六个应用 Service 的统一指标抓取：
+
+```bash
+helm upgrade --install flowmesh infra/helm/flowmesh \
+  -f infra/helm/flowmesh/values-production.yaml \
+  --set-string global.imageTag="$GITHUB_SHA" \
+  --set observability.serviceMonitor.enabled=true \
+  --set observability.serviceMonitor.labels.release=kube-prometheus-stack \
+  --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
+  --set 'ingress.tls[0].hosts[0]=api.example.com' \
+  --set ingress.host=api.example.com \
+  --set global.existingSecret=flowmesh-runtime-secrets
+```
+
+未安装 Prometheus Operator 时保持该选项关闭，并使用目标平台的 Service Discovery 或静态抓取配置。

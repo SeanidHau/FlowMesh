@@ -24,6 +24,8 @@ require_value '^  imageRegistry:[[:space:]]*[^[:space:]]+' '生产镜像仓库�
 require_value '^  existingSecret:[[:space:]]*[^[:space:]]+' '外部 Secret 引用'
 require_value '^networkPolicy:[[:space:]]*$' 'NetworkPolicy 配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' 'NetworkPolicy 必须启用'
+require_value '^  egress:[[:space:]]*$' 'NetworkPolicy 出站配置块'
+require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 NetworkPolicy 出站必须启用'
 require_value '^ingress:[[:space:]]*$' 'Ingress 配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产 Ingress 必须启用'
 require_value '^objectStorage:[[:space:]]*$' '对象存储配置块'

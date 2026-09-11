@@ -12,6 +12,10 @@ global:
 
 networkPolicy:
   enabled: true
+  # 生产发布必须注入 PostgreSQL、Redis、RocketMQ、MinIO 和 ClamAV 的实际出口 CIDR。
+  egress:
+    enabled: true
+    externalCidrs: []
 
 # 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
 ingress:

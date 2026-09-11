@@ -42,6 +42,16 @@ ingress:
 
 networkPolicy:
   enabled: false
+  egress:
+    enabled: false
+    externalCidrs: []
+    externalPorts: [3310, 5432, 6379, 9876, 9000, 10909, 10911, 10912]
+
+observability:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
 
 gateway:
   image: flowmesh/gateway-service

@@ -90,6 +90,7 @@ jobs:
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets
           helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
@@ -97,7 +98,21 @@ jobs:
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets >/dev/null
+          if ! helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            --set observability.serviceMonitor.enabled=true \
+            --set observability.serviceMonitor.labels.release=kube-prometheus-stack | grep -q '^kind: ServiceMonitor$'; then
+            echo 'ServiceMonitor must render when explicitly enabled.' >&2
+            exit 1
+          fi
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
@@ -107,8 +122,19 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
             echo 'Production chart must fail when ingress host or TLS is missing.' >&2
+            exit 1
+          fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            echo 'Production chart must fail when external egress CIDRs are missing.' >&2
             exit 1
           fi
 
