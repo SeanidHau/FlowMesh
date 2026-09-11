@@ -23,6 +23,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | risk-service 提供默认关闭的 `FAIL` / `TIMEOUT` 故障注入，用于复现 RocketMQ 重试、DLQ 和人工处置场景；生产 Helm 显式关闭该开关。 |
 | 已完成 | PostgreSQL 备份脚本不导出角色密码，并通过临时 PostgreSQL 容器 E2E 验证归档完整性、隔离数据库恢复和测试资源清理；CI 会执行该回归。 |
 | 已完成 | PostgreSQL 备份镜像和 Helm CronJob 已支持定时执行、S3 兼容对象存储上传、服务端加密、并发互斥和失败重试；生产渲染要求显式提供外部数据库地址、备份 URI 和凭据 Secret。 |
+| 已完成 | 提供对象存储生命周期配置脚本和离线契约测试；专用材料桶启用版本化，逻辑删除对象的非当前版本默认保留 7 天。 |
 | 已完成 | 六个服务提供默认关闭的 Micrometer Tracing 和 OTLP/HTTP 导出配置；生产 Helm 在开启导出但缺少 Collector 地址时拒绝渲染。 |
 | 已完成 | Helm 提供可选 Prometheus Operator `PrometheusRule`，CI 验证启用时能够渲染关键服务、HTTP 和消息告警规则。 |
 | 已完成 | 生产 NetworkPolicy 已允许可配置监控命名空间访问 Actuator 指标端口，CI 验证生产渲染包含该入口。 |

@@ -245,6 +245,20 @@ CronJob 使用独立备份镜像，禁止同一时间运行多个备份，
 并在失败时按 `backoffLimit` 重试。备份凭据应通过 Kubernetes Secret 或云厂商工作负载身份提供，
 不能写入 values 文件。
 
+### 材料对象生命周期
+
+材料桶必须是 FlowMesh 专用桶。生产初始化或变更时执行一次生命周期配置：
+
+```bash
+FLOWMESH_OBJECT_STORAGE_BUCKET=flowmesh-documents \
+FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
+FLOWMESH_OBJECT_STORAGE_NONCURRENT_RETENTION_DAYS=7 \
+./scripts/configure-object-storage-lifecycle.sh
+```
+
+脚本会启用版本化，并将非当前版本保留 7 天；应用删除材料时先生成删除标记，生命周期任务再清理历史版本和过期删除标记。
+执行前必须确认桶不包含其他业务数据；脚本拒绝非 HTTPS 对象存储 endpoint。跨故障域复制、访问审计和云平台策略验证仍由平台负责。
+
 备份完成后必须在同一台具备 PostgreSQL 客户端工具和 SHA-256 校验工具的机器上校验归档目录。备份脚本会生成
 `checksums.sha256`，并使用 `--no-role-passwords` 导出全局对象，避免角色密码进入备份文件。校验步骤同时检查文件摘要和 custom-format 归档目录：
 

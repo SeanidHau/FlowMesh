@@ -238,6 +238,7 @@ A:
 - 完整监控平台、生产级 Broker/数据库高可用和目标集群 Chaos 故障演练仍需补充；当前已提供 Prometheus 抓取与告警样例、恢复演练脚本，核心 RocketMQ E2E 和多实例 Outbox 竞争测试已完成。
 - 当前 workflow 是内部流程状态实现，尚未接入 Camunda 8；这属于明确的编排替换路线，不影响当前事件契约。
 - Redis 缓存和外部邮件/短信通道仍未接入；Gateway/IAM Redis 限流、MinIO、独立风险/通知服务、DLQ 查询/重放/审计和对账入口已接入。
+- 材料桶生命周期脚本已经提供并通过离线契约测试，但生产环境仍需在专用桶上执行，并验证版本清理、跨故障域复制和访问审计。
 - Compose 仍是单机演示拓扑；Helm 已提供 Gateway、双副本、HPA、PDB、Ingress 和业务入口 NetworkPolicy，但外部依赖 HA 仍由目标平台负责。
 - 当前已具备基础业务/消息指标、Gateway 限流结果指标、HTTP Trace ID、按消费者区分的消息处理耗时指标和可选 OTLP Trace 出口；生产 Collector、告警通知路由和大规模并发压测仍需在目标环境完成。
 
@@ -247,7 +248,7 @@ A: 主要瓶颈包括 Outbox 扫描和认领 SQL、RocketMQ 发布吞吐、消�
 主动说明边界比把设计蓝图中的规划内容包装成已完成能力更可信。
 
 Q: 如果让你继续迭代，下一步会做什么？
-A: 下一步优先完成真实集群的 Ingress/TLS、NetworkPolicy、HPA/PDB 和数据库/RocketMQ/Redis HA 演练，再做大规模并发压测和告警通知值班演练；当前应用正确性链路已经通过真实 RocketMQ E2E、多实例竞争、DLQ 运维和对账验证。
+A: 材料桶生命周期策略已经补齐脚本和契约测试，下一步优先在真实集群完成 Ingress/TLS、NetworkPolicy、HPA/PDB、对象存储复制以及数据库/RocketMQ/Redis HA 演练，再做大规模并发压测和告警通知值班演练；当前应用正确性链路已经通过真实 RocketMQ E2E、多实例竞争、DLQ 运维和对账验证。
 
 在此基础上再评估 Camunda 8 和 Redis 缓存，并补齐外部通知通道；MinIO、风险和通知审计已经是当前运行链路的一部分，不需要重复建设。
 

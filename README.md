@@ -12,7 +12,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | Gateway Redis 分布式限流 | 已实现 | Redis Lua 令牌桶按客户端地址限流；额度耗尽返回 429，Redis 故障 fail-closed 返回 503。 |
 | IAM、JWT、Refresh Token | 已实现 | 支持登录、刷新、登出、安全审计，以及多副本安全的失效令牌定期清理。 |
 | 供应商申请与审批投影 | 已实现 | 支持四级顺序审批、幂等和 PostgreSQL RLS。 |
-| 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描和短期下载 URL。 |
+| 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描、短期下载 URL 和可执行生命周期策略。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |

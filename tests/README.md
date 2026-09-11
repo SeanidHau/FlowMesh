@@ -31,6 +31,14 @@ PostgreSQL 备份恢复回归：
 
 该脚本使用本地替身命令验证 S3 上传参数、KMS 服务端加密和失败后的部分目录清理，不访问真实云账号。
 
+对象存储生命周期配置契约测试：
+
+```bash
+./tests/object-storage-lifecycle-contract.sh
+```
+
+该测试离线验证专用材料桶的版本化、非当前版本保留期、删除标记清理和 HTTPS endpoint 门禁，不访问真实云账号。
+
 性能与故障演练：
 
 ```bash

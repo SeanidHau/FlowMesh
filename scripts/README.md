@@ -10,6 +10,7 @@
 - `infra/backup/entrypoint.sh`：在备份容器中调用 PostgreSQL 备份和对象存储上传流程。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
 - `validate-production-dependencies.sh`：在目标生产网络内只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的连接安全与基础可达性。
+- `configure-object-storage-lifecycle.sh`：为专用材料桶启用版本化，并配置逻辑删除对象的非当前版本保留期。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像和一个备份镜像均具备受信任 GitHub Actions 签名。
 - `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 - `validate-supply-chain-policy.sh`：校验 Kyverno 镜像签名准入策略的仓库、digest 和 OIDC 约束。
@@ -38,7 +39,14 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 最后上传 `_SUCCESS` 标记。恢复工具或平台只应使用存在 `_SUCCESS` 标记的备份前缀。
 默认使用 `AES256` 服务端加密，也可以通过 `FLOWMESH_BACKUP_S3_SSE=aws:kms` 和
 `FLOWMESH_BACKUP_S3_KMS_KEY_ID` 使用 KMS 密钥。恢复前必须完成审批和目标数据库隔离确认；对象存储仍需
-由平台配置跨故障域复制、生命周期和访问审计策略。
+由平台配置跨故障域复制和访问审计策略。FlowMesh 提供生命周期配置脚本，执行前必须确认材料桶为专用桶：
+
+```bash
+FLOWMESH_OBJECT_STORAGE_BUCKET=flowmesh-documents \
+FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
+FLOWMESH_OBJECT_STORAGE_NONCURRENT_RETENTION_DAYS=7 \
+./scripts/configure-object-storage-lifecycle.sh
+```
 
 生产部署前执行镜像签名校验：
 
