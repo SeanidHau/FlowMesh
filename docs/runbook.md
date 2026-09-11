@@ -107,26 +107,24 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 FLOWMESH_K8S_NAMESPACE=flowmesh \
 FLOWMESH_HELM_RELEASE=flowmesh \
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
-FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true \
 FLOWMESH_PROMETHEUS_URL='https://prometheus.observability.example.com' \
 FLOWMESH_ALERTMANAGER_URL='https://alertmanager.observability.example.com' \
-FLOWMESH_REQUIRE_DEPENDENCY_HA=true \
-FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=true \
 FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
 ./scripts/run-production-acceptance.sh
 ```
 
 该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
-便于发布记录和故障处置。设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=true` 后，还会只读验证 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，并将拓扑证据写入报告；该检查仍不替代实际故障切换和恢复演练。
-`FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 时还要求提供
-`FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`，并只读验证观测后端已就绪、六个服务目标可见且关键告警已加载。
-`FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=true` 时还要求 `FLOWMESH_EVIDENCE_DIR` 指向已归档的目标环境证据包；
+便于发布记录和故障处置。生产验收默认只读验证 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，并将拓扑证据写入报告；该检查仍不替代实际故障切换和恢复演练。
+生产验收默认要求提供 `FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`，并只读验证观测后端已就绪、六个服务目标可见且关键告警已加载。
+生产验收默认要求 `FLOWMESH_EVIDENCE_DIR` 指向已归档的目标环境证据包；
 证据包必须包含 `kubernetes-smoke.md`、`dependency-ha.md`、`runtime-observability.md`、`service-recovery.md`、
 `backup-restore.md`、`load-test.md`、`security-regression.md` 和 `alert-routing.md`，每份报告必须记录
 `结果：\`PASS\``，并使用 `manifest.md` 与 `checksums.sha256` 记录环境、执行人、执行时间和完整性校验。
 证据包校验是只读的，不会替代真实演练；缺少任一报告、报告失败、校验和不匹配或包含敏感凭据时，生产验收直接失败。
 默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
 可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
+非生产预检如果确实没有对应平台证据，必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false`、
+`FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 或 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false`；这些选项不应出现在生产发布命令中。
 
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 

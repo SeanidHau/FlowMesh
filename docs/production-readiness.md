@@ -31,11 +31,11 @@
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
-- Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、确认失败，以及 PostgreSQL 备份、生命周期清理和 Workflow SLA CronJob 长时间未成功执行告警；CronJob 告警依赖 kube-state-metrics，生产环境仍需配置 Alertmanager 路由和值班通知。
+- Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、确认失败、外部通知积压/死信/失败，以及 PostgreSQL 备份、生命周期清理和 Workflow SLA CronJob 长时间未成功执行告警；CronJob 告警依赖 kube-state-metrics，生产环境仍需配置 Alertmanager 路由和值班通知。
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
-- 提供只读运行时观测预检：检查 Prometheus/Alertmanager 就绪、六个 FlowMesh 服务目标可见，以及关键告警规则已加载；生产验收可通过 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=true` 将其纳入证据报告。
-- 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收可通过 `FLOWMESH_REQUIRE_DEPENDENCY_HA=true` 将其纳入证据报告。
-- 提供只读生产证据包校验：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并通过清单与 SHA-256 校验和防止缺项或篡改；生产验收可通过 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=true` 将其纳入发布门禁。
+- 提供只读运行时观测预检：检查 Prometheus/Alertmanager 就绪、六个 FlowMesh 服务目标可见，以及关键告警规则已加载；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false` 才能跳过。
+- 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 才能跳过。
+- 提供只读生产证据包校验：要求目标环境归档 Kubernetes smoke、外部依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并通过清单与 SHA-256 校验和防止缺项或篡改；生产验收默认强制执行该门禁，非生产预检必须显式设置 `FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE=false` 才能跳过。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
 - 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。

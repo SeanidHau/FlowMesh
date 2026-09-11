@@ -26,7 +26,7 @@ case "${expect_prometheus_rule}" in
 esac
 export FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}"
 
-require_runtime_observability="${FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-false}"
+require_runtime_observability="${FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-true}"
 case "${require_runtime_observability}" in
   true|false) ;;
   *)
@@ -35,7 +35,7 @@ case "${require_runtime_observability}" in
     ;;
 esac
 
-require_dependency_ha="${FLOWMESH_REQUIRE_DEPENDENCY_HA:-false}"
+require_dependency_ha="${FLOWMESH_REQUIRE_DEPENDENCY_HA:-true}"
 case "${require_dependency_ha}" in
   true|false) ;;
   *)
@@ -44,7 +44,7 @@ case "${require_dependency_ha}" in
     ;;
 esac
 
-require_production_evidence="${FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE:-false}"
+require_production_evidence="${FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE:-true}"
 case "${require_production_evidence}" in
   true|false) ;;
   *)
