@@ -28,6 +28,12 @@
       <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
     </dependency>
 
+    <!-- 作用：为 Gateway 的 Redis RateLimiter 提供响应式 Redis 连接。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+    </dependency>
+
     <!-- 作用：暴露网关健康检查和 Prometheus 指标。 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

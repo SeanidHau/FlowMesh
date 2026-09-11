@@ -96,6 +96,11 @@ gateway:
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
+  rateLimit:
+    replenishRate: 100
+    burstCapacity: 200
+    requestedTokens: 1
+    clientIpHeader: X-Real-IP
 
 services:
   iam:

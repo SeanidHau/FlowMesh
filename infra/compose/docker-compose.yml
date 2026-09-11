@@ -312,6 +312,8 @@ services:
       context: ../..
       dockerfile: services/gateway-service/Dockerfile
     depends_on:
+      redis:
+        condition: service_healthy
       iam-service:
         condition: service_healthy
       supplier-service:
@@ -321,6 +323,13 @@ services:
       notification-audit-service:
         condition: service_healthy
     environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
+      FLOWMESH_GATEWAY_RATE_LIMIT_REPLENISH_RATE: ${FLOWMESH_GATEWAY_RATE_LIMIT_REPLENISH_RATE:-100}
+      FLOWMESH_GATEWAY_RATE_LIMIT_BURST_CAPACITY: ${FLOWMESH_GATEWAY_RATE_LIMIT_BURST_CAPACITY:-200}
+      FLOWMESH_GATEWAY_RATE_LIMIT_REQUESTED_TOKENS: ${FLOWMESH_GATEWAY_RATE_LIMIT_REQUESTED_TOKENS:-1}
+      FLOWMESH_GATEWAY_CLIENT_IP_HEADER: ${FLOWMESH_GATEWAY_CLIENT_IP_HEADER:-X-Real-IP}
       FLOWMESH_IAM_URL: http://iam-service:8081
       FLOWMESH_SUPPLIER_URL: http://supplier-service:8082
       FLOWMESH_WORKFLOW_URL: http://workflow-service:8083

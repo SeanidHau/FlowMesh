@@ -7,6 +7,13 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
+
   cloud:
     gateway:
       server:
@@ -73,3 +80,12 @@ management:
 logging:
   pattern:
     level: "traceId=%X{traceId} %5p"
+
+flowmesh:
+  gateway:
+    rate-limit:
+      # 该请求头必须由可信 Ingress 覆写，不能由公网客户端直接决定。
+      client-ip-header: ${FLOWMESH_GATEWAY_CLIENT_IP_HEADER:X-Real-IP}
+      replenish-rate: ${FLOWMESH_GATEWAY_RATE_LIMIT_REPLENISH_RATE:100}
+      burst-capacity: ${FLOWMESH_GATEWAY_RATE_LIMIT_BURST_CAPACITY:200}
+      requested-tokens: ${FLOWMESH_GATEWAY_RATE_LIMIT_REQUESTED_TOKENS:1}

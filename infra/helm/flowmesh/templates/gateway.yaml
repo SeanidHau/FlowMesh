@@ -52,6 +52,23 @@ spec:
               containerPort: {{ .Values.gateway.port }}
           env:
             {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
+            - name: REDIS_HOST
+              value: {{ .Values.redis.host | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: REDIS_PASSWORD
+            - name: FLOWMESH_GATEWAY_RATE_LIMIT_REPLENISH_RATE
+              value: {{ .Values.gateway.rateLimit.replenishRate | quote }}
+            - name: FLOWMESH_GATEWAY_RATE_LIMIT_BURST_CAPACITY
+              value: {{ .Values.gateway.rateLimit.burstCapacity | quote }}
+            - name: FLOWMESH_GATEWAY_RATE_LIMIT_REQUESTED_TOKENS
+              value: {{ .Values.gateway.rateLimit.requestedTokens | quote }}
+            - name: FLOWMESH_GATEWAY_CLIENT_IP_HEADER
+              value: {{ .Values.gateway.rateLimit.clientIpHeader | quote }}
             - name: FLOWMESH_IAM_URL
               value: "http://{{ include "flowmesh.fullname" . }}-iam:{{ .Values.services.iam.port }}"
             - name: FLOWMESH_SUPPLIER_URL

@@ -123,6 +123,11 @@ gateway:
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
+  rateLimit:
+    replenishRate: 100
+    burstCapacity: 200
+    requestedTokens: 1
+    clientIpHeader: X-Real-IP
 
 services:
   iam:

@@ -32,3 +32,6 @@ PostgreSQL 数据卷只会在第一次初始化时执行 `postgres/init` 脚本�
 放入 Compose 网络，再改为 `rocketmq-namesrv:9876`。Compose 中各服务的 Outbox 发布器和消费者
 默认开启，申请提交后会经过 workflow 的异步风控请求与 risk-service 的风控结果事件链路。supplier
 在生产配置下还会检查 MinIO 材料桶；启用文件扫描时，同时检查 ClamAV TCP 端口。
+
+Gateway 默认通过 Redis 令牌桶对业务路由执行全局限流。生产 Ingress 必须覆写
+`FLOWMESH_GATEWAY_CLIENT_IP_HEADER` 指定的请求头（默认 `X-Real-IP`），不要让公网客户端直接决定该值。
