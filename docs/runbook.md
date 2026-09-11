@@ -106,11 +106,13 @@ FLOWMESH_ACCEPTANCE_REPORT="./artifacts/production-acceptance-$(date -u +%Y%m%dT
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 FLOWMESH_K8S_NAMESPACE=flowmesh \
 FLOWMESH_HELM_RELEASE=flowmesh \
+FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
 ./scripts/run-production-acceptance.sh
 ```
 
 该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
-便于发布记录和故障处置。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
+便于发布记录和故障处置。默认要求目标集群提供 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`；如果使用其他监控接入方式，
+可显式设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=false`。脚本会调用生命周期角色预检，因此必须同时提供 `FLOWMESH_RETENTION_DB_PASSWORD` 以及外部依赖预检所需环境变量。
 
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 

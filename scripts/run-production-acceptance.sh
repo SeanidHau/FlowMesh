@@ -15,6 +15,17 @@ if [[ -e "${report_path}" ]]; then
   exit 64
 fi
 
+expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-true}"
+case "${expect_prometheus_rule}" in
+  true|false)
+    ;;
+  *)
+    echo 'FLOWMESH_EXPECT_PROMETHEUS_RULE 必须是 true 或 false。' >&2
+    exit 64
+    ;;
+esac
+export FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}"
+
 report_directory="$(dirname "${report_path}")"
 mkdir -p "${report_directory}"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-production-acceptance.XXXXXX")"
@@ -36,6 +47,7 @@ trap cleanup EXIT
   echo "- Kubernetes 命名空间：\`${FLOWMESH_K8S_NAMESPACE:-flowmesh}\`"
   echo "- Helm Release：\`${FLOWMESH_HELM_RELEASE:-flowmesh}\`"
   echo "- 镜像提交：\`${FLOWMESH_IMAGE_TAG:-未设置}\`"
+  echo "- 期望 Prometheus Operator 资源：\`${expect_prometheus_rule}\`"
   echo
   echo '> 本报告只记录仓库提供的只读预检结果，不证明外部依赖 HA、故障切换、备份恢复或 RTO/RPO 已完成。'
   echo
