@@ -140,6 +140,26 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 ./scripts/create-production-evidence-manifest.sh
 ```
 
+如果目标运维环境已注册带有 `flowmesh-production` 标签的自托管 Runner，可以通过 GitHub Actions
+中的 `Production acceptance` 工作流执行同一套只读验收。该工作流仅允许手动触发，绑定 GitHub
+`production` Environment 审批，并将报告上传为 30 天保留的 Artifact；它不会安装依赖、部署 Helm、
+修改 Kubernetes 资源、执行数据库迁移或触发故障切换。Runner 需要预装 `kubectl`、`psql`、
+`redis-cli`、`openssl`、`ruby` 和 `cosign`，并在 `production` Environment 中配置目标环境 Variables
+以及 PostgreSQL、Redis、生命周期维护账号密码 Secrets。生产工作流固定要求观测、外部依赖 HA 和
+目标证据包校验，不接受 `FLOWMESH_REQUIRE_*` 跳过参数。
+
+`production` Environment 至少需要配置以下 Variables：
+`FLOWMESH_PG_HOST`、`FLOWMESH_PG_PORT`、`FLOWMESH_PG_DATABASE`、`FLOWMESH_PG_USER`、
+`FLOWMESH_PG_SSLMODE`、`FLOWMESH_RETENTION_DB_USER`、`FLOWMESH_REDIS_HOST`、
+`FLOWMESH_REDIS_PORT`、`FLOWMESH_REDIS_USER`、`FLOWMESH_ROCKETMQ_NAMESRV_ADDR`、
+`FLOWMESH_OBJECT_STORAGE_ENDPOINT`、`FLOWMESH_HA_EXPECTED_PG_REPLICAS`、
+`FLOWMESH_HA_REDIS_HOSTS`、`FLOWMESH_HA_EXPECTED_REDIS_REPLICAS`、
+`FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`。如果目标集群或私有 CA 使用非默认名称，
+再配置 `FLOWMESH_INGRESS_NAMESPACE`、`FLOWMESH_RUNTIME_SECRET_NAME`、
+`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_SECRET_NAME` 和 `FLOWMESH_ROCKETMQ_CA_FILE`。
+至少需要配置以下 Secrets：`FLOWMESH_PG_PASSWORD`、`FLOWMESH_RETENTION_DB_PASSWORD` 和
+`FLOWMESH_REDIS_PASSWORD`。所有地址、密码和证书路径均由 Environment 注入，不要写入工作流文件或仓库。
+
 发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
 
 ```bash

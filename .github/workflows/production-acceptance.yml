@@ -1,0 +1,92 @@
+name: Production acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '待验收的 40 位提交 SHA 镜像标签'
+        required: true
+        type: string
+      evidence_dir:
+        description: '目标运维环境中已归档的生产证据目录'
+        required: true
+        type: string
+      namespace:
+        description: 'FlowMesh Kubernetes 命名空间'
+        required: true
+        default: flowmesh
+        type: string
+      release:
+        description: 'FlowMesh Helm Release 名称'
+        required: true
+        default: flowmesh
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    name: Read-only production acceptance
+    runs-on: [self-hosted, linux, flowmesh-production]
+    environment: production
+    timeout-minutes: 30
+    steps:
+      # 只读取仓库脚本；生产工作流不执行部署、迁移或故障切换。
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Check runner prerequisites
+        run: |
+          set -Eeuo pipefail
+          for command_name in bash curl kubectl openssl psql pg_isready redis-cli ruby cosign; do
+            command -v "${command_name}" >/dev/null || {
+              echo "生产验收 Runner 缺少命令：${command_name}" >&2
+              exit 127
+            }
+          done
+
+      - name: Run read-only production acceptance
+        env:
+          FLOWMESH_ACCEPTANCE_REPORT: ${{ runner.temp }}/flowmesh-production-acceptance.md
+          FLOWMESH_IMAGE_TAG: ${{ inputs.image_tag }}
+          FLOWMESH_EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+          FLOWMESH_K8S_NAMESPACE: ${{ inputs.namespace }}
+          FLOWMESH_HELM_RELEASE: ${{ inputs.release }}
+          FLOWMESH_EXPECT_PROMETHEUS_RULE: 'true'
+          FLOWMESH_PG_HOST: ${{ vars.FLOWMESH_PG_HOST }}
+          FLOWMESH_PG_PORT: ${{ vars.FLOWMESH_PG_PORT }}
+          FLOWMESH_PG_DATABASE: ${{ vars.FLOWMESH_PG_DATABASE }}
+          FLOWMESH_PG_USER: ${{ vars.FLOWMESH_PG_USER }}
+          FLOWMESH_PG_SSLMODE: ${{ vars.FLOWMESH_PG_SSLMODE }}
+          FLOWMESH_PG_PASSWORD: ${{ secrets.FLOWMESH_PG_PASSWORD }}
+          FLOWMESH_RETENTION_DB_USER: ${{ vars.FLOWMESH_RETENTION_DB_USER }}
+          FLOWMESH_RETENTION_DB_PASSWORD: ${{ secrets.FLOWMESH_RETENTION_DB_PASSWORD }}
+          FLOWMESH_REDIS_HOST: ${{ vars.FLOWMESH_REDIS_HOST }}
+          FLOWMESH_REDIS_PORT: ${{ vars.FLOWMESH_REDIS_PORT }}
+          FLOWMESH_REDIS_USER: ${{ vars.FLOWMESH_REDIS_USER }}
+          FLOWMESH_REDIS_PASSWORD: ${{ secrets.FLOWMESH_REDIS_PASSWORD }}
+          FLOWMESH_REDIS_TLS: 'true'
+          FLOWMESH_ROCKETMQ_NAMESRV_ADDR: ${{ vars.FLOWMESH_ROCKETMQ_NAMESRV_ADDR }}
+          FLOWMESH_ROCKETMQ_TLS: 'true'
+          FLOWMESH_ROCKETMQ_CA_FILE: ${{ vars.FLOWMESH_ROCKETMQ_CA_FILE }}
+          FLOWMESH_OBJECT_STORAGE_ENDPOINT: ${{ vars.FLOWMESH_OBJECT_STORAGE_ENDPOINT }}
+          FLOWMESH_HA_EXPECTED_PG_REPLICAS: ${{ vars.FLOWMESH_HA_EXPECTED_PG_REPLICAS }}
+          FLOWMESH_HA_REDIS_HOSTS: ${{ vars.FLOWMESH_HA_REDIS_HOSTS }}
+          FLOWMESH_HA_EXPECTED_REDIS_REPLICAS: ${{ vars.FLOWMESH_HA_EXPECTED_REDIS_REPLICAS }}
+          FLOWMESH_PROMETHEUS_URL: ${{ vars.FLOWMESH_PROMETHEUS_URL }}
+          FLOWMESH_ALERTMANAGER_URL: ${{ vars.FLOWMESH_ALERTMANAGER_URL }}
+          FLOWMESH_INGRESS_NAMESPACE: ${{ vars.FLOWMESH_INGRESS_NAMESPACE }}
+          FLOWMESH_RUNTIME_SECRET_NAME: ${{ vars.FLOWMESH_RUNTIME_SECRET_NAME }}
+          FLOWMESH_BACKUP_SECRET_NAME: ${{ vars.FLOWMESH_BACKUP_SECRET_NAME }}
+          FLOWMESH_RETENTION_SECRET_NAME: ${{ vars.FLOWMESH_RETENTION_SECRET_NAME }}
+        run: ./scripts/run-production-acceptance.sh
+
+      - name: Upload acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowmesh-production-acceptance
+          path: ${{ runner.temp }}/flowmesh-production-acceptance.md
+          if-no-files-found: warn
+          retention-days: 30
