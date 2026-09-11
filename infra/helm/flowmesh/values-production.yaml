@@ -76,6 +76,7 @@ backup:
     region: us-east-1
     serverSideEncryption: AES256
     kmsKeyId: ""
+    verifyRemote: true
   cleanupLocal: true
   startingDeadlineSeconds: 900
   activeDeadlineSeconds: 3600

@@ -179,6 +179,11 @@ jobs:
             echo 'Production chart must render the Workflow SLA CronJob with its dedicated Secret key.' >&2
             exit 1
           fi
+          if ! printf '%s\n' "$rendered_production" | grep -q 'name: FLOWMESH_BACKUP_S3_VERIFY_REMOTE' || \
+             ! printf '%s\n' "$rendered_production" | grep -q 'value: "true"'; then
+            echo 'Production backup CronJob must enable remote object verification.' >&2
+            exit 1
+          fi
           rendered_alerts="$(helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \

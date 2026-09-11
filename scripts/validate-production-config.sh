@@ -74,6 +74,7 @@ raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEna
 backup_postgresql = backup.fetch("postgres")
 raise "生产 PostgreSQL 备份不得使用明文连接" if backup_postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 备份必须配置 sslMode" if backup_postgresql.fetch("sslMode", "").to_s.empty?
+raise "生产 PostgreSQL 备份必须启用远端对象校验" unless backup.dig("s3", "verifyRemote") == true
 retention = values.fetch("retention")
 raise "生产数据生命周期清理必须启用" unless retention.fetch("enabled") == true
 raise "生产生命周期清理必须配置凭据 Secret" if retention.fetch("credentialsSecret", "").to_s.empty?

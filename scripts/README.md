@@ -43,6 +43,8 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 通过 `FLOWMESH_PG_SSLMODE` 控制 PostgreSQL 传输加密；生产覆盖值默认使用 `require`，目标平台提供 CA 后可改为
 `verify-full`。备份镜像包含 PostgreSQL 客户端和 AWS CLI，脚本会先创建 custom-format 归档，再将三个归档文件上传到 S3 兼容对象存储，
 最后上传 `_SUCCESS` 标记。恢复工具或平台只应使用存在 `_SUCCESS` 标记的备份前缀。
+生产 Helm 默认开启远端对象校验：三个归档对象均通过 S3 `head-object` 确认可见后，才会上传 `_SUCCESS` 标记；
+因此恢复流程不会把部分上传目录当成完整备份。
 默认使用 `AES256` 服务端加密，也可以通过 `FLOWMESH_BACKUP_S3_SSE=aws:kms` 和
 `FLOWMESH_BACKUP_S3_KMS_KEY_ID` 使用 KMS 密钥。恢复前必须完成审批和目标数据库隔离确认；对象存储仍需
 由平台配置跨故障域复制和访问审计策略。FlowMesh 提供生命周期配置脚本，执行前必须确认材料桶为专用桶：

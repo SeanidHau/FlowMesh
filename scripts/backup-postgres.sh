@@ -80,11 +80,14 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
 
   destination="${FLOWMESH_BACKUP_S3_URI%/}/$(basename "${backup_dir}")"
   aws_arguments=(s3 cp --only-show-errors)
+  aws_api_arguments=()
   if [[ -n "${FLOWMESH_BACKUP_S3_ENDPOINT:-}" ]]; then
     aws_arguments+=(--endpoint-url "${FLOWMESH_BACKUP_S3_ENDPOINT}")
+    aws_api_arguments+=(--endpoint-url "${FLOWMESH_BACKUP_S3_ENDPOINT}")
   fi
   if [[ -n "${AWS_REGION:-}" ]]; then
     aws_arguments+=(--region "${AWS_REGION}")
+    aws_api_arguments+=(--region "${AWS_REGION}")
   fi
 
   server_side_encryption="${FLOWMESH_BACKUP_S3_SSE:-AES256}"
@@ -108,6 +111,26 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
       "${backup_dir}/${backup_file}" \
       "${destination}/${backup_file}"
   done
+
+  if [[ "${FLOWMESH_BACKUP_S3_VERIFY_REMOTE:-false}" == "true" ]]; then
+    # 作用：在写入 _SUCCESS 前，从对象存储端确认每个归档对象可见，避免部分上传被误判为完整备份。
+    if [[ "${FLOWMESH_BACKUP_S3_URI}" =~ ^s3://([^/]+)(/(.*))?$ ]]; then
+      bucket="${BASH_REMATCH[1]}"
+      prefix="${BASH_REMATCH[3]:-}"
+    else
+      printf 'FLOWMESH_BACKUP_S3_URI 必须是 s3://bucket/optional-prefix 格式，才能执行远端校验。\n' >&2
+      exit 1
+    fi
+    prefix="${prefix%/}"
+    for backup_file in flowmesh.dump globals.sql checksums.sha256; do
+      object_key="${prefix:+${prefix}/}$(basename "${backup_dir}")/${backup_file}"
+      aws s3api head-object "${aws_api_arguments[@]}" \
+        --bucket "${bucket}" \
+        --key "${object_key}" >/dev/null
+    done
+    printf 'PostgreSQL 备份远端对象校验通过：%s\n' "${destination}"
+  fi
+
   printf 'completedAt=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${backup_dir}/_SUCCESS"
   chmod 600 "${backup_dir}/_SUCCESS"
   aws "${aws_arguments[@]}" "${backup_dir}/_SUCCESS" "${destination}/_SUCCESS"

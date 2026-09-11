@@ -85,6 +85,8 @@ spec:
                   value: {{ .Values.backup.s3.serverSideEncryption | quote }}
                 - name: FLOWMESH_BACKUP_S3_KMS_KEY_ID
                   value: {{ .Values.backup.s3.kmsKeyId | quote }}
+                - name: FLOWMESH_BACKUP_S3_VERIFY_REMOTE
+                  value: {{ .Values.backup.s3.verifyRemote | quote }}
                 - name: FLOWMESH_BACKUP_CLEANUP_LOCAL
                   value: {{ .Values.backup.cleanupLocal | quote }}
                 - name: AWS_REGION

@@ -102,6 +102,8 @@ backup:
     region: us-east-1
     serverSideEncryption: AES256
     kmsKeyId: ""
+    # 生产环境建议开启，只有远端三个归档对象均可见后才写入 _SUCCESS 标记。
+    verifyRemote: false
   cleanupLocal: true
   startingDeadlineSeconds: 900
   activeDeadlineSeconds: 3600
