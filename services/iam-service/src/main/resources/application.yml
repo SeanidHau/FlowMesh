@@ -104,4 +104,5 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,db
+          # 生产登录限流启用时，Redis 不可用应阻止 IAM 实例进入就绪状态。
+          include: readinessState,db,redis

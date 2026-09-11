@@ -24,6 +24,9 @@ echo '校验生产配置门禁……'
 bash "${root_dir}/scripts/validate-production-config.sh" \
   "${root_dir}/infra/helm/flowmesh/values-production.yaml"
 
+echo '校验服务 readiness 依赖……'
+bash "${root_dir}/tests/readiness-dependency-contract.sh"
+
 while IFS= read -r contract; do
   echo "执行生产契约：${contract#"${root_dir}/"}"
   bash "${contract}"
