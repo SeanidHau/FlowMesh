@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY . .
 RUN ./mvnw -pl services/supplier-service -am package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 
 WORKDIR /app
 COPY --from=build /workspace/services/supplier-service/target/supplier-service-0.1.0-SNAPSHOT.jar app.jar

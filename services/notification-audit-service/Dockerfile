@@ -4,7 +4,7 @@ WORKDIR /workspace
 COPY . .
 RUN ./mvnw -pl services/notification-audit-service -am package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 WORKDIR /app
 COPY --from=build /workspace/services/notification-audit-service/target/notification-audit-service-0.1.0-SNAPSHOT.jar app.jar
 RUN apt-get update \

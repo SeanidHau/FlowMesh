@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.0</version>
+    <version>3.5.16</version>
     <relativePath/>
   </parent>
 
@@ -60,7 +60,7 @@
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
     <!-- 作用：统一 Spring Cloud Gateway 与 Spring Boot 3.5 的兼容版本。 -->
-    <spring-cloud.version>2025.0.0</spring-cloud.version>
+    <spring-cloud.version>2025.0.3</spring-cloud.version>
     <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
     <minio.version>8.5.17</minio.version>
 

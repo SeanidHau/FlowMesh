@@ -100,6 +100,18 @@ wait_for_tcp() {
   done
 }
 
+assert_url_contains() {
+  local url="$1"
+  local expected="$2"
+  local response
+
+  response="$(curl --fail --silent --show-error "$url")"
+  if [[ "${response}" != *"${expected}"* ]]; then
+    echo "接口响应缺少预期内容：${url} -> ${expected}" >&2
+    return 1
+  fi
+}
+
 start_service() {
   local service="$1"
   local jar="$2"
@@ -249,10 +261,12 @@ if [ "${application_status}" = "ENABLED" ]; then
 done
 
 for attempt in $(seq 1 60); do
-  if curl --fail --silent --show-error \
+  if notifications="$(curl --fail --silent --show-error \
     -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
-    "${API_BASE}/api/notification/api/v1/notifications" | grep -q '供应商已启用'; then
-    break
+    "${API_BASE}/api/notification/api/v1/notifications")"; then
+    if [[ "${notifications}" == *'供应商已启用'* ]]; then
+      break
+    fi
   fi
   if [ "$attempt" -eq 60 ]; then
     echo "SupplierActivated 未能生成申请人通知。" >&2
@@ -300,10 +314,12 @@ for attempt in $(seq 1 60); do
 done
 
 for attempt in $(seq 1 60); do
-  if curl --fail --silent --show-error \
+  if notifications="$(curl --fail --silent --show-error \
     -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
-    "${API_BASE}/api/notification/api/v1/notifications" | grep -q '未通过风控'; then
-    break
+    "${API_BASE}/api/notification/api/v1/notifications")"; then
+    if [[ "${notifications}" == *'未通过风控'* ]]; then
+      break
+    fi
   fi
   if [ "${attempt}" -eq 60 ]; then
     echo "WorkflowRiskRejected 未能生成申请人风控拒绝通知。" >&2
@@ -362,13 +378,9 @@ if [ "$(printf '%s' "${RECONCILIATION_RESULT}" | json_field consistent)" != "Tru
   echo "完成后的跨服务对账未达到一致状态：${RECONCILIATION_RESULT}" >&2
   exit 1
 fi
-curl --fail --silent --show-error http://localhost:8082/actuator/prometheus \
-  | grep -q 'flowmesh_outbox_pending'
-curl --fail --silent --show-error http://localhost:8083/actuator/prometheus \
-  | grep -q 'flowmesh_messaging_consumed'
-curl --fail --silent --show-error http://localhost:8084/actuator/prometheus \
-  | grep -q 'flowmesh_messaging_consumed'
-curl --fail --silent --show-error http://localhost:8085/actuator/prometheus \
-  | grep -q 'flowmesh_messaging_consumed'
+assert_url_contains http://localhost:8082/actuator/prometheus 'flowmesh_outbox_pending'
+assert_url_contains http://localhost:8083/actuator/prometheus 'flowmesh_messaging_consumed'
+assert_url_contains http://localhost:8084/actuator/prometheus 'flowmesh_messaging_consumed'
+assert_url_contains http://localhost:8085/actuator/prometheus 'flowmesh_messaging_consumed'
 
 echo "RocketMQ E2E 通过：${APPLICATION_ID} 已完成四级审批并进入 ENABLED，${REJECTED_APPLICATION_ID} 已完成风控拒绝闭环。"

@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY . .
 RUN ./mvnw -pl services/iam-service -am package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 
 WORKDIR /app
 COPY --from=build /workspace/services/iam-service/target/iam-service-0.1.0-SNAPSHOT.jar app.jar

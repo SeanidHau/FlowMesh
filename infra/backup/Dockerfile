@@ -4,6 +4,7 @@ FROM postgres:16-bookworm
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends awscli ca-certificates \
+    && rm -f /usr/local/bin/gosu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY scripts/backup-postgres.sh /opt/flowmesh/scripts/backup-postgres.sh

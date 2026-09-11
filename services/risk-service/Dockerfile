@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY . .
 RUN ./mvnw -pl services/risk-service -am package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 
 WORKDIR /app
 COPY --from=build /workspace/services/risk-service/target/risk-service-0.1.0-SNAPSHOT.jar app.jar
