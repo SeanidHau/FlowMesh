@@ -11,6 +11,15 @@ database="${FLOWMESH_PG_DATABASE:-flowmesh}"
 host="${FLOWMESH_PG_HOST:-localhost}"
 port="${FLOWMESH_PG_PORT:-5432}"
 user="${FLOWMESH_PG_USER:-flowmesh}"
+ssl_mode="${FLOWMESH_PG_SSLMODE:-disable}"
+case "${ssl_mode}" in
+  disable|allow|prefer|require|verify-ca|verify-full)
+    ;;
+  *)
+    printf '不支持的 FLOWMESH_PG_SSLMODE：%s\n' "${ssl_mode}" >&2
+    exit 1
+    ;;
+esac
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_dir="${backup_root}/${timestamp}"
 
@@ -24,7 +33,7 @@ chmod 700 "${backup_dir}"
 
 cleanup_failed_backup() {
   local status=$?
-  unset PGPASSWORD PGCONNECT_TIMEOUT
+  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
   if [[ "${status}" -ne 0 && -d "${backup_dir}" ]]; then
     rm -rf -- "${backup_dir}"
   fi
@@ -34,6 +43,7 @@ trap cleanup_failed_backup EXIT
 
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD}"
 export PGCONNECT_TIMEOUT="${FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS:-5}"
+export PGSSLMODE="${ssl_mode}"
 
 pg_dump \
   --format=custom \
@@ -108,6 +118,6 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
 fi
 
 trap - EXIT
-unset PGPASSWORD PGCONNECT_TIMEOUT
+unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
 
 printf 'PostgreSQL 备份已创建：%s\n' "${backup_dir}"

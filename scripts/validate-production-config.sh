@@ -68,6 +68,9 @@ postgresql = values.fetch("postgresql")
 raise "生产 PostgreSQL 不得使用明文连接" if postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 必须配置 sslMode" if postgresql.fetch("sslMode", "").to_s.empty?
 raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEnabled") == true
+backup_postgresql = backup.fetch("postgres")
+raise "生产 PostgreSQL 备份不得使用明文连接" if backup_postgresql.fetch("sslMode") == "disable"
+raise "生产 PostgreSQL 备份必须配置 sslMode" if backup_postgresql.fetch("sslMode", "").to_s.empty?
 puts "生产备份配置结构校验通过。"
 RUBY
 

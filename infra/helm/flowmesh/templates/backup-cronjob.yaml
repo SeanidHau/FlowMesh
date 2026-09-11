@@ -68,6 +68,8 @@ spec:
                   value: {{ .Values.backup.postgres.database | quote }}
                 - name: FLOWMESH_PG_USER
                   value: {{ .Values.backup.postgres.user | quote }}
+                - name: FLOWMESH_PG_SSLMODE
+                  value: {{ .Values.backup.postgres.sslMode | quote }}
                 - name: FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS
                   value: {{ .Values.backup.postgres.connectTimeoutSeconds | quote }}
                 - name: FLOWMESH_PG_PASSWORD

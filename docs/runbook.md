@@ -107,7 +107,7 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 ./tests/kubernetes-production-smoke.sh
 ```
 
-默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS 和 PostgreSQL
+默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS、PostgreSQL TLS 和 PostgreSQL
 备份 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
 
 ```bash

@@ -123,6 +123,9 @@ raise "备份 CronJob 未设置 concurrencyPolicy=Forbid" unless spec.fetch("con
 job_spec = spec.fetch("jobTemplate").fetch("spec")
 raise "备份 CronJob 未设置 activeDeadlineSeconds" unless job_spec.fetch("activeDeadlineSeconds", 0).to_i > 0
 raise "备份 CronJob 未设置 backoffLimit" unless job_spec.fetch("backoffLimit", -1).to_i >= 0
+container = job_spec.fetch("template").fetch("spec").fetch("containers").first
+ssl_mode = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLMODE" }
+raise "备份 CronJob 未设置 PostgreSQL SSL 模式" unless ssl_mode && ssl_mode.fetch("value") != "disable"
 puts "备份 CronJob 参数校验通过。"
 '
 

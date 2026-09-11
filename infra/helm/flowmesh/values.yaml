@@ -77,6 +77,7 @@ backup:
     port: 5432
     database: flowmesh
     user: flowmesh
+    sslMode: disable
     connectTimeoutSeconds: 5
   s3:
     uri: ""

@@ -7,12 +7,14 @@ temp_root="$(mktemp -d)"
 fake_bin="${temp_root}/bin"
 backup_root="${temp_root}/backups"
 aws_log="${temp_root}/aws.log"
+ssl_log="${temp_root}/sslmode.log"
 mkdir -p "${fake_bin}"
 trap 'rm -rf -- "${temp_root}"' EXIT
 
 cat > "${fake_bin}/pg_dump" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "${PGSSLMODE:-}" >> "${SSL_LOG:?}"
 for argument in "$@"; do
   case "${argument}" in
     --file=*) printf 'fake custom format backup\n' > "${argument#--file=}" ;;
@@ -23,6 +25,7 @@ EOF
 cat > "${fake_bin}/pg_dumpall" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "${PGSSLMODE:-}" >> "${SSL_LOG:?}"
 printf 'CREATE ROLE flowmesh;\n'
 EOF
 
@@ -41,6 +44,8 @@ FLOWMESH_BACKUP_S3_URI=s3://flowmesh-backups \
 FLOWMESH_BACKUP_S3_SSE=aws:kms \
 FLOWMESH_BACKUP_S3_KMS_KEY_ID=alias/flowmesh-backup \
 FLOWMESH_BACKUP_CLEANUP_LOCAL=true \
+FLOWMESH_PG_SSLMODE=require \
+SSL_LOG="${ssl_log}" \
 AWS_REGION=cn-shanghai \
   "${repo_root}/scripts/backup-postgres.sh" >/dev/null
 
@@ -48,6 +53,7 @@ grep -F -- '--sse aws:kms' "${aws_log}" >/dev/null
 grep -F -- '--sse-kms-key-id alias/flowmesh-backup' "${aws_log}" >/dev/null
 grep -F -- 's3://flowmesh-backups/' "${aws_log}" >/dev/null
 grep -F -- '_SUCCESS' "${aws_log}" >/dev/null
+grep -Fx -- 'require' "${ssl_log}" >/dev/null
 if find "${backup_root}" -mindepth 1 -print -quit | grep -q .; then
   echo '成功上传后未清理临时备份目录。' >&2
   exit 1

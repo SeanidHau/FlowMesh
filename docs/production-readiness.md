@@ -22,7 +22,7 @@
 - 提供可发布的 PostgreSQL 备份镜像和 Helm CronJob：定时创建归档、上传到 S3 兼容对象存储、使用服务端加密、禁止并发执行并在失败时重试；生产 Helm 要求显式注入外部数据库地址、备份目标和凭据 Secret。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
 - 四个 RocketMQ 服务支持独立 Producer/Consumer 凭据、访问通道和 TLS 配置；生产 Helm 默认开启 Producer/Consumer TLS，并要求运行时 Secret 提供四组凭据键。
-- 生产 PostgreSQL 连接默认使用 `sslmode=require`，Redis 连接默认启用 TLS；目标平台配置 CA 后可进一步使用 PostgreSQL `verify-full` 完成服务端身份校验。
+- 生产应用和备份 PostgreSQL 连接默认使用 `sslmode=require`，Redis 连接默认启用 TLS；目标平台配置 CA 后可进一步使用 PostgreSQL `verify-full` 完成服务端身份校验。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像和一个备份镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
