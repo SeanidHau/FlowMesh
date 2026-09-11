@@ -181,6 +181,17 @@ jobs:
             echo 'Redis TLS configuration must be rendered for gateway and IAM.' >&2
             exit 1
           fi
+          if ! printf '%s\n' "$rendered_production" | grep -q 'name: FLOWMESH_NOTIFICATION_DELIVERY_ENABLED' || \
+             ! printf '%s\n' "$rendered_production" | grep -q 'value: "true"' || \
+             ! printf '%s\n' "$rendered_production" | grep -q 'name: FLOWMESH_NOTIFICATION_WEBHOOK_URL' || \
+             ! printf '%s\n' "$rendered_production" | grep -q 'value: "https://'; then
+            echo 'Production notification delivery must be enabled with an HTTPS Webhook.' >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$rendered_production" | grep -q 'key: "NOTIFICATION_WEBHOOK_SIGNING_SECRET"'; then
+            echo 'Production notification delivery must reference its signing Secret.' >&2
+            exit 1
+          fi
           pg_sslmode_count="$(printf '%s\n' "$rendered_production" | grep -c 'name: FLOWMESH_PG_SSLMODE' || true)"
           pg_sslmode_require_count="$(printf '%s\n' "$rendered_production" | awk '
             /name: FLOWMESH_PG_SSLMODE/ {

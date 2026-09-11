@@ -87,7 +87,7 @@ rules_response="$(fetch_json "${prometheus_url}/api/v1/rules?type=alert")"
 printf '%s' "${rules_response}" | validate_json 'Prometheus 告警规则查询'
 missing_alerts="$(printf '%s' "${rules_response}" | ruby -rjson -e '
   body = JSON.parse(STDIN.read)
-  expected = %w[FlowMeshServiceDown FlowMeshOutboxBacklog FlowMeshDeadLetterEvents FlowMeshConsumerFailures FlowMeshConsumerProcessingLatency FlowMeshOutboxConfirmationFailures]
+  expected = %w[FlowMeshServiceDown FlowMeshOutboxBacklog FlowMeshDeadLetterEvents FlowMeshConsumerFailures FlowMeshConsumerProcessingLatency FlowMeshOutboxConfirmationFailures FlowMeshNotificationDeliveryBacklog FlowMeshNotificationDeliveryDeadLetter FlowMeshNotificationDeliveryFailures]
   actual = body.fetch("data").fetch("groups").flat_map { |group| group.fetch("rules") }.map { |rule| rule.fetch("name") }
   puts(expected - actual)
 ')"

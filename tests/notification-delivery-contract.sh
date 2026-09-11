@@ -7,6 +7,7 @@ migration="${repo_root}/services/notification-audit-service/src/main/resources/d
 publisher="${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/messaging/NotificationDeliveryPublisher.java"
 webhook="${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/messaging/NotificationWebhookClient.java"
 template="${repo_root}/infra/helm/flowmesh/templates/notification-audit.yaml"
+production_values="${repo_root}/infra/helm/flowmesh/values-production.yaml"
 
 grep -F 'FORCE ROW LEVEL SECURITY' "${migration}" >/dev/null
 grep -F 'flowmesh_audit_delivery' "${migration}" >/dev/null
@@ -20,6 +21,8 @@ grep -F 'X-FlowMesh-Signature' "${webhook}" >/dev/null
 grep -F 'Idempotency-Key' "${webhook}" >/dev/null
 grep -F 'https://' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
 grep -F 'FLOWMESH_NOTIFICATION_SIGNING_SECRET' "${template}" >/dev/null
+grep -A4 -F 'notificationDelivery:' "${production_values}" | grep -F 'enabled: true' >/dev/null
+grep -A4 -F 'notificationDelivery:' "${production_values}" | grep -F 'webhookUrl: https://' >/dev/null
 
 if grep -Eq 'log\.(info|warn|error).*delivery.*content|System\.out.*content' "${publisher}" "${webhook}"; then
   echo '外部通知投递日志不得包含通知内容。' >&2

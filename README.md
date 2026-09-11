@@ -2,7 +2,7 @@
 
 FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购合同审批平台。当前版本使用 Java 21、Spring Boot、Spring Cloud Gateway、MyBatis、PostgreSQL、Apache RocketMQ、Vue 3 和 Electron，聚焦申请、审批、可靠消息和 Kubernetes 部署基础。
 
-核心业务 MVP-4 已完成，并已形成生产化应用基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档、补件重审和审批 SLA 处置，以及 Compose、Helm、CI 验证。仓库同时提供目标集群的只读 smoke、外部依赖 TLS 预检、运行时 Prometheus/Alertmanager 预检和恢复演练入口；仍需在实际目标集群完成外部依赖 HA、告警通知、备份恢复与 RTO/RPO 证据。Camunda、Redis 缓存和外部通知通道属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
+核心业务 MVP-4 已完成，并已形成生产化应用基线：在上述基础上接入统一 API Gateway、Gateway Redis 分布式限流、供应商材料对象存储、异步风控服务、通知审计服务、RocketMQ Outbox 认领租约、退避、死信与重放、跨服务对账、基础指标、Trace ID、IAM 登录限流、PostgreSQL 定时备份归档、补件重审和审批 SLA 处置，以及 Compose、Helm、CI 验证。仓库同时提供目标集群的只读 smoke、外部依赖 TLS 预检、运行时 Prometheus/Alertmanager 预检和恢复演练入口；仍需在实际目标集群完成外部依赖 HA、告警通知、备份恢复与 RTO/RPO 证据。Camunda 和 Redis 缓存仍属于后续业务扩展。总体设计见 [DESIGN.md](DESIGN.md)。
 
 ## 当前能力边界
 
@@ -15,7 +15,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | 审批 SLA 与运营处置 | 已实现 | 第 20 小时催办、第 24 小时自动转运营升级；独立维护角色和 CronJob 扫描任务并写入 Outbox。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描、短期下载 URL 和可执行生命周期策略。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；拒绝结果同步回写 supplier 终态并生成通知审计；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
-| 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
+| 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；外部通知通过事务投递队列、HMAC 签名、幂等键、租约重试和死信闭环交付。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |
 | PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移；生产连接默认要求 TLS。 |
 | 消息与幂等数据生命周期 | 已实现 | 独立维护 CronJob 先预检专用非超级用户权限，再按 90/30 天窗口清理终态 Outbox、DLQ、重放审计、Inbox 和幂等记录，使用固定表白名单。 |

@@ -91,6 +91,10 @@ end
 if %w[-supplier -workflow -risk].any? { |suffix| name.end_with?(suffix) }
   raise "#{name} 必须启用 RocketMQ Producer TLS" unless env["ROCKETMQ_PRODUCER_TLS_ENABLED"] == "true"
 end
+if name.end_with?("-notification-audit")
+  raise "#{name} 必须启用外部通知投递" unless env["FLOWMESH_NOTIFICATION_DELIVERY_ENABLED"] == "true"
+  raise "#{name} 的外部通知 Webhook 必须使用 HTTPS" unless env["FLOWMESH_NOTIFICATION_WEBHOOK_URL"].to_s.start_with?("https://")
+end
 '
   images="$(kubectl -n "${namespace}" get "deployment/${deployment}" -o jsonpath='{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}')"
   while IFS= read -r image; do
@@ -123,7 +127,7 @@ runtime_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_RUNTIME_
 RUNTIME_SECRET_JSON="${runtime_secret_json}" ruby -e '
 require "json"
 keys = JSON.parse(ENV.fetch("RUNTIME_SECRET_JSON")).fetch("data").keys
-required = %w[JWT_SIGNING_KEY REDIS_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD WORKFLOW_SLA_DB_PASSWORD RISK_DB_PASSWORD AUDIT_DB_PASSWORD OBJECT_STORAGE_ACCESS_KEY OBJECT_STORAGE_SECRET_KEY ROCKETMQ_PRODUCER_ACCESS_KEY ROCKETMQ_PRODUCER_SECRET_KEY ROCKETMQ_CONSUMER_ACCESS_KEY ROCKETMQ_CONSUMER_SECRET_KEY]
+required = %w[JWT_SIGNING_KEY REDIS_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD WORKFLOW_SLA_DB_PASSWORD RISK_DB_PASSWORD AUDIT_DB_PASSWORD NOTIFICATION_WEBHOOK_SIGNING_SECRET OBJECT_STORAGE_ACCESS_KEY OBJECT_STORAGE_SECRET_KEY ROCKETMQ_PRODUCER_ACCESS_KEY ROCKETMQ_PRODUCER_SECRET_KEY ROCKETMQ_CONSUMER_ACCESS_KEY ROCKETMQ_CONSUMER_SECRET_KEY]
 missing = required - keys
 raise "运行时 Secret 缺少键：#{missing.join(",")}" unless missing.empty?
 '

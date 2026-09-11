@@ -302,6 +302,7 @@ services:
     notificationDelivery:
       enabled: false
       webhookUrl: ""
+      signingSecret: ""
       signingSecretKey: NOTIFICATION_WEBHOOK_SIGNING_SECRET
     replicas: 1
     resources:

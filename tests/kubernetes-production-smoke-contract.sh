@@ -17,6 +17,7 @@ required_secret_keys=(
   WORKFLOW_SLA_DB_PASSWORD
   RISK_DB_PASSWORD
   AUDIT_DB_PASSWORD
+  NOTIFICATION_WEBHOOK_SIGNING_SECRET
   OBJECT_STORAGE_ACCESS_KEY
   OBJECT_STORAGE_SECRET_KEY
   ROCKETMQ_PRODUCER_ACCESS_KEY
@@ -45,5 +46,7 @@ grep -F -- 'FLOWMESH_PG_SSLMODE' "${smoke_test}" >/dev/null
 grep -F -- 'workflow_sla_cronjob' "${smoke_test}" >/dev/null
 grep -F -- 'WORKFLOW_SLA_DB_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'automountServiceAccountToken' "${smoke_test}" >/dev/null
+grep -F -- 'FLOWMESH_NOTIFICATION_DELIVERY_ENABLED' "${smoke_test}" >/dev/null
+grep -F -- 'FLOWMESH_NOTIFICATION_WEBHOOK_URL' "${smoke_test}" >/dev/null
 
 echo 'Kubernetes production smoke contract passed.'

@@ -56,6 +56,10 @@ require_value '^  supplier:[[:space:]]*$' 'supplier 服务配置块'
 require_value '^  workflow:[[:space:]]*$' 'workflow 服务配置块'
 require_value '^  risk:[[:space:]]*$' 'risk 服务配置块'
 require_value '^  notificationAudit:[[:space:]]*$' 'notification-audit 服务配置块'
+require_value '^    notificationDelivery:[[:space:]]*$' '外部通知投递配置块'
+require_value '^      enabled:[[:space:]]*true[[:space:]]*$' '生产外部通知投递必须启用'
+require_value '^      webhookUrl:[[:space:]]*https://' '生产外部通知 Webhook 必须使用 HTTPS'
+require_value '^      signingSecretKey:[[:space:]]*[^[:space:]]+' '外部通知签名 Secret 键名'
 
 ruby - "${values_file}" <<'RUBY'
 require "yaml"
@@ -81,6 +85,10 @@ raise "生产生命周期清理必须配置凭据 Secret" if retention.fetch("cr
 raise "生产生命周期清理必须使用 YES 确认值" unless retention.fetch("confirmation") == "YES"
 raise "生产生命周期清理不得使用明文连接" if retention.dig("postgres", "sslMode") == "disable"
 raise "生产生命周期清理必须配置 sslMode" if retention.dig("postgres", "sslMode").to_s.empty?
+notification_delivery = values.dig("services", "notificationAudit", "notificationDelivery") || {}
+raise "生产外部通知投递必须启用" unless notification_delivery.fetch("enabled") == true
+raise "生产外部通知 Webhook 必须使用 HTTPS" unless notification_delivery.fetch("webhookUrl", "").to_s.start_with?("https://")
+raise "生产外部通知必须配置签名 Secret 键名" if notification_delivery.fetch("signingSecretKey", "").to_s.empty?
 %w[outboxRetentionDays dlqRetentionDays inboxRetentionDays batchSize].each do |field|
   raise "生产生命周期清理 #{field} 必须是正整数" unless retention.fetch(field).to_i.positive?
 end

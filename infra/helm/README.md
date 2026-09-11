@@ -65,6 +65,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set retention.postgres.host="postgres-primary.database.svc" \
+  --set retention.credentialsSecret="flowmesh-retention-credentials" \
   --set observability.tracing.enabled=true \
   --set observability.tracing.exportEnabled=true \
   --set observability.tracing.endpoint="http://otel-collector.observability:4318/v1/traces" \
@@ -79,8 +81,14 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY`、
 `OBJECT_STORAGE_SECRET_KEY`、`ROCKETMQ_PRODUCER_ACCESS_KEY`、`ROCKETMQ_PRODUCER_SECRET_KEY`、
-`ROCKETMQ_CONSUMER_ACCESS_KEY`、`ROCKETMQ_CONSUMER_SECRET_KEY` 和 `WORKFLOW_SLA_DB_PASSWORD` 的 Secret，然后设置
+`ROCKETMQ_CONSUMER_ACCESS_KEY`、`ROCKETMQ_CONSUMER_SECRET_KEY`、`WORKFLOW_SLA_DB_PASSWORD` 和
+`NOTIFICATION_WEBHOOK_SIGNING_SECRET` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
+
+生产覆盖值默认启用外部通知投递。发布前必须将
+`services.notificationAudit.notificationDelivery.webhookUrl` 覆盖为真实的 HTTPS 接收端点，并在外部 Secret
+中提供 `NOTIFICATION_WEBHOOK_SIGNING_SECRET`；接收端应校验 HMAC 签名和 `Idempotency-Key`。数据库初始化时还要预先创建
+`flowmesh_audit_delivery` 投递维护角色，并确保 `flowmesh_audit` 不继承该角色，具体权限以通知投递 Flyway 迁移为准。
 
 生产覆盖值默认启用 RocketMQ Producer 和 Consumer 的 TLS，并将访问通道设为 `CLOUD`；如果使用自建
 RocketMQ 集群，发布流程可以将 `rocketmq.accessChannel` 覆盖为 `LOCAL`，但仍必须保留 TLS，并为生产者、消费者
@@ -119,6 +127,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set retention.postgres.host="postgres-primary.database.svc" \
+  --set retention.credentialsSecret="flowmesh-retention-credentials" \
   --set backup.serviceAccountName="flowmesh-backup" \
   --set ingress.host="api.example.com" \
   --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
@@ -165,6 +175,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set retention.postgres.host="postgres-primary.database.svc" \
+  --set retention.credentialsSecret="flowmesh-retention-credentials" \
   --set observability.serviceMonitor.enabled=true \
   --set observability.serviceMonitor.labels.release=kube-prometheus-stack \
   --set 'ingress.tls[0].secretName=flowmesh-gateway-tls' \
@@ -176,7 +188,7 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 未安装 Prometheus Operator 时保持该选项关闭，并使用目标平台的 Service Discovery 或静态抓取配置。
 
 如果需要同时加载 FlowMesh 告警规则，可在同一发布中启用 `PrometheusRule`。该资源覆盖服务不可用、
-HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、Outbox 确认失败，以及 PostgreSQL 备份、生命周期清理和
+HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、Outbox 确认失败、外部通知积压/死信/失败，以及 PostgreSQL 备份、生命周期清理和
 Workflow SLA CronJob 长时间未成功执行的告警。CronJob 告警依赖目标集群安装 kube-state-metrics；目标平台仍需配置
 Alertmanager 路由、通知渠道和明确的值班责任：
 
@@ -188,6 +200,8 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
+  --set retention.postgres.host="postgres-primary.database.svc" \
+  --set retention.credentialsSecret="flowmesh-retention-credentials" \
   --set observability.prometheusRule.enabled=true \
   --set observability.prometheusRule.labels.release=kube-prometheus-stack \
   --set ingress.host="api.example.com" \

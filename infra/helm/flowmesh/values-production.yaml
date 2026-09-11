@@ -215,6 +215,10 @@ services:
       enabled: true
       minAvailable: 1
   notificationAudit:
+    notificationDelivery:
+      enabled: true
+      webhookUrl: https://notifications.internal.example.com/webhooks/flowmesh
+      signingSecretKey: NOTIFICATION_WEBHOOK_SIGNING_SECRET
     replicas: 2
     autoscaling:
       enabled: true
