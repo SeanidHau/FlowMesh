@@ -4,6 +4,9 @@ global:
   # 私有镜像仓库凭据由集群管理员预先创建；留空表示镜像仓库公开可读。
   imagePullSecrets: []
   production: false
+  # 单节点本地环境允许副本共置；生产覆盖值改为 DoNotSchedule，强制副本跨节点分布。
+  topologySpread:
+    whenUnsatisfiable: ScheduleAnyway
   imageRegistry: ""
   imageTag: ""
   jwtIssuer: flowmesh-local

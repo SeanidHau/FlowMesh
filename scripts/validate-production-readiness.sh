@@ -30,6 +30,9 @@ bash "${root_dir}/tests/readiness-dependency-contract.sh"
 echo '校验 Gateway 请求体边界……'
 bash "${root_dir}/tests/gateway-request-size-contract.sh"
 
+echo '校验生产副本拓扑分散……'
+bash "${root_dir}/tests/production-topology-spread-contract.sh"
+
 while IFS= read -r contract; do
   echo "执行生产契约：${contract#"${root_dir}/"}"
   bash "${contract}"

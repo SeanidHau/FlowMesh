@@ -64,6 +64,14 @@ Gateway 请求体边界契约：
 
 该测试验证认证、流程、通知和供应商材料上传路由均配置入口请求体上限，避免新增路由时遗漏资源保护。
 
+生产副本拓扑分散契约：
+
+```bash
+./tests/production-topology-spread-contract.sh
+```
+
+该测试验证生产副本使用 `DoNotSchedule` 跨节点分布；本地默认仍允许单节点共置，避免开发环境因只有一个节点而无法调度。
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

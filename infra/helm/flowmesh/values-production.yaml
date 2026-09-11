@@ -3,6 +3,9 @@
 global:
   imagePullPolicy: IfNotPresent
   production: true
+  # 生产副本必须跨 Kubernetes 节点分布；无法满足时宁可保持 Pending，避免节点级故障同时影响全部副本。
+  topologySpread:
+    whenUnsatisfiable: DoNotSchedule
   # 服务 image 字段已包含 flowmesh 仓库命名空间，最终地址为
   # ghcr.io/seanidhau/flowmesh/<service>:<commit-sha>。
   imageRegistry: ghcr.io/seanidhau

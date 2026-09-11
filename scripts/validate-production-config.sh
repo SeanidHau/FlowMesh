@@ -20,6 +20,8 @@ require_value() {
 
 require_value '^global:[[:space:]]*$' 'global 配置块'
 require_value '^  production:[[:space:]]*true[[:space:]]*$' '生产模式必须启用'
+require_value '^  topologySpread:[[:space:]]*$' '生产拓扑分散配置块'
+require_value '^    whenUnsatisfiable:[[:space:]]*DoNotSchedule[[:space:]]*$' '生产副本必须跨节点分布'
 require_value '^  imageRegistry:[[:space:]]*[^[:space:]]+' '生产镜像仓库地址'
 require_value '^  existingSecret:[[:space:]]*[^[:space:]]+' '外部 Secret 引用'
 require_value '^postgresql:[[:space:]]*$' 'PostgreSQL 配置块'
@@ -66,6 +68,8 @@ ruby - "${values_file}" <<'RUBY'
 require "yaml"
 
 values = YAML.load_file(ARGV.fetch(0))
+topology_spread = values.fetch("global").fetch("topologySpread")
+raise "生产副本拓扑分散必须使用 DoNotSchedule" unless topology_spread.fetch("whenUnsatisfiable") == "DoNotSchedule"
 backup = values.fetch("backup")
 raise "生产 PostgreSQL 备份必须启用" unless backup.fetch("enabled") == true
 raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret", "").to_s.empty?
