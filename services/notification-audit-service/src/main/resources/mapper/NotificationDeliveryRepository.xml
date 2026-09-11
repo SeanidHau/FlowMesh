@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flowmesh.notificationaudit.repository.NotificationDeliveryRepository">
+  <resultMap id="delivery" type="com.flowmesh.notificationaudit.domain.NotificationDelivery">
+    <id property="id" column="id" />
+    <result property="notificationId" column="notification_id" />
+    <result property="sourceEventId" column="source_event_id" />
+    <result property="tenantId" column="tenant_id" />
+    <result property="recipientUserId" column="recipient_user_id" />
+    <result property="notificationType" column="notification_type" />
+    <result property="title" column="title" />
+    <result property="content" column="content" />
+    <result property="status" column="status" />
+    <result property="attempts" column="attempts" />
+    <result property="nextAttemptAt" column="next_attempt_at" />
+    <result property="claimedUntil" column="claimed_until" />
+    <result property="claimToken" column="claim_token" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <insert id="insert" parameterType="com.flowmesh.notificationaudit.domain.NotificationDelivery">
+    INSERT INTO notification_deliveries
+      (id, notification_id, source_event_id, tenant_id, recipient_user_id,
+       notification_type, title, content, status, next_attempt_at, created_at, updated_at)
+    VALUES
+      (#{id, jdbcType=OTHER}, #{notificationId, jdbcType=OTHER}, #{sourceEventId, jdbcType=OTHER},
+       #{tenantId}, #{recipientUserId, jdbcType=OTHER}, #{notificationType}, #{title}, #{content},
+       #{status}, #{nextAttemptAt}, #{createdAt}, now())
+  </insert>
+
+  <select id="claimBatch" resultMap="delivery">
+    SELECT * FROM audit.claim_notification_deliveries(
+      #{now}, #{claimToken, jdbcType=OTHER}, #{claimedUntil}, #{limit}
+    )
+  </select>
+
+  <select id="markDelivered" resultType="int">
+    SELECT audit.mark_notification_delivery_delivered(
+      #{id, jdbcType=OTHER}, #{claimToken, jdbcType=OTHER}, #{deliveredAt}
+    )
+  </select>
+
+  <select id="markFailed" resultType="int">
+    SELECT audit.mark_notification_delivery_failed(
+      #{id, jdbcType=OTHER}, #{claimToken, jdbcType=OTHER}, #{attempts}, #{nextAttemptAt},
+      #{status}, #{lastError}
+    )
+  </select>
+
+  <select id="countPending" resultType="long">
+    SELECT audit.count_pending_notification_deliveries()
+  </select>
+
+  <select id="countDeadLettered" resultType="long">
+    SELECT audit.count_dead_lettered_notification_deliveries()
+  </select>
+</mapper>

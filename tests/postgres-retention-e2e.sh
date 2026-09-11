@@ -72,6 +72,9 @@ CREATE TABLE risk.risk_outbox_events (
 CREATE TABLE audit.audit_event_inbox (
   event_id UUID PRIMARY KEY, tenant_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE audit.notification_deliveries (
+  id UUID PRIMARY KEY, status TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL
+);
 
 ALTER TABLE supplier.supplier_workflow_event_inbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supplier.supplier_workflow_event_inbox FORCE ROW LEVEL SECURITY;
@@ -95,13 +98,15 @@ GRANT SELECT, DELETE ON supplier.supplier_outbox_events,
   workflow.workflow_outbox_replay_audits,
   workflow.workflow_risk_event_inbox,
   risk.risk_outbox_events,
-  audit.audit_event_inbox TO flowmesh_retention;
+  audit.audit_event_inbox,
+  audit.notification_deliveries TO flowmesh_retention;
 GRANT UPDATE (id) ON supplier.supplier_outbox_events,
   supplier.supplier_outbox_replay_audits,
   supplier.supplier_idempotency_keys,
   workflow.workflow_outbox_events,
   workflow.workflow_outbox_replay_audits,
-  risk.risk_outbox_events TO flowmesh_retention;
+  risk.risk_outbox_events,
+  audit.notification_deliveries TO flowmesh_retention;
 GRANT UPDATE (event_id) ON supplier.supplier_workflow_event_inbox,
   workflow.workflow_risk_event_inbox,
   audit.audit_event_inbox TO flowmesh_retention;
@@ -135,6 +140,10 @@ INSERT INTO risk.risk_outbox_events VALUES
   ('00000000-0000-0000-0000-000000000074', now() - interval '10 days', NULL, now() - interval '10 days');
 INSERT INTO audit.audit_event_inbox VALUES
   ('00000000-0000-0000-0000-000000000081', 'tenant-a', now() - interval '100 days');
+INSERT INTO audit.notification_deliveries VALUES
+  ('00000000-0000-0000-0000-000000000091', 'DELIVERED', now() - interval '100 days'),
+  ('00000000-0000-0000-0000-000000000092', 'DEAD_LETTER', now() - interval '40 days'),
+  ('00000000-0000-0000-0000-000000000093', 'PENDING', now() - interval '100 days');
 SQL
 
 docker exec \
@@ -168,5 +177,6 @@ assert_count workflow.workflow_outbox_replay_audits 0
 assert_count workflow.workflow_risk_event_inbox 0
 assert_count risk.risk_outbox_events 2
 assert_count audit.audit_event_inbox 0
+assert_count audit.notification_deliveries 1
 
 echo 'PostgreSQL retention cleanup E2E passed.'

@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-acceptance-contract.sh tests/production-dependencies-preflight-contract.sh tests/production-evidence-contract.sh tests/production-ha-contract.sh tests/retention-cleanup-contract.sh tests/retention-role-contract.sh tests/rocketmq-e2e.sh tests/runtime-observability-contract.sh tests/workflow-sla-contract.sh tests/workflow-sla-e2e.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/notification-delivery-contract.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-acceptance-contract.sh tests/production-dependencies-preflight-contract.sh tests/production-evidence-contract.sh tests/production-ha-contract.sh tests/retention-cleanup-contract.sh tests/retention-role-contract.sh tests/rocketmq-e2e.sh tests/runtime-observability-contract.sh tests/workflow-sla-contract.sh tests/workflow-sla-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -77,6 +77,9 @@ jobs:
 
       - name: Validate retention role contract
         run: bash tests/retention-role-contract.sh
+
+      - name: Validate notification delivery contract
+        run: bash tests/notification-delivery-contract.sh
 
       - name: Validate workflow SLA contract
         run: bash tests/workflow-sla-contract.sh

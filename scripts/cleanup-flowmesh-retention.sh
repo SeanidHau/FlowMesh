@@ -133,6 +133,58 @@ BEGIN
   LOOP
     WITH victim AS (
       SELECT id
+        FROM audit.notification_deliveries
+       WHERE status = 'DELIVERED'
+         AND updated_at < now() - make_interval(days => current_setting('flowmesh.outbox_retention_days')::int)
+       ORDER BY updated_at, id
+       FOR UPDATE SKIP LOCKED
+       LIMIT current_setting('flowmesh.batch_size')::int
+    )
+    DELETE FROM audit.notification_deliveries target
+     USING victim
+     WHERE target.id = victim.id;
+    GET DIAGNOSTICS deleted_rows = ROW_COUNT;
+    total_rows := total_rows + deleted_rows;
+    EXIT WHEN deleted_rows = 0;
+  END LOOP;
+  RAISE NOTICE 'notification delivered records deleted: %', total_rows;
+END $$;
+
+DO $$
+DECLARE
+  deleted_rows BIGINT;
+  total_rows BIGINT;
+BEGIN
+  total_rows := 0;
+  LOOP
+    WITH victim AS (
+      SELECT id
+        FROM audit.notification_deliveries
+       WHERE status = 'DEAD_LETTER'
+         AND updated_at < now() - make_interval(days => current_setting('flowmesh.dlq_retention_days')::int)
+       ORDER BY updated_at, id
+       FOR UPDATE SKIP LOCKED
+       LIMIT current_setting('flowmesh.batch_size')::int
+    )
+    DELETE FROM audit.notification_deliveries target
+     USING victim
+     WHERE target.id = victim.id;
+    GET DIAGNOSTICS deleted_rows = ROW_COUNT;
+    total_rows := total_rows + deleted_rows;
+    EXIT WHEN deleted_rows = 0;
+  END LOOP;
+  RAISE NOTICE 'notification dead-letter deliveries deleted: %', total_rows;
+END $$;
+
+DO $$
+DECLARE
+  deleted_rows BIGINT;
+  total_rows BIGINT;
+BEGIN
+  total_rows := 0;
+  LOOP
+    WITH victim AS (
+      SELECT id
         FROM supplier.supplier_outbox_events
        WHERE dead_lettered_at IS NOT NULL
          AND dead_lettered_at < now() - make_interval(days => current_setting('flowmesh.dlq_retention_days')::int)

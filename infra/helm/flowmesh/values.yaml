@@ -299,6 +299,10 @@ services:
     port: 8085
     dbUser: flowmesh_audit
     dbPassword: ""
+    notificationDelivery:
+      enabled: false
+      webhookUrl: ""
+      signingSecretKey: NOTIFICATION_WEBHOOK_SIGNING_SECRET
     replicas: 1
     resources:
       requests:

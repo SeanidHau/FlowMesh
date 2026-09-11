@@ -1,5 +1,7 @@
 package com.flowmesh.notificationaudit.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowmesh.notificationaudit.application.NotificationAuditService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -7,6 +9,7 @@ import io.micrometer.core.instrument.Timer;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Component;
 public class WorkflowTaskSlaListener implements RocketMQListener<String> {
 
     private final NotificationAuditService service;
+    private final ObjectMapper objectMapper;
     private final Counter successCounter;
     private final Counter failureCounter;
     private final Timer processingTimer;
@@ -33,8 +37,13 @@ public class WorkflowTaskSlaListener implements RocketMQListener<String> {
      * @param service 通知审计服务
      * @param meterRegistry 指标注册器
      */
-    public WorkflowTaskSlaListener(NotificationAuditService service, MeterRegistry meterRegistry) {
+    public WorkflowTaskSlaListener(
+        NotificationAuditService service,
+        ObjectMapper objectMapper,
+        MeterRegistry meterRegistry
+    ) {
         this.service = service;
+        this.objectMapper = objectMapper;
         this.successCounter = Counter.builder("flowmesh.messaging.consumed")
             .tag("consumer", "workflow-task-sla").register(meterRegistry);
         this.failureCounter = Counter.builder("flowmesh.messaging.failed")
@@ -54,14 +63,24 @@ public class WorkflowTaskSlaListener implements RocketMQListener<String> {
     @Override
     public void onMessage(String message) {
         Timer.Sample sample = Timer.start();
-        try {
-            service.handleWorkflowTaskSla(message);
-            successCounter.increment();
-        } catch (RuntimeException exception) {
-            failureCounter.increment();
-            throw exception;
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("traceId", traceId(message))) {
+            try {
+                service.handleWorkflowTaskSla(message);
+                successCounter.increment();
+            } catch (RuntimeException exception) {
+                failureCounter.increment();
+                throw exception;
+            }
         } finally {
             sample.stop(processingTimer);
+        }
+    }
+
+    private String traceId(String message) {
+        try {
+            return objectMapper.readTree(message).path("traceId").asText("");
+        } catch (JsonProcessingException exception) {
+            return "";
         }
     }
 }

@@ -60,7 +60,8 @@ for table in \
   workflow.workflow_outbox_replay_audits \
   workflow.workflow_risk_event_inbox \
   risk.risk_outbox_events \
-  audit.audit_event_inbox; do
+  audit.audit_event_inbox \
+  audit.notification_deliveries; do
   grep -F "${table}" "${sql_log}" >/dev/null || {
     echo "清理 SQL 缺少表白名单项：${table}" >&2
     exit 1
@@ -68,6 +69,7 @@ for table in \
 done
 grep -F 'FOR UPDATE SKIP LOCKED' "${sql_log}" >/dev/null
 grep -F 'dead_lettered_at' "${sql_log}" >/dev/null
+grep -F 'audit.notification_deliveries' "${sql_log}" >/dev/null
 grep -F "current_setting('flowmesh.outbox_retention_days')::int" "${sql_log}" >/dev/null
 if grep -Eq 'DELETE FROM (audit\.audit_events|audit\.notifications|supplier\.supplier_applications)' "${sql_log}"; then
   echo '生命周期清理不应删除审批审计、通知或业务申请数据。' >&2

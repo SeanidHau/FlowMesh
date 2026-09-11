@@ -23,6 +23,7 @@ public class NotificationAuditService {
 
     private final AuditEventRepository auditEventRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationDeliveryEnqueuer notificationDeliveryEnqueuer;
     private final TenantRlsInitializer tenantRlsInitializer;
     private final ObjectMapper objectMapper;
 
@@ -37,11 +38,13 @@ public class NotificationAuditService {
     public NotificationAuditService(
         AuditEventRepository auditEventRepository,
         NotificationRepository notificationRepository,
+        NotificationDeliveryEnqueuer notificationDeliveryEnqueuer,
         TenantRlsInitializer tenantRlsInitializer,
         ObjectMapper objectMapper
     ) {
         this.auditEventRepository = auditEventRepository;
         this.notificationRepository = notificationRepository;
+        this.notificationDeliveryEnqueuer = notificationDeliveryEnqueuer;
         this.tenantRlsInitializer = tenantRlsInitializer;
         this.objectMapper = objectMapper;
     }
@@ -71,14 +74,16 @@ public class NotificationAuditService {
             UUID.randomUUID(), eventId, tenantId, aggregateId, "SupplierActivated", traceId,
             message, occurredAt
         );
-        notificationRepository.insert(Notification.unread(
+        Notification notification = Notification.unread(
             eventId,
             tenantId,
             applicantUserId,
             "SUPPLIER_ACTIVATED",
             "供应商已启用",
             "供应商「" + supplierName + "」已完成准入审批并启用。"
-        ));
+        );
+        notificationRepository.insert(notification);
+        notificationDeliveryEnqueuer.enqueue(notification);
         auditEventRepository.insertInbox(eventId, tenantId, aggregateId);
     }
 
@@ -116,12 +121,14 @@ public class NotificationAuditService {
             UUID.randomUUID(), eventId, tenantId, aggregateId, eventType, traceId,
             message, occurredAt
         );
-        notificationRepository.insert(Notification.unread(
+        Notification notification = Notification.unread(
             eventId, tenantId, applicantUserId,
             escalated ? "WORKFLOW_TASK_ESCALATED" : "WORKFLOW_TASK_REMINDER",
             title,
             content
-        ));
+        );
+        notificationRepository.insert(notification);
+        notificationDeliveryEnqueuer.enqueue(notification);
         auditEventRepository.insertInbox(eventId, tenantId, aggregateId);
     }
 
@@ -150,14 +157,16 @@ public class NotificationAuditService {
             UUID.randomUUID(), eventId, tenantId, aggregateId, "WorkflowRiskRejected", traceId,
             message, occurredAt
         );
-        notificationRepository.insert(Notification.unread(
+        Notification notification = Notification.unread(
             eventId,
             tenantId,
             applicantUserId,
             "SUPPLIER_RISK_REJECTED",
             "供应商申请未通过风控",
             "本次申请未通过风控校验：" + reason
-        ));
+        );
+        notificationRepository.insert(notification);
+        notificationDeliveryEnqueuer.enqueue(notification);
         auditEventRepository.insertInbox(eventId, tenantId, aggregateId);
     }
 

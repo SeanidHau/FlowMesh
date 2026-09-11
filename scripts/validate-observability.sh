@@ -31,6 +31,9 @@ required_alerts = %w[
   FlowMeshConsumerFailures
   FlowMeshConsumerProcessingLatency
   FlowMeshOutboxConfirmationFailures
+  FlowMeshNotificationDeliveryBacklog
+  FlowMeshNotificationDeliveryDeadLetter
+  FlowMeshNotificationDeliveryFailures
   FlowMeshHttp5xxRate
   FlowMeshGatewayRateLimitRedisErrors
   FlowMeshGatewayRateLimitDenied

@@ -41,6 +41,12 @@ PostgreSQL 生命周期清理验证：
 前者不连接数据库，验证删除表白名单、确认门禁和锁语义；后者使用临时 PostgreSQL 容器验证
 90/30 天窗口、终态判断和强制 RLS 表清理。执行后脚本会删除测试容器。
 
+外部通知可靠投递契约：
+
+```bash
+./tests/notification-delivery-contract.sh
+```
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

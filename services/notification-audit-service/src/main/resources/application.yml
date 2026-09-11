@@ -44,6 +44,18 @@ flowmesh:
       refresh-token-ttl: P7D
   audit:
     consumer-enabled: ${FLOWMESH_AUDIT_CONSUMER_ENABLED:false}
+  notification:
+    delivery:
+      # 默认关闭；生产环境启用时必须配置 HTTPS Webhook 和至少 32 位签名密钥。
+      enabled: ${FLOWMESH_NOTIFICATION_DELIVERY_ENABLED:false}
+      webhook-url: ${FLOWMESH_NOTIFICATION_WEBHOOK_URL:}
+      signing-secret: ${FLOWMESH_NOTIFICATION_SIGNING_SECRET:}
+      batch-size: ${FLOWMESH_NOTIFICATION_DELIVERY_BATCH_SIZE:10}
+      lease-seconds: ${FLOWMESH_NOTIFICATION_DELIVERY_LEASE_SECONDS:60}
+      max-attempts: ${FLOWMESH_NOTIFICATION_DELIVERY_MAX_ATTEMPTS:5}
+      retry-base-delay-seconds: ${FLOWMESH_NOTIFICATION_DELIVERY_RETRY_BASE_DELAY_SECONDS:1}
+      send-timeout-ms: ${FLOWMESH_NOTIFICATION_DELIVERY_SEND_TIMEOUT_MS:3000}
+      publish-interval-ms: ${FLOWMESH_NOTIFICATION_DELIVERY_PUBLISH_INTERVAL_MS:1000}
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}

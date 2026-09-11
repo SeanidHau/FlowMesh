@@ -40,7 +40,8 @@ for table in \
   workflow.workflow_outbox_replay_audits \
   workflow.workflow_risk_event_inbox \
   risk.risk_outbox_events \
-  audit.audit_event_inbox; do
+  audit.audit_event_inbox \
+  audit.notification_deliveries; do
   grep -F "${table#*.}" "${sql_log}" >/dev/null || {
     echo "生命周期角色预检 SQL 缺少白名单表：${table}" >&2
     exit 1

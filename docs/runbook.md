@@ -230,8 +230,16 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 - 重放审计、Inbox 和请求幂等记录：90 天。
 
 任务使用 `FOR UPDATE SKIP LOCKED` 和固定批量上限，多个任务实例不会争抢同一批记录。待发送
-Outbox、业务申请、审批快照、`audit_events` 和通知不在清理范围内。任务失败时先检查 CronJob 日志、
-数据库锁等待和维护账号权限；不要直接执行未经过评审的删除 SQL。
+待发送 Outbox、业务申请、审批快照、`audit_events` 和站内通知不在清理范围内；已完成或进入死信的
+外部通知投递记录按对应窗口清理。任务失败时先检查 CronJob 日志、数据库锁等待和维护账号权限；
+不要直接执行未经过评审的删除 SQL。
+
+外部通知投递默认关闭。启用前必须在 `flowmesh_audit` 数据库中预置
+`flowmesh_audit_delivery` 角色，并将 `flowmesh_audit` 业务账号设为 `NOINHERIT`，再允许迁移账号在迁移期间
+`SET ROLE` 到该 `NOSUPERUSER NOINHERIT BYPASSRLS` 角色。Helm 通过
+`services.notificationAudit.notificationDelivery.enabled=true`、HTTPS Webhook 地址和运行时 Secret
+开启投递。接收方必须校验 `X-FlowMesh-Signature`，并使用 `X-FlowMesh-Delivery-Id` 或
+`Idempotency-Key` 幂等处理；连续失败达到上限后记录为 `DEAD_LETTER`，由告警和值班流程人工处置。
 
 部署或轮换凭据后，先执行只读角色预检，确认 CronJob 使用的账号与迁移授予的最小权限一致：
 

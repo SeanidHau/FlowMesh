@@ -39,6 +39,7 @@
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
 - 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。
+- 外部通知投递已落地：站内通知与投递队列同事务提交，Webhook 使用 HTTPS、HMAC 签名、幂等键、租约认领、指数退避和死信；队列通过专用 `flowmesh_audit_delivery` `BYPASSRLS` 角色的安全函数跨租户调度，业务账号不直接读取投递队列。
 
 验证命令：
 
@@ -84,7 +85,7 @@ helm lint infra/helm/flowmesh \
 
 - 已实现材料上传、私有对象存储、文件头校验、SHA-256、ClamAV 扫描和短期下载授权；生产环境仍需完成对象存储生命周期、备份和权限策略演练。
 - 已提供对象存储生命周期配置脚本和离线契约测试：专用材料桶启用版本化，逻辑删除对象的非当前版本默认保留 7 天；目标平台仍需执行脚本并验证跨故障域复制、访问审计和实际清理结果。
-- 已实现独立 risk-service 的异步 PASS/REJECT 运行链路，以及 notification-audit-service 的通知/审计投影链路；仍需在目标环境完成外部通知通道、保留策略和恢复演练。
+- 已实现独立 risk-service 的异步 PASS/REJECT 运行链路，以及 notification-audit-service 的通知/审计投影和可靠外部通知投递链路；目标环境仍需配置实际 Webhook、轮换签名密钥、验证签名接收和完成恢复演练。
 - risk-service 已提供默认关闭的 `FAIL` / `TIMEOUT` 受控故障注入，用于验证消息重试、DLQ 和人工处置；生产 Helm 会显式关闭该开关。
 - 高并发压测、故障注入和跨租户安全回归。仓库已提供 k6 压测脚本和显式确认的服务恢复演练脚本，但必须在目标环境执行并留存结果。
 - 提供只读 Kubernetes 生产 smoke test，验证六个 Deployment、提交 SHA 镜像、安全上下文、探针、资源限制、PDB/HPA/NetworkPolicy、Gateway Ingress 边界、运行时 Secret 必需键、实际 Pod 的 PostgreSQL/Redis/RocketMQ TLS 配置和备份 CronJob；目标环境仍需实际执行并留存输出。

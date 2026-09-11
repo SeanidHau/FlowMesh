@@ -34,9 +34,19 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   DO \$\$
   BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_audit') THEN
-      CREATE ROLE flowmesh_audit LOGIN PASSWORD '${AUDIT_DB_PASSWORD}' NOSUPERUSER;
+      CREATE ROLE flowmesh_audit LOGIN PASSWORD '${AUDIT_DB_PASSWORD}' NOSUPERUSER NOINHERIT;
     END IF;
   END \$\$;
+  ALTER ROLE flowmesh_audit NOINHERIT;
+
+  -- 外部通知调度账号只用于投递队列安全函数；不允许登录或继承业务账号权限。
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'flowmesh_audit_delivery') THEN
+      CREATE ROLE flowmesh_audit_delivery NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
+    END IF;
+  END \$\$;
+  GRANT flowmesh_audit_delivery TO flowmesh_audit;
 
   -- 创建 supplier 服务业务账号（NOSUPERUSER，仅拥有 supplier schema）
   DO \$\$

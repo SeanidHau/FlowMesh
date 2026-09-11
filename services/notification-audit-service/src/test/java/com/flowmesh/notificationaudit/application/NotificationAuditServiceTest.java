@@ -32,6 +32,9 @@ class NotificationAuditServiceTest {
     private NotificationRepository notificationRepository;
 
     @Mock
+    private NotificationDeliveryEnqueuer notificationDeliveryEnqueuer;
+
+    @Mock
     private TenantRlsInitializer tenantRlsInitializer;
 
     /**
@@ -59,6 +62,7 @@ class NotificationAuditServiceTest {
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).insert(captor.capture());
         assertThat(captor.getValue().getRecipientUserId()).isEqualTo(applicantUserId);
+        verify(notificationDeliveryEnqueuer).enqueue(captor.getValue());
         verify(auditRepository).insertInbox(eventId, "tenant-a", applicationId);
     }
 
@@ -80,6 +84,7 @@ class NotificationAuditServiceTest {
         verify(notificationRepository).insert(captor.capture());
         assertThat(captor.getValue().getRecipientUserId()).isEqualTo(applicantUserId);
         assertThat(captor.getValue().getNotificationType()).isEqualTo("WORKFLOW_TASK_REMINDER");
+        verify(notificationDeliveryEnqueuer).enqueue(captor.getValue());
         verify(auditRepository).insertInbox(eventId, "tenant-a", applicationId);
     }
 
@@ -101,6 +106,7 @@ class NotificationAuditServiceTest {
         verify(notificationRepository).insert(captor.capture());
         assertThat(captor.getValue().getRecipientUserId()).isEqualTo(applicantUserId);
         assertThat(captor.getValue().getNotificationType()).isEqualTo("WORKFLOW_TASK_ESCALATED");
+        verify(notificationDeliveryEnqueuer).enqueue(captor.getValue());
         verify(auditRepository).insertInbox(eventId, "tenant-a", applicationId);
     }
 
@@ -117,6 +123,7 @@ class NotificationAuditServiceTest {
         newService().handleSupplierActivated(message(eventId, applicationId, applicantUserId));
 
         org.mockito.Mockito.verifyNoInteractions(notificationRepository);
+        org.mockito.Mockito.verifyNoInteractions(notificationDeliveryEnqueuer);
     }
 
     /**
@@ -170,6 +177,7 @@ class NotificationAuditServiceTest {
         return new NotificationAuditService(
             auditRepository,
             notificationRepository,
+            notificationDeliveryEnqueuer,
             tenantRlsInitializer,
             new ObjectMapper().registerModule(new JavaTimeModule())
         );

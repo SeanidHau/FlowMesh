@@ -74,6 +74,17 @@ spec:
               value: {{ .Values.rocketmq.namesrvAddr | quote }}
             - name: FLOWMESH_AUDIT_CONSUMER_ENABLED
               value: "true"
+            - name: FLOWMESH_NOTIFICATION_DELIVERY_ENABLED
+              value: {{ .Values.services.notificationAudit.notificationDelivery.enabled | quote }}
+            {{- if .Values.services.notificationAudit.notificationDelivery.enabled }}
+            - name: FLOWMESH_NOTIFICATION_WEBHOOK_URL
+              value: {{ required "services.notificationAudit.notificationDelivery.webhookUrl is required when external notification delivery is enabled" .Values.services.notificationAudit.notificationDelivery.webhookUrl | quote }}
+            - name: FLOWMESH_NOTIFICATION_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: {{ .Values.services.notificationAudit.notificationDelivery.signingSecretKey | quote }}
+            {{- end }}
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

@@ -2,11 +2,13 @@ package com.flowmesh.notificationaudit;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * FlowMesh 通知与审计投影服务启动类。
  */
 @SpringBootApplication(scanBasePackages = "com.flowmesh")
+@EnableScheduling
 public class NotificationAuditServiceApplication {
 
     /**

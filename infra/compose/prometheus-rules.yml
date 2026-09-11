@@ -53,6 +53,30 @@ groups:
         annotations:
           summary: "FlowMesh Outbox 确认失败"
           description: "服务 {{ $labels.service }} 已发送消息但未完成本地确认。"
+      - alert: FlowMeshNotificationDeliveryBacklog
+        expr: flowmesh_notification_delivery_pending > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FlowMesh 外部通知持续积压"
+          description: "{{ $labels.instance }} 的外部通知待投递数量超过 100。"
+      - alert: FlowMeshNotificationDeliveryDeadLetter
+        expr: flowmesh_notification_delivery_dead_lettered_current > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FlowMesh 外部通知进入死信"
+          description: "{{ $labels.instance }} 存在待处置的外部通知死信。"
+      - alert: FlowMeshNotificationDeliveryFailures
+        expr: sum(rate(flowmesh_notification_delivery_failed_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FlowMesh 外部通知持续失败"
+          description: "外部通知 Webhook 最近五分钟持续投递失败。"
 
   - name: flowmesh-http
     rules:

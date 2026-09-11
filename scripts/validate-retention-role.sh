@@ -94,7 +94,8 @@ BEGIN
         ('workflow', 'workflow_outbox_replay_audits', 'id'),
         ('workflow', 'workflow_risk_event_inbox', 'event_id'),
         ('risk', 'risk_outbox_events', 'id'),
-        ('audit', 'audit_event_inbox', 'event_id')
+        ('audit', 'audit_event_inbox', 'event_id'),
+        ('audit', 'notification_deliveries', 'id')
       ) AS expected(schema_name, table_name, lock_column)
   LOOP
     qualified_table := format('%I.%I', table_record.schema_name, table_record.table_name);
@@ -160,7 +161,8 @@ BEGIN
              ('workflow', 'workflow_outbox_replay_audits'),
              ('workflow', 'workflow_risk_event_inbox'),
              ('risk', 'risk_outbox_events'),
-             ('audit', 'audit_event_inbox')
+             ('audit', 'audit_event_inbox'),
+             ('audit', 'notification_deliveries')
            ) AS expected(schema_name, table_name)
           WHERE expected.schema_name = namespace.nspname
             AND expected.table_name = relation.relname
