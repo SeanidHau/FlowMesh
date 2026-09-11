@@ -40,3 +40,16 @@ FLOWMESH_CHAOS_CONFIRM=YES \
 ```
 
 故障演练会短暂停止并重启指定 Compose 服务；不要在共享环境直接执行。
+
+目标 Kubernetes 集群发布后的只读验收：
+
+```bash
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_K8S_NAMESPACE=flowmesh \
+FLOWMESH_HELM_RELEASE=flowmesh \
+./tests/kubernetes-production-smoke.sh
+```
+
+脚本验证 Deployment 可用性、提交 SHA 镜像、PDB/HPA/NetworkPolicy、运行时 Secret、备份 CronJob
+并发与截止时间。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
+`PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。

@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh infra/backup/entrypoint.sh tests/fault-drills/*.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/rocketmq-e2e.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/rocketmq-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh

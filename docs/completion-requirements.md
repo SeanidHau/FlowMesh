@@ -26,6 +26,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 六个服务提供默认关闭的 Micrometer Tracing 和 OTLP/HTTP 导出配置；生产 Helm 在开启导出但缺少 Collector 地址时拒绝渲染。 |
 | 已完成 | Helm 提供可选 Prometheus Operator `PrometheusRule`，CI 验证启用时能够渲染关键服务、HTTP 和消息告警规则。 |
 | 已完成 | 生产 NetworkPolicy 已允许可配置监控命名空间访问 Actuator 指标端口，CI 验证生产渲染包含该入口。 |
+| 已完成 | 提供只读 Kubernetes 生产 smoke test，验证发布后的 Deployment、提交 SHA 镜像、PDB/HPA/NetworkPolicy、Secret 和备份 CronJob。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 
 ## 3. MVP-4 范围

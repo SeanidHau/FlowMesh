@@ -89,6 +89,29 @@ OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector.observability:4318/v1/t
 
 `FLOWMESH_TRACING_SAMPLING_PROBABILITY` 使用 `0.0` 到 `1.0` 的采样比例。先在非生产环境验证 Collector 接收、Trace 查询和出口 NetworkPolicy，再在生产环境启用。Collector 不可用时，不要把导出失败误判为业务请求失败；应根据平台的丢弃、重试和告警策略处置。
 
+## Kubernetes 发布后验收
+
+发布完成后，在能够访问目标集群的运维环境执行只读 smoke test：
+
+```bash
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_K8S_NAMESPACE=flowmesh \
+FLOWMESH_HELM_RELEASE=flowmesh \
+./tests/kubernetes-production-smoke.sh
+```
+
+默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret 和 PostgreSQL
+备份 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
+
+```bash
+FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
+FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+./tests/kubernetes-production-smoke.sh
+```
+
+smoke test 只读取集群状态，不证明 PostgreSQL、Redis、RocketMQ、对象存储已经完成故障切换；这些依赖
+仍需按目标平台的 HA 和恢复剧本单独演练。
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：
