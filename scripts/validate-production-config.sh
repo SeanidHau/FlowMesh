@@ -22,6 +22,10 @@ require_value '^global:[[:space:]]*$' 'global 配置块'
 require_value '^  production:[[:space:]]*true[[:space:]]*$' '生产模式必须启用'
 require_value '^  imageRegistry:[[:space:]]*[^[:space:]]+' '生产镜像仓库地址'
 require_value '^  existingSecret:[[:space:]]*[^[:space:]]+' '外部 Secret 引用'
+require_value '^postgresql:[[:space:]]*$' 'PostgreSQL 配置块'
+require_value '^  sslMode:[[:space:]]*[^[:space:]]+' 'PostgreSQL TLS 模式'
+require_value '^redis:[[:space:]]*$' 'Redis 配置块'
+require_value '^  sslEnabled:[[:space:]]*true[[:space:]]*$' 'Redis TLS 必须启用'
 require_value '^networkPolicy:[[:space:]]*$' 'NetworkPolicy 配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' 'NetworkPolicy 必须启用'
 require_value '^  ingressNamespace:[[:space:]]*[^[:space:]]+' 'Gateway 入站 Ingress Controller 命名空间'
@@ -31,6 +35,8 @@ require_value '^ingress:[[:space:]]*$' 'Ingress 配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产 Ingress 必须启用'
 require_value '^objectStorage:[[:space:]]*$' '对象存储配置块'
 require_value '^  endpoint:[[:space:]]*https://' '生产对象存储必须使用 HTTPS'
+require_value '^rocketmq:[[:space:]]*$' 'RocketMQ 配置块'
+require_value '^  accessChannel:[[:space:]]*[^[:space:]]+' 'RocketMQ 访问通道'
 require_value '^fileScan:[[:space:]]*$' '文件扫描配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产文件扫描必须启用'
 require_value '^gateway:[[:space:]]*$' 'Gateway 配置块'
@@ -55,6 +61,13 @@ values = YAML.load_file(ARGV.fetch(0))
 backup = values.fetch("backup")
 raise "生产 PostgreSQL 备份必须启用" unless backup.fetch("enabled") == true
 raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret", "").to_s.empty?
+rocketmq = values.fetch("rocketmq")
+raise "生产 RocketMQ Producer 必须启用 TLS" unless rocketmq.dig("producer", "tlsEnabled") == true
+raise "生产 RocketMQ Consumer 必须启用 TLS" unless rocketmq.dig("consumer", "tlsEnabled") == true
+postgresql = values.fetch("postgresql")
+raise "生产 PostgreSQL 不得使用明文连接" if postgresql.fetch("sslMode") == "disable"
+raise "生产 PostgreSQL 必须配置 sslMode" if postgresql.fetch("sslMode", "").to_s.empty?
+raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEnabled") == true
 puts "生产备份配置结构校验通过。"
 RUBY
 

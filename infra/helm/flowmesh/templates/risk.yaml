@@ -52,8 +52,11 @@ spec:
               containerPort: {{ .Values.services.risk.port }}
           env:
             {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqCommonEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqProducerEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqConsumerEnv" . | nindent 12 }}
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=risk"
+              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=risk&sslmode={{ .Values.postgresql.sslMode }}"
             - name: RISK_DB_USER
               value: {{ .Values.services.risk.dbUser | quote }}
             - name: RISK_DB_PASSWORD

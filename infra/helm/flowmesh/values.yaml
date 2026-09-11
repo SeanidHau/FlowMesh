@@ -13,13 +13,25 @@ postgresql:
   host: postgres
   port: 5432
   database: flowmesh
+  sslMode: disable
 
 rocketmq:
   namesrvAddr: rocketmq-namesrv:9876
+  # 本地 Compose 不启用认证和 TLS；生产覆盖值必须开启 TLS 并使用外部 Secret 凭据。
+  accessChannel: LOCAL
+  producer:
+    accessKey: ""
+    secretKey: ""
+    tlsEnabled: false
+  consumer:
+    accessKey: ""
+    secretKey: ""
+    tlsEnabled: false
 
 redis:
   host: redis
   port: 6379
+  sslEnabled: false
 
 objectStorage:
   endpoint: http://minio:9000

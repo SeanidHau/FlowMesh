@@ -74,9 +74,18 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 生产环境不得在未部署 Collector 时开启 OTLP 导出；Helm 会拒绝缺少地址的生产渲染。
 
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
-`SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和
-`OBJECT_STORAGE_SECRET_KEY` 的 Secret，然后设置
+`SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY`、
+`OBJECT_STORAGE_SECRET_KEY`、`ROCKETMQ_PRODUCER_ACCESS_KEY`、`ROCKETMQ_PRODUCER_SECRET_KEY`、
+`ROCKETMQ_CONSUMER_ACCESS_KEY` 和 `ROCKETMQ_CONSUMER_SECRET_KEY` 的 Secret，然后设置
 `--set global.existingSecret=<secret-name>`。Chart 不会为缺少凭据或已知占位值的配置生成 Secret。
+
+生产覆盖值默认启用 RocketMQ Producer 和 Consumer 的 TLS，并将访问通道设为 `CLOUD`；如果使用自建
+RocketMQ 集群，发布流程可以将 `rocketmq.accessChannel` 覆盖为 `LOCAL`，但仍必须保留 TLS，并为生产者、消费者
+配置具备最小权限的独立凭据。四个消息服务都会从外部 Secret 读取这些凭据，缺少任一 Secret 键时 Pod 不会启动。
+
+生产覆盖值同时将 PostgreSQL `sslMode` 设为 `require`、Redis `sslEnabled` 设为 `true`，防止应用到外部数据库和缓存的
+连接回落到明文。若目标平台提供完整 CA 校验，应将 PostgreSQL 覆盖为 `verify-full`，并通过受控挂载提供 CA；本地 Compose
+默认使用 `disable` 和关闭 Redis TLS，仅用于本地演示。
 
 IAM 默认每小时清理保留超过 30 天的过期或撤销 Refresh Token；可通过
 `services.iam.refreshTokenCleanup.intervalMs`、`retention` 和 `batchSize` 调整，生产环境不应关闭该任务。

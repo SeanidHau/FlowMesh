@@ -107,7 +107,7 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 ./tests/kubernetes-production-smoke.sh
 ```
 
-默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret 和 PostgreSQL
+默认检查六个 Deployment、提交 SHA 镜像、PDB、HPA、NetworkPolicy、运行时 Secret、RocketMQ ACL/TLS 和 PostgreSQL
 备份 CronJob。Prometheus Operator 已安装且启用了对应资源时，增加：
 
 ```bash
@@ -120,7 +120,7 @@ smoke test 还会校验每个 Pod 的非 root、只读根文件系统、默认 S
 Ingress Controller 不在 `ingress-nginx` 命名空间，执行前设置 `FLOWMESH_INGRESS_NAMESPACE` 为实际命名空间。
 
 smoke test 只读取集群状态，不证明 PostgreSQL、Redis、RocketMQ、对象存储已经完成故障切换；这些依赖
-仍需按目标平台的 HA 和恢复剧本单独演练。
+仍需按目标平台的 HA、RocketMQ ACL/TLS 连通性和恢复剧本单独演练。
 
 ## 停止与数据卷
 

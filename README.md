@@ -15,10 +15,10 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描和短期下载 URL。 |
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知。 |
-| RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标。 |
-| PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移。 |
+| RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |
+| PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移；生产连接默认要求 TLS。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
-| Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed。 |
+| Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed，并默认启用 Redis TLS。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
 | Prometheus、Alertmanager、Grafana | 本地基线已实现 | 提供 Prometheus 抓取、Alertmanager 路由、告警规则和 Grafana 概览 Dashboard；生产环境仍需接入托管观测平台和通知渠道。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |

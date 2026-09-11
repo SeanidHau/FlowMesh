@@ -55,6 +55,44 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
   value: {{ .Values.observability.tracing.exportTimeout | quote }}
 {{- end }}
 
+{{/* 作用：统一注入 RocketMQ 访问通道，所有消息服务都需要该配置。 */}}
+{{- define "flowmesh.rocketmqCommonEnv" -}}
+- name: ROCKETMQ_ACCESS_CHANNEL
+  value: {{ .Values.rocketmq.accessChannel | quote }}
+{{- end }}
+
+{{/* 作用：仅向实际发布消息的服务注入 Producer 凭据和 TLS 配置。 */}}
+{{- define "flowmesh.rocketmqProducerEnv" -}}
+- name: ROCKETMQ_PRODUCER_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "flowmesh.configSecret" . }}
+      key: ROCKETMQ_PRODUCER_ACCESS_KEY
+- name: ROCKETMQ_PRODUCER_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "flowmesh.configSecret" . }}
+      key: ROCKETMQ_PRODUCER_SECRET_KEY
+- name: ROCKETMQ_PRODUCER_TLS_ENABLED
+  value: {{ .Values.rocketmq.producer.tlsEnabled | quote }}
+{{- end }}
+
+{{/* 作用：仅向实际消费消息的服务注入 Consumer 凭据和 TLS 配置。 */}}
+{{- define "flowmesh.rocketmqConsumerEnv" -}}
+- name: ROCKETMQ_CONSUMER_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "flowmesh.configSecret" . }}
+      key: ROCKETMQ_CONSUMER_ACCESS_KEY
+- name: ROCKETMQ_CONSUMER_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "flowmesh.configSecret" . }}
+      key: ROCKETMQ_CONSUMER_SECRET_KEY
+- name: ROCKETMQ_CONSUMER_TLS_ENABLED
+  value: {{ .Values.rocketmq.consumer.tlsEnabled | quote }}
+{{- end }}
+
 {{/* 作用：统一生成备份镜像引用，并在生产模式阻止使用可变默认标签。 */}}
 {{- define "flowmesh.backupImageReference" -}}
 {{- $registry := trimSuffix "/" (default "" .Values.global.imageRegistry) -}}

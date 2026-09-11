@@ -14,7 +14,7 @@ spring:
     timeout-per-shutdown-phase: 20s
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier
+    url: "jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier&sslmode=${DB_SSLMODE:disable}"
     username: ${SUPPLIER_DB_USER:flowmesh_supplier}
     password: ${SUPPLIER_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -85,8 +85,16 @@ flowmesh:
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:localhost:9876}
+  access-channel: ${ROCKETMQ_ACCESS_CHANNEL:LOCAL}
   producer:
     group: ${ROCKETMQ_PRODUCER_GROUP:flowmesh-supplier-producer}
+    access-key: ${ROCKETMQ_PRODUCER_ACCESS_KEY:}
+    secret-key: ${ROCKETMQ_PRODUCER_SECRET_KEY:}
+    tls-enable: ${ROCKETMQ_PRODUCER_TLS_ENABLED:false}
+  consumer:
+    access-key: ${ROCKETMQ_CONSUMER_ACCESS_KEY:}
+    secret-key: ${ROCKETMQ_CONSUMER_SECRET_KEY:}
+    tls-enable: ${ROCKETMQ_CONSUMER_TLS_ENABLED:false}
 
 management:
   tracing:

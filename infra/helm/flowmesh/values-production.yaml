@@ -16,13 +16,21 @@ postgresql:
   host: postgresql.internal.example.com
   port: 5432
   database: flowmesh
+  sslMode: require
 
 redis:
   host: redis.internal.example.com
   port: 6379
+  sslEnabled: true
 
 rocketmq:
   namesrvAddr: rocketmq-namesrv.internal.example.com:9876
+  # CLOUD 适用于 RocketMQ 云端接入；自建集群可通过发布参数覆盖为 LOCAL。
+  accessChannel: CLOUD
+  producer:
+    tlsEnabled: true
+  consumer:
+    tlsEnabled: true
 
 networkPolicy:
   enabled: true

@@ -52,8 +52,11 @@ spec:
               containerPort: {{ .Values.services.supplier.port }}
           env:
             {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqCommonEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqProducerEnv" . | nindent 12 }}
+            {{- include "flowmesh.rocketmqConsumerEnv" . | nindent 12 }}
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=supplier"
+              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=supplier&sslmode={{ .Values.postgresql.sslMode }}"
             - name: SUPPLIER_DB_USER
               value: {{ .Values.services.supplier.dbUser | quote }}
             - name: SUPPLIER_DB_PASSWORD

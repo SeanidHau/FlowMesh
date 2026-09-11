@@ -110,6 +110,39 @@ jobs:
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets \
             "${backup_test_args[@]}" >/dev/null
+          rendered_production="$(helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}")"
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'name: ROCKETMQ_PRODUCER_TLS_ENABLED' || true)" -ne 3 ]]; then
+            echo 'Producer TLS configuration must be injected into supplier/workflow/risk.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'name: ROCKETMQ_CONSUMER_TLS_ENABLED' || true)" -ne 4 ]]; then
+            echo 'Consumer TLS configuration must be injected into all RocketMQ consumers.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'key: ROCKETMQ_PRODUCER_ACCESS_KEY' || true)" -ne 3 ]]; then
+            echo 'Producer credentials must be limited to producer services.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'key: ROCKETMQ_CONSUMER_ACCESS_KEY' || true)" -ne 4 ]]; then
+            echo 'Consumer credentials must be injected into all consumer services.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'sslmode=require' || true)" -ne 5 ]]; then
+            echo 'PostgreSQL TLS mode must be rendered for all five database services.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'name: REDIS_SSL_ENABLED' || true)" -ne 2 ]]; then
+            echo 'Redis TLS configuration must be rendered for gateway and IAM.' >&2
+            exit 1
+          fi
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \

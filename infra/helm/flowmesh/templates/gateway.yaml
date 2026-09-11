@@ -56,6 +56,8 @@ spec:
               value: {{ .Values.redis.host | quote }}
             - name: REDIS_PORT
               value: {{ .Values.redis.port | quote }}
+            - name: REDIS_SSL_ENABLED
+              value: {{ .Values.redis.sslEnabled | quote }}
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
