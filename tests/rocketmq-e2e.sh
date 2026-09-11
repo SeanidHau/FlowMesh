@@ -156,7 +156,8 @@ start_service "gateway" "services/gateway-service/target/gateway-service-0.1.0-S
   FLOWMESH_IAM_URL=http://localhost:8081 \
   FLOWMESH_SUPPLIER_URL=http://localhost:8082 \
   FLOWMESH_WORKFLOW_URL=http://localhost:8083 \
-  FLOWMESH_NOTIFICATION_AUDIT_URL=http://localhost:8085
+  FLOWMESH_NOTIFICATION_AUDIT_URL=http://localhost:8085 \
+  REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=flowmesh-e2e-redis
 
 wait_for_url http://localhost:8081/actuator/health
 wait_for_url http://localhost:8082/actuator/health
