@@ -63,6 +63,14 @@
     <spring-cloud.version>2025.0.3</spring-cloud.version>
     <!-- 作用：覆盖 Spring Boot BOM 中的 Netty 补丁版本，修复当前高危/严重漏洞。 -->
     <netty.version>4.1.138.Final</netty.version>
+    <!-- 作用：覆盖 Spring Boot BOM 中的 Tomcat 和 PostgreSQL JDBC 补丁版本。 -->
+    <tomcat.version>10.1.59</tomcat.version>
+    <postgresql.version>42.7.12</postgresql.version>
+    <!-- 作用：统一 RocketMQ 传递引入的 gRPC、Protobuf、BeanUtils 和 LZ4 安全版本。 -->
+    <grpc.version>1.75.0</grpc.version>
+    <protobuf.version>3.25.5</protobuf.version>
+    <commons-beanutils.version>1.11.0</commons-beanutils.version>
+    <lz4.version>1.8.1</lz4.version>
     <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
     <minio.version>8.5.17</minio.version>
 
@@ -81,6 +89,37 @@
         <version>${spring-cloud.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <!-- 作用：统一 RocketMQ 传递依赖使用的 gRPC 组件补丁版本。 -->
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${grpc.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- 作用：确保 RocketMQ 传递依赖不会回退到存在漏洞的旧组件。 -->
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${protobuf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java-util</artifactId>
+        <version>${protobuf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${commons-beanutils.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.lz4</groupId>
+        <artifactId>lz4-java</artifactId>
+        <version>${lz4.version}</version>
       </dependency>
 
       <!--
