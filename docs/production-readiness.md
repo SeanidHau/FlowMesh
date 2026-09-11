@@ -101,6 +101,7 @@ helm lint infra/helm/flowmesh \
 - 生产验收编排脚本可选要求目标环境证据包；未提供真实目标环境的 HA、观测、恢复、备份、压测、安全回归和告警路由证据时，不得将版本标记为生产完成。
 - 生产验收编排脚本可选执行运行时 Prometheus/Alertmanager 预检，但仍不替代平台侧告警通知、日志聚合、Trace 后端和值班演练。
 - 提供只读外部依赖 preflight，检查 PostgreSQL/Redis/RocketMQ TLS 和对象存储 HTTPS；目标环境仍需执行并留存输出，且该检查不替代 HA、故障切换和恢复演练。
+- 提供 `scripts/validate-production-readiness.sh` 作为本地生产化仓库门禁入口；它不启动 Docker，也不连接外部服务，可在提交前复现全部静态检查和契约测试。
 
 ## 完成判定
 

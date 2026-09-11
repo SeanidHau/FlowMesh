@@ -15,6 +15,7 @@
 - `validate-retention-role.sh`：只读核验生命周期维护账号的角色属性、RLS 能力和精确表/列权限。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
 - `deploy-production.sh`：校验镜像和生产参数后，以 `helm upgrade --install --atomic --wait` 发布，并执行发布后只读 smoke test。
+- `validate-production-readiness.sh`：不启动 Docker、不连接外部基础设施，聚合脚本语法、观测、供应链、生产配置和全部生产契约门禁。
 - `run-production-acceptance.sh`：串联生产发布后的只读验收并生成不可覆盖的证据报告。
 - `create-production-evidence-manifest.sh`：为目标平台已生成的证据报告创建不可覆盖的清单和 SHA-256 校验和。
 - `validate-production-evidence.sh`：只读校验目标环境证据包的必需报告、通过状态、校验和和敏感信息边界。
