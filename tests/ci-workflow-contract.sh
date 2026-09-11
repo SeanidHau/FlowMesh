@@ -11,5 +11,7 @@ grep -F -- 'cancel-in-progress: true' "${workflow}" >/dev/null
 grep -F -- 'timeout-minutes: 30' "${workflow}" >/dev/null
 grep -F -- 'timeout-minutes: 20' "${workflow}" >/dev/null
 grep -F -- 'timeout 15m ./tests/rocketmq-e2e.sh' "${workflow}" >/dev/null
+grep -F -- 'sigstore/cosign-installer@v4.1.2' "${workflow}" >/dev/null
+grep -F -- "cosign-release: 'v3.1.3'" "${workflow}" >/dev/null
 
 echo 'CI workflow contract passed.'

@@ -578,7 +578,10 @@ jobs:
       # 使用 GitHub OIDC 进行无密钥签名，部署系统可按仓库和工作流身份校验镜像来源。
       - name: Install Cosign
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: sigstore/cosign-installer@v3.8.1
+        # 固定已验证的 action 与 Cosign 版本，避免旧 installer 默认下载已过期的 v2.4.3 资产。
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: 'v3.1.3'
 
       - name: Sign immutable image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
