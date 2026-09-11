@@ -17,6 +17,7 @@
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
 - 提供独立的 PostgreSQL 生命周期维护镜像和 Helm CronJob，使用非超级用户 `flowmesh_retention` 清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录；SQL 使用固定表白名单、批量上限和 `FOR UPDATE SKIP LOCKED`，并通过 PostgreSQL E2E 验证强制 RLS 表的清理边界。
+- 提供只读的 `flowmesh_retention` 角色权限预检，核验 `NOSUPERUSER`、`NOINHERIT`、`BYPASSRLS`、Schema 使用权限、清理白名单和行锁键列级 `UPDATE` 权限；契约测试和生命周期 PostgreSQL E2E 均会执行该预检。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
@@ -69,7 +70,7 @@ helm lint infra/helm/flowmesh \
 - 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard 和本地 Alertmanager 路由基线；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
 - PostgreSQL 备份已经提供 Helm CronJob、S3 上传、服务端加密、失败重试和 CI 恢复回归；目标平台仍需配置对象存储跨故障域复制、生命周期、定期恢复验证和实际 RTO/RPO 记录。
-- PostgreSQL 消息与幂等记录的保留策略已提供 Helm CronJob 和 CI/E2E 验证；目标平台仍需确认 `flowmesh_retention` 角色已预置、Secret 已轮换，并按实际合规要求调整 90/30 天窗口。
+- PostgreSQL 消息与幂等记录的保留策略已提供 Helm CronJob、角色权限预检和 CI/E2E 验证；目标平台仍需预置 `flowmesh_retention` 角色、轮换 Secret，并按实际合规要求调整 90/30 天窗口。
 - RocketMQ 堆积、DLQ、对账差异和审批超时的告警剧本。
 
 ### 业务闭环

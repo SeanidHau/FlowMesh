@@ -37,7 +37,7 @@ jobs:
 
       # 在进入部署或备份操作前，先验证仓库内 Shell 脚本的语法。
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-dependencies-preflight-contract.sh tests/retention-cleanup-contract.sh tests/rocketmq-e2e.sh
+        run: bash -n scripts/*.sh infra/backup/entrypoint.sh infra/retention/entrypoint.sh tests/fault-drills/*.sh tests/kubernetes-production-smoke.sh tests/object-storage-lifecycle-contract.sh tests/postgres-backup-e2e.sh tests/postgres-backup-upload-contract.sh tests/postgres-retention-e2e.sh tests/production-dependencies-preflight-contract.sh tests/retention-cleanup-contract.sh tests/retention-role-contract.sh tests/rocketmq-e2e.sh
 
       - name: Validate observability configuration
         run: bash scripts/validate-observability.sh
@@ -59,6 +59,9 @@ jobs:
 
       - name: Validate retention cleanup contract
         run: bash tests/retention-cleanup-contract.sh
+
+      - name: Validate retention role contract
+        run: bash tests/retention-role-contract.sh
 
       # 使用非生产测试值校验 Chart 语法、合法凭据渲染和缺失凭据失败保护。
       - name: Set up Helm

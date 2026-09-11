@@ -17,7 +17,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |
 | PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移；生产连接默认要求 TLS。 |
-| 消息与幂等数据生命周期 | 已实现 | 独立维护 CronJob 按 90/30 天窗口清理终态 Outbox、DLQ、重放审计、Inbox 和幂等记录，使用专用非超级用户和固定表白名单。 |
+| 消息与幂等数据生命周期 | 已实现 | 独立维护 CronJob 先预检专用非超级用户权限，再按 90/30 天窗口清理终态 Outbox、DLQ、重放审计、Inbox 和幂等记录，使用固定表白名单。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed，并默认启用 Redis TLS。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
@@ -46,6 +46,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | [测试策略](docs/testing-strategy.md) | 单元、集成、契约、E2E 和压测范围 |
 | [运行手册](docs/runbook.md) | 启停、排障、DLQ 重放、对账和恢复步骤 |
 | [生产依赖预检](scripts/validate-production-dependencies.sh) | 只读检查目标环境外部依赖的 TLS 与基础连通性 |
+| [生命周期角色预检](scripts/validate-retention-role.sh) | 只读检查维护账号属性、RLS 能力和最小表列权限 |
 | [补齐需求与验收](docs/completion-requirements.md) | 当前阶段范围、验收标准和实施状态 |
 | [生产化验收清单](docs/production-readiness.md) | 从 MVP-4 推进到生产级项目的完成标准 |
 

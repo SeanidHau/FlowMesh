@@ -194,6 +194,18 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml down -v
 Outbox、业务申请、审批快照、`audit_events` 和通知不在清理范围内。任务失败时先检查 CronJob 日志、
 数据库锁等待和维护账号权限；不要直接执行未经过评审的删除 SQL。
 
+部署或轮换凭据后，先执行只读角色预检，确认 CronJob 使用的账号与迁移授予的最小权限一致：
+
+```bash
+FLOWMESH_PG_HOST=postgres-primary.database.svc \
+FLOWMESH_PG_DATABASE=flowmesh \
+FLOWMESH_RETENTION_DB_PASSWORD="$RETENTION_DB_PASSWORD" \
+./scripts/validate-retention-role.sh
+```
+
+预检失败时不得直接放宽权限；应核对 `flowmesh_retention` 的 `NOSUPERUSER`、`NOINHERIT`、
+`BYPASSRLS` 属性，以及各服务生命周期迁移是否已在目标数据库执行。
+
 ## DLQ 重放
 
 前置条件：操作者拥有 `OPERATIONS` 角色，并已确认消息的业务影响。

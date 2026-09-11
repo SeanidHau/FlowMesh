@@ -31,6 +31,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | Gateway 已接入 Redis Lua 令牌桶限流，Redis 故障 fail-closed 返回 `503`、额度耗尽返回 `429`，并提供 Micrometer 指标、Prometheus 告警和本地 Alertmanager 路由基线。 |
 | 已完成 | IAM Refresh Token 已提供带保留窗口、批量上限和 `FOR UPDATE SKIP LOCKED` 的多副本安全清理任务，并通过 PostgreSQL 集成测试验证失效令牌删除不会影响有效令牌。 |
 | 已完成 | 已提供独立生命周期维护镜像和 Helm CronJob，按固定白名单清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录，并通过契约测试与 PostgreSQL E2E 验证 RLS、终态判断和保留窗口。 |
+| 已完成 | 提供只读生命周期角色权限预检，核验专用账号的非超级用户、不可继承、BYPASSRLS、白名单表和锁键列权限；CI 契约测试与 PostgreSQL 生命周期 E2E 会执行该预检。 |
 | 已完成 | 生产外部依赖连接安全已补齐：RocketMQ Producer/Consumer 使用独立 Secret 凭据和 TLS，PostgreSQL 默认 `sslmode=require`，Redis 默认启用 TLS；本地 Compose 保持关闭 TLS 的兼容默认值。 |
 | 明确不纳入本轮 | Camunda、Redis 缓存、Redis 短期幂等加速、外部邮件/短信通道、生产级托管观测后端和外部依赖高可用，详见后续产品能力。 |
 

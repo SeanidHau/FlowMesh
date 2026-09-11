@@ -145,7 +145,7 @@ docker exec \
   --env FLOWMESH_PG_DATABASE=flowmesh \
   --env FLOWMESH_PG_SSLMODE=disable \
   --env FLOWMESH_RETENTION_DB_USER=flowmesh_retention \
-  "${container}" bash -c 'cd /workspace && ./scripts/cleanup-flowmesh-retention.sh'
+  "${container}" bash -c 'cd /workspace && ./scripts/validate-retention-role.sh && ./scripts/cleanup-flowmesh-retention.sh'
 
 assert_count() {
   local table="$1"
