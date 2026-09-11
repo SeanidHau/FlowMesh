@@ -169,9 +169,17 @@ jobs:
             echo 'Redis TLS configuration must be rendered for gateway and IAM.' >&2
             exit 1
           fi
-          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'name: FLOWMESH_PG_SSLMODE' || true)" -ne 1 ]] || \
-             ! printf '%s\n' "$rendered_production" | grep -q 'name: FLOWMESH_PG_SSLMODE' -A1 | grep -q 'value: "require"'; then
-            echo 'PostgreSQL backup CronJob must use an encrypted connection.' >&2
+          pg_sslmode_count="$(printf '%s\n' "$rendered_production" | grep -c 'name: FLOWMESH_PG_SSLMODE' || true)"
+          pg_sslmode_require_count="$(printf '%s\n' "$rendered_production" | awk '
+            /name: FLOWMESH_PG_SSLMODE/ {
+              if (getline next_line > 0 && next_line ~ /value: "require"/) {
+                count++
+              }
+            }
+            END { print count + 0 }
+          ')
+          if [[ "$pg_sslmode_count" -ne 2 || "$pg_sslmode_require_count" -ne 2 ]]; then
+            echo 'PostgreSQL backup and retention CronJobs must use encrypted connections.' >&2
             exit 1
           fi
           if ! printf '%s\n' "$rendered_production" | grep -q 'app.kubernetes.io/component: workflow-sla' || \
