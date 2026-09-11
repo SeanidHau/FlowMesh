@@ -84,7 +84,7 @@ BEGIN
           AND t.task_key IN ('PURCHASER_REVIEW', 'LEGAL_REVIEW', 'FINANCE_REVIEW')
         ORDER BY t.due_at
         LIMIT 100
-        FOR UPDATE OF t SKIP LOCKED
+        FOR UPDATE OF t, i SKIP LOCKED
     LOOP
         UPDATE workflow.workflow_tasks
         SET status = 'ESCALATED', escalated_at = CURRENT_TIMESTAMP

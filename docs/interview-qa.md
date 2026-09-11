@@ -28,6 +28,9 @@ A: 认领批次在短事务中完成，发送前会以 `id + claimToken` 条件�
 Q: 审批 SLA 催办通知如何保证不会因事件类型校验错误而丢失？
 A: 通知审计服务先解析通用事件信封，再根据 `eventType` 允许 `WorkflowTaskSlaReminderRequested` 或 `WorkflowTaskSlaEscalated`，最后以事件 ID 做幂等投影。两种事件分别生成催办和升级通知，并与审计记录、Inbox 在同一事务中提交。
 
+Q: 审批 SLA 超时升级如何避免并行审批产生半完成状态？
+A: SLA 扫描在处理到期任务时使用 `FOR UPDATE OF t, i SKIP LOCKED` 同时锁定任务行和对应的 workflow instance。这样同一实例的审批推进与超时升级不能交叉修改；随后才更新任务状态、取消其他并行待办、创建运营升级任务和写入 Outbox，所有步骤仍在同一数据库事务中完成。
+
 Q: 为什么拆分成多个服务？
 A:
 - Gateway 负责统一 API 入口和下游路由，不拥有业务数据。

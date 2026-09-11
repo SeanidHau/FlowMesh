@@ -8,7 +8,8 @@ cronjob="${repo_root}/infra/helm/flowmesh/templates/workflow-sla-cronjob.yaml"
 migration="${repo_root}/services/workflow-service/src/main/resources/db/migration/V10__add_supplement_and_task_sla.sql"
 
 grep -F 'flowmesh_workflow_sla' "${sla_script}" >/dev/null
-grep -F 'FOR UPDATE OF t SKIP LOCKED' "${sla_script}" >/dev/null
+grep -F 'FOR UPDATE OF t, i SKIP LOCKED' "${sla_script}" >/dev/null
+grep -F 'FOR UPDATE OF t, i SKIP LOCKED' "${cronjob}" >/dev/null
 grep -F 'WorkflowTaskSlaReminderRequested' "${sla_script}" >/dev/null
 grep -F 'WorkflowTaskSlaEscalated' "${sla_script}" >/dev/null
 grep -F 'PGUSER 必须是 flowmesh_workflow_sla' "${sla_script}" >/dev/null
