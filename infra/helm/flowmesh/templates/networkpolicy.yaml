@@ -24,6 +24,15 @@ spec:
       ports:
         - protocol: TCP
           port: http
+    {{- if $root.Values.networkPolicy.monitoringNamespace }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $root.Values.networkPolicy.monitoringNamespace | quote }}
+      ports:
+        - protocol: TCP
+          port: http
+    {{- end }}
     {{- if eq $name "workflow" }}
     - from:
         - podSelector:

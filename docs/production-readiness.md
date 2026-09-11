@@ -52,7 +52,7 @@ helm lint infra/helm/flowmesh \
 ### 平台与网络
 
 - Gateway 的统一限流、审计和服务间网络策略；Helm 已提供并校验 TLS Ingress 路由模板，目标集群仍需提供 Ingress Controller 和证书 Secret。
-- Helm 生产覆盖值已提供业务服务入口和出站白名单 NetworkPolicy；发布流程必须注入外部依赖 CIDR，仍需在目标 CNI 和真实集群完成连通性演练。
+- Helm 生产覆盖值已提供业务服务入口、Prometheus 指标抓取入口和出站白名单 NetworkPolicy；发布流程必须注入监控命名空间和外部依赖 CIDR，仍需在目标 CNI 和真实集群完成连通性演练。
 - 已提供 Kyverno 镜像签名准入策略；目标集群仍需安装 Kyverno、应用策略，并配置持续运行时漏洞扫描平台。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 
