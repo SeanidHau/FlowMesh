@@ -54,6 +54,9 @@ jobs:
       - name: Validate recovery drill contract
         run: bash tests/fault-drills/verify-service-recovery-contract.sh
 
+      - name: Validate Kubernetes smoke test contract
+        run: bash tests/kubernetes-production-smoke-contract.sh
+
       - name: Validate object storage lifecycle contract
         run: bash tests/object-storage-lifecycle-contract.sh
 
