@@ -2,6 +2,8 @@
 
 ## 身份与会话
 
+- 业务服务使用无状态 JWT，不启用 HTTP Basic、表单登录和 Session；健康探针匿名访问，业务 API 默认需要认证。
+- IAM、supplier、workflow 和 notification-audit 显式关闭 Spring Security 默认用户自动配置，不生成未被业务使用的随机 Basic 用户密码。
 - Access Token 有效期为 15 分钟。
 - Refresh Token 有效期为 7 天。数据库仅存储 Refresh Token 哈希，支持轮换与撤销。
 - 登出、用户禁用和密码重置必须写入审计日志。

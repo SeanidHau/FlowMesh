@@ -5,6 +5,7 @@
 ## 已完成的生产基线
 
 - JWT 密钥、数据库密码和 Redis 密码不允许使用默认占位值。
+- Servlet 业务服务关闭 Spring Security 默认用户自动配置，不生成未被业务使用的随机 Basic 用户。
 - Kubernetes 应用 Pod 使用非 root、只读根文件系统、默认 Seccomp，并关闭 ServiceAccount Token 自动挂载。
 - Helm 默认提供 CPU/内存 requests 和 limits、启动/就绪/存活探针、滚动更新和优雅终止配置。
 - 生产 values 提供 gateway 和五个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。

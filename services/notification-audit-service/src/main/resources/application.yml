@@ -2,6 +2,11 @@
 spring:
   application:
     name: notification-audit-service
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
   lifecycle:
     timeout-per-shutdown-phase: 20s
   datasource:
