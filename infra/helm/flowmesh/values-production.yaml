@@ -133,9 +133,16 @@ observability:
     samplingProbability: "0.1"
     connectTimeout: 2s
     exportTimeout: 5s
+  # 生产默认接入 Prometheus Operator；如果平台使用其他抓取方式，发布参数必须显式关闭并由验收脚本校验替代方案。
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: kube-prometheus-stack
   prometheusRule:
-    enabled: false
-    labels: {}
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
 
 # 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
 ingress:

@@ -104,6 +104,9 @@ jobs:
       - name: Validate production topology spread
         run: bash tests/production-topology-spread-contract.sh
 
+      - name: Validate production observability resources
+        run: bash tests/production-observability-contract.sh
+
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 

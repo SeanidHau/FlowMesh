@@ -72,6 +72,14 @@ Gateway 请求体边界契约：
 
 该测试验证生产副本使用 `DoNotSchedule` 跨节点分布；本地默认仍允许单节点共置，避免开发环境因只有一个节点而无法调度。
 
+生产观测资源契约：
+
+```bash
+./tests/production-observability-contract.sh
+```
+
+该测试验证生产 values 默认启用 `ServiceMonitor` 和 `PrometheusRule`，并提供 Prometheus Operator 选择标签。
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

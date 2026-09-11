@@ -54,6 +54,11 @@ require_value '^    user:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*$' '备�
 require_value '^retention:[[:space:]]*$' '数据生命周期清理配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产数据生命周期清理必须启用'
 require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '生命周期维护凭据 Secret'
+require_value '^observability:[[:space:]]*$' '生产观测配置块'
+require_value '^  serviceMonitor:[[:space:]]*$' '生产 ServiceMonitor 配置块'
+require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 ServiceMonitor 必须启用'
+require_value '^  prometheusRule:[[:space:]]*$' '生产 PrometheusRule 配置块'
+require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 PrometheusRule 必须启用'
 require_value '^    replicas:[[:space:]]*2[[:space:]]*$' 'IAM 双副本'
 require_value '^  supplier:[[:space:]]*$' 'supplier 服务配置块'
 require_value '^  workflow:[[:space:]]*$' 'workflow 服务配置块'
@@ -70,6 +75,9 @@ require "yaml"
 values = YAML.load_file(ARGV.fetch(0))
 topology_spread = values.fetch("global").fetch("topologySpread")
 raise "生产副本拓扑分散必须使用 DoNotSchedule" unless topology_spread.fetch("whenUnsatisfiable") == "DoNotSchedule"
+observability = values.fetch("observability")
+raise "生产 ServiceMonitor 必须启用" unless observability.dig("serviceMonitor", "enabled") == true
+raise "生产 PrometheusRule 必须启用" unless observability.dig("prometheusRule", "enabled") == true
 backup = values.fetch("backup")
 raise "生产 PostgreSQL 备份必须启用" unless backup.fetch("enabled") == true
 raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret", "").to_s.empty?
