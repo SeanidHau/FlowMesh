@@ -24,13 +24,8 @@ interface ApiResponse {
   body: string;
 }
 
-const serviceUrls: Record<ApiService, string> = {
-  iam: process.env.FLOWMESH_IAM_URL ?? 'http://127.0.0.1:8081',
-  supplier: process.env.FLOWMESH_SUPPLIER_URL ?? 'http://127.0.0.1:8082',
-  workflow: process.env.FLOWMESH_WORKFLOW_URL ?? 'http://127.0.0.1:8083',
-  notification: process.env.FLOWMESH_NOTIFICATION_AUDIT_URL ?? 'http://127.0.0.1:8085',
-};
-const gatewayUrl = process.env.FLOWMESH_GATEWAY_URL;
+// 生产桌面端默认只访问统一 Gateway，避免绕过入口认证、限流和审计策略。
+const gatewayUrl = process.env.FLOWMESH_GATEWAY_URL ?? 'http://127.0.0.1:8080';
 
 /**
  * 创建安全的 Electron 主窗口。
@@ -95,14 +90,15 @@ async function requestApi(event: Electron.IpcMainInvokeEvent, value: unknown): P
   }
 
   const request = parseRequest(value);
-  const url = gatewayUrl
-    ? new URL(`/api/${request.service}${request.path}`, gatewayUrl)
-    : new URL(request.path, serviceUrls[request.service]);
+  const url = new URL(`/api/${request.service}${request.path}`, gatewayUrl);
   const headers: Record<string, string> = { Accept: 'application/json' };
+  Object.assign(headers, request.headers);
+  // IPC 调用方不能覆盖由主进程注入的访问令牌，避免渲染层请求头伪造。
   if (request.token) {
     headers.Authorization = `Bearer ${request.token}`;
+  } else {
+    delete headers.Authorization;
   }
-  Object.assign(headers, request.headers);
   if (request.body !== undefined) {
     headers['Content-Type'] = 'application/json';
   }

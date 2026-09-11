@@ -10,24 +10,24 @@ scrape_configs:
   - job_name: flowmesh-gateway
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [gateway-service:8080]
+      - targets: ["gateway-service:8080"]
   - job_name: flowmesh-iam
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [iam-service:8081]
+      - targets: ["iam-service:8081"]
   - job_name: flowmesh-supplier
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [supplier-service:8082]
+      - targets: ["supplier-service:8082"]
   - job_name: flowmesh-workflow
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [workflow-service:8083]
+      - targets: ["workflow-service:8083"]
   - job_name: flowmesh-risk
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [risk-service:8084]
+      - targets: ["risk-service:8084"]
   - job_name: flowmesh-notification-audit
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [notification-audit-service:8085]
+      - targets: ["notification-audit-service:8085"]

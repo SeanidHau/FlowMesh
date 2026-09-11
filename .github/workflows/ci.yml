@@ -39,6 +39,9 @@ jobs:
       - name: Validate shell scripts
         run: bash -n scripts/*.sh tests/fault-drills/*.sh tests/rocketmq-e2e.sh
 
+      - name: Validate observability configuration
+        run: bash scripts/validate-observability.sh
+
       - name: Validate production deployment guardrails
         run: bash scripts/validate-production-config.sh infra/helm/flowmesh/values-production.yaml
 
@@ -84,15 +87,28 @@ jobs:
           helm lint infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set global.existingSecret=flowmesh-runtime-secrets
           helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
             --set global.existingSecret=flowmesh-runtime-secrets >/dev/null
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
             echo 'Production chart must fail when immutable image tag is missing.' >&2
+            exit 1
+          fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set global.existingSecret=flowmesh-runtime-secrets >/dev/null 2>&1; then
+            echo 'Production chart must fail when ingress host or TLS is missing.' >&2
             exit 1
           fi
 
@@ -122,6 +138,10 @@ jobs:
       - name: Build Electron desktop client
         working-directory: frontend
         run: npm run build
+
+      - name: Run Electron security tests
+        working-directory: frontend
+        run: npm run test:electron
 
   rocketmq-e2e:
     name: RocketMQ end-to-end

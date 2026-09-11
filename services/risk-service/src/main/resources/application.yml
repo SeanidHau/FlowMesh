@@ -22,7 +22,7 @@ spring:
   flyway:
     schemas: risk
     create-schemas: true
-    fail-on-missing-locations: false
+    fail-on-missing-locations: true
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml

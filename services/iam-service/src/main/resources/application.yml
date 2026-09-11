@@ -29,7 +29,7 @@ spring:
 
   flyway:
     # 作用：Flyway 使用 flowmesh_iam 账号在 iam schema 上执行迁移。
-    fail-on-missing-locations: false
+    fail-on-missing-locations: true
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml
@@ -63,6 +63,7 @@ flowmesh:
       account-max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_ACCOUNT_MAX_ATTEMPTS:5}
       client-max-attempts: ${FLOWMESH_LOGIN_RATE_LIMIT_CLIENT_MAX_ATTEMPTS:30}
       window: ${FLOWMESH_LOGIN_RATE_LIMIT_WINDOW:PT1M}
+      fail-open: ${FLOWMESH_LOGIN_RATE_LIMIT_FAIL_OPEN:true}
 
 management:
   health:

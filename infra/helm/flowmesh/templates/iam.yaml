@@ -78,6 +78,8 @@ spec:
                   key: REDIS_PASSWORD
             - name: FLOWMESH_LOGIN_RATE_LIMIT_ENABLED
               value: {{ .Values.services.iam.loginRateLimitEnabled | quote }}
+            - name: FLOWMESH_LOGIN_RATE_LIMIT_FAIL_OPEN
+              value: {{ .Values.services.iam.loginRateLimitFailOpen | quote }}
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: http }
             initialDelaySeconds: 15

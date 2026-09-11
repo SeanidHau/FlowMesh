@@ -38,8 +38,13 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set ingress.host="api.example.com" \
+  --set ingress.tls[0].secretName="flowmesh-gateway-tls" \
+  --set ingress.tls[0].hosts[0]="api.example.com" \
   --set global.existingSecret=flowmesh-runtime-secrets
 ```
+
+生产模式要求显式提供真实 Ingress 域名和已存在的 TLS Secret；未提供时 Helm 渲染失败。
 
 生产环境建议预先创建包含 `JWT_SIGNING_KEY`、`REDIS_PASSWORD`、`IAM_DB_PASSWORD`、
 `SUPPLIER_DB_PASSWORD`、`WORKFLOW_DB_PASSWORD`、`RISK_DB_PASSWORD`、`AUDIT_DB_PASSWORD`、`OBJECT_STORAGE_ACCESS_KEY` 和

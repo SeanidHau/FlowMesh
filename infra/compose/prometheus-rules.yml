@@ -26,9 +26,9 @@ groups:
         for: 2m
         labels:
           severity: critical
-          annotations:
-            summary: "FlowMesh 出现死信事件"
-            description: "{{ $labels.instance }} 存在待处置死信事件。"
+        annotations:
+          summary: "FlowMesh 出现死信事件"
+          description: "{{ $labels.instance }} 存在待处置死信事件。"
       - alert: FlowMeshConsumerFailures
         expr: sum by (consumer) (rate(flowmesh_messaging_failed_total[5m])) > 0
         for: 5m

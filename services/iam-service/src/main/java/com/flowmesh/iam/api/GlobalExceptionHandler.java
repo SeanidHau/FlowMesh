@@ -4,6 +4,7 @@ import com.flowmesh.common.api.ErrorResponse;
 import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.iam.application.auth.InvalidCredentialsException;
 import com.flowmesh.iam.application.auth.LoginRateLimitExceededException;
+import com.flowmesh.iam.application.auth.LoginRateLimitUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,28 @@ public class GlobalExceptionHandler {
             .body(ErrorResponse.of(
                 "LOGIN_RATE_LIMITED",
                 "登录尝试过于频繁，请稍后再试。",
+                traceId(request)
+            ));
+    }
+
+    /**
+     * 处理生产环境配置为拒绝放行时的 Redis 限流依赖故障。
+     *
+     * @param exception 限流依赖不可用异常
+     * @param request HTTP 请求
+     * @return 503 ErrorResponse
+     */
+    @ExceptionHandler(LoginRateLimitUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleLoginRateLimitUnavailable(
+        LoginRateLimitUnavailableException exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.SERVICE_UNAVAILABLE)
+            .header("Retry-After", "5")
+            .body(ErrorResponse.of(
+                "LOGIN_RATE_LIMIT_UNAVAILABLE",
+                "登录保护服务暂时不可用，请稍后重试。",
                 traceId(request)
             ));
     }

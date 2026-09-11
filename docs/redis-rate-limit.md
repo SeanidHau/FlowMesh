@@ -4,7 +4,7 @@
 
 第一阶段仅为 `iam-service` 的登录接口增加分布式尝试次数限流，使用 Redis 共享计数，避免多实例部署时每个实例各自计数。
 
-Redis 只负责性能和风控辅助，不承载认证事实：用户、租户、密码和 Refresh Token 仍以 PostgreSQL 为准。Redis 不可用时限流器必须记录告警并降级放行，不能让 Redis 故障阻断正常登录。
+Redis 只负责性能和风控辅助，不承载认证事实：用户、租户、密码和 Refresh Token 仍以 PostgreSQL 为准。本地默认在 Redis 不可用时记录告警并降级放行；生产 Helm 默认关闭降级放行，Redis 不可用时返回 `503`，避免登录保护被故障绕过。
 
 ## 限流策略
 
@@ -27,6 +27,7 @@ Redis 只负责性能和风控辅助，不承载认证事实：用户、租户�
 3. `LoginRateLimitExceededException`：表示任一限流维度超限。
 4. `AuthController`：在调用认证应用服务前检查限流；成功后清除账号计数。
 5. `GlobalExceptionHandler`：将限流异常映射为统一的 `429` 错误响应。
+6. `FLOWMESH_LOGIN_RATE_LIMIT_FAIL_OPEN`：控制 Redis 故障时的可用性/安全性取舍；生产值为 `false`。
 
 实现时应保留 Javadoc，并明确 Redis 异常的降级行为。不要把 Redis 查询结果当作用户是否存在或密码是否正确的依据，避免引入账号枚举问题。
 
@@ -36,5 +37,5 @@ Redis 只负责性能和风控辅助，不承载认证事实：用户、租户�
 - 同一客户端地址连续失败 30 次后，第 31 次在窗口内返回 `429`。
 - 成功登录后，该账号的登录尝试计数清零。
 - 两个 IAM 实例共享 Redis 时，计数结果一致。
-- Redis 停止时登录接口仍可完成认证，日志中有明确告警。
+- 本地 fail-open 模式下 Redis 停止时登录接口仍可完成认证，日志中有明确告警；生产 fail-closed 模式返回 `503`。
 - 认证集成测试、Redis 限流单元测试和 Compose 健康检查均通过。

@@ -8,8 +8,15 @@
 - `restore-postgres.sh`：将 PostgreSQL custom-format 备份恢复到目标数据库。
 - `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
+- `validate-observability.sh`：校验 Prometheus 配置和 Grafana Dashboard 的基本结构。
 
 备份完成后执行 `./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>`，确认
-custom-format 归档可被 `pg_restore` 读取。
+SHA-256 校验清单和 custom-format 归档均可读取。恢复脚本会在写入目标数据库前再次执行同一校验。
+
+观测配置校验不会启动 Prometheus 或 Grafana，也不替代真实环境验证：
+
+```bash
+./scripts/validate-observability.sh
+```
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境应将备份目录同步到独立、加密且具备生命周期策略的对象存储；恢复前必须完成审批和目标数据库隔离确认。

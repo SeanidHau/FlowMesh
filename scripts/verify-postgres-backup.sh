@@ -12,6 +12,7 @@ fi
 backup_dir="$1"
 database_backup="${backup_dir}/flowmesh.dump"
 globals_backup="${backup_dir}/globals.sql"
+checksums_backup="${backup_dir}/checksums.sha256"
 
 if [[ ! -f "${database_backup}" || ! -s "${database_backup}" ]]; then
   echo "数据库备份不存在或为空：${database_backup}" >&2
@@ -21,6 +22,17 @@ fi
 if [[ ! -f "${globals_backup}" || ! -s "${globals_backup}" ]]; then
   echo "全局对象备份不存在或为空：${globals_backup}" >&2
   exit 1
+fi
+
+if [[ ! -f "${checksums_backup}" || ! -s "${checksums_backup}" ]]; then
+  echo "备份校验清单不存在或为空：${checksums_backup}" >&2
+  exit 1
+fi
+
+if command -v sha256sum >/dev/null 2>&1; then
+  (cd "${backup_dir}" && sha256sum --check checksums.sha256)
+else
+  (cd "${backup_dir}" && shasum -a 256 --check checksums.sha256)
 fi
 
 pg_restore --list "${database_backup}" >/dev/null

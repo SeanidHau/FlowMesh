@@ -13,6 +13,13 @@ global:
 networkPolicy:
   enabled: true
 
+# 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  tls: []
+
 objectStorage:
   endpoint: https://minio.internal.example.com
   bucket: flowmesh-documents
@@ -37,6 +44,7 @@ gateway:
 services:
   iam:
     replicas: 2
+    loginRateLimitFailOpen: false
     autoscaling:
       enabled: true
       minReplicas: 2

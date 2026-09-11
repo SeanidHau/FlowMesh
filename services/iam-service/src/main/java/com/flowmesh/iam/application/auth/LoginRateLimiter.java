@@ -74,6 +74,9 @@ public class LoginRateLimiter {
                 throw new LoginRateLimitExceededException();
             }
         } catch (DataAccessException | NumberFormatException exception) {
+            if (!properties.failOpen()) {
+                throw new LoginRateLimitUnavailableException();
+            }
             log.warn("Redis 登录限流检查失败，已降级放行。", exception);
         }
     }

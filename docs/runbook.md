@@ -130,7 +130,8 @@ export FLOWMESH_BACKUP_ROOT='./backups/postgres'
 ./scripts/backup-postgres.sh
 ```
 
-备份完成后必须在同一台具备 PostgreSQL 客户端工具的机器上校验归档目录：
+备份完成后必须在同一台具备 PostgreSQL 客户端工具和 SHA-256 校验工具的机器上校验归档目录。备份脚本会生成
+`checksums.sha256`，校验步骤同时检查文件摘要和 custom-format 归档目录：
 
 ```bash
 ./scripts/verify-postgres-backup.sh ./backups/postgres/<timestamp>

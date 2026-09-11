@@ -35,7 +35,7 @@ class LoginRateLimiterTest {
     void setUp() {
         limiter = new LoginRateLimiter(
             redisTemplate,
-            new LoginRateLimitProperties(true, 5, 30, Duration.ofMinutes(1))
+            new LoginRateLimitProperties(true, 5, 30, Duration.ofMinutes(1), true)
         );
     }
 
@@ -64,5 +64,24 @@ class LoginRateLimiterTest {
         assertThatCode(() -> limiter.check(
             new LoginRateLimiter.LoginAttempt("tenant-a", "applicant-a", "127.0.0.1")
         )).doesNotThrowAnyException();
+    }
+
+    /**
+     * 验证生产环境关闭降级放行时，Redis 故障会返回依赖不可用，而不是绕过限流。
+     */
+    @Test
+    void shouldFailClosedWhenConfigured() {
+        limiter = new LoginRateLimiter(
+            redisTemplate,
+            new LoginRateLimitProperties(true, 5, 30, Duration.ofMinutes(1), false)
+        );
+        doThrow(new RedisConnectionFailureException("redis unavailable"))
+            .when(redisTemplate).execute(
+                any(RedisScript.class), anyList(), anyString(), anyString(), anyString()
+            );
+
+        assertThatThrownBy(() -> limiter.check(
+            new LoginRateLimiter.LoginAttempt("tenant-a", "applicant-a", "127.0.0.1")
+        )).isInstanceOf(LoginRateLimitUnavailableException.class);
     }
 }

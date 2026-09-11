@@ -10,12 +10,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param accountMaxAttempts 单个账号在窗口内允许的最大尝试次数
  * @param clientMaxAttempts 单个客户端地址在窗口内允许的最大尝试次数
  * @param window 限流时间窗口
+ * @param failOpen Redis 不可用时是否降级放行；生产环境建议关闭
  */
 @ConfigurationProperties(prefix = "flowmesh.security.login-rate-limit")
 public record LoginRateLimitProperties(
     boolean enabled,
     int accountMaxAttempts,
     int clientMaxAttempts,
-    Duration window
+    Duration window,
+    boolean failOpen
 ) {
 }

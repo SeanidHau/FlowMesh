@@ -111,7 +111,7 @@ POST http://localhost:8083/api/v1/workflow-instances/{applicationId}/tasks
 
 ## 启动完整本地环境
 
-在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ、五个 Java 服务和 API Gateway：
+在仓库根目录执行以下命令可以构建并启动 PostgreSQL、RocketMQ、六个 Java 服务和 API Gateway：
 
 ```bash
 cp .env.example .env

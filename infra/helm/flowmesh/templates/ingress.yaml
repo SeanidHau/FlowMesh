@@ -1,4 +1,12 @@
 {{- if .Values.ingress.enabled }}
+{{- if .Values.global.production }}
+{{- if not .Values.ingress.host }}
+{{- fail "ingress.host is required in production mode" }}
+{{- end }}
+{{- if not .Values.ingress.tls }}
+{{- fail "ingress.tls is required in production mode" }}
+{{- end }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

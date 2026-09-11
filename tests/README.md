@@ -10,8 +10,8 @@
 ./tests/rocketmq-e2e.sh
 ```
 
-脚本会临时创建环境变量和 Broker 配置，打包五个 Java 服务，并只启动本次测试使用的
-PostgreSQL、Redis 与真实 RocketMQ Broker。脚本验证申请幂等、四级审批、消费回写、健康探针、
+脚本会临时创建环境变量和 Broker 配置，打包六个 Java 服务，并只启动本次测试使用的
+PostgreSQL、Redis 与真实 RocketMQ Broker。脚本通过 Gateway 访问业务 API，验证申请幂等、四级审批、消费回写、健康探针、
 Prometheus 指标、风控结果、申请人通知、死信查询、受控重放、审计和跨服务对账；退出时停止并删除本次测试容器和数据卷。
 本地验证完成后请按 [运行手册](../docs/runbook.md) 退出 Docker Desktop。
 

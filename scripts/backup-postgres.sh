@@ -35,7 +35,13 @@ pg_dumpall \
   --username="${user}" \
   > "${backup_dir}/globals.sql"
 
-chmod 600 "${backup_dir}/flowmesh.dump" "${backup_dir}/globals.sql"
+if command -v sha256sum >/dev/null 2>&1; then
+  (cd "${backup_dir}" && sha256sum flowmesh.dump globals.sql > checksums.sha256)
+else
+  (cd "${backup_dir}" && shasum -a 256 flowmesh.dump globals.sql > checksums.sha256)
+fi
+
+chmod 600 "${backup_dir}/flowmesh.dump" "${backup_dir}/globals.sql" "${backup_dir}/checksums.sha256"
 unset PGPASSWORD
 
 printf 'PostgreSQL 备份已创建：%s\n' "${backup_dir}"

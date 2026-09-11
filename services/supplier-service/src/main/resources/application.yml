@@ -26,7 +26,7 @@ spring:
       max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
 
   flyway:
-    fail-on-missing-locations: false
+    fail-on-missing-locations: true
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml

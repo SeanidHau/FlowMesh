@@ -11,10 +11,13 @@ if [[ "${FLOWMESH_CONFIRM_RESTORE}" != "YES" ]]; then
 fi
 
 backup_dir="${1:-}"
-if [[ -z "${backup_dir}" || ! -f "${backup_dir}/flowmesh.dump" ]]; then
+if [[ -z "${backup_dir}" || ! -f "${backup_dir}/flowmesh.dump" || ! -f "${backup_dir}/checksums.sha256" ]]; then
   printf '用法：FLOWMESH_CONFIRM_RESTORE=YES FLOWMESH_PG_PASSWORD=... %s <backup-dir>\n' "$0" >&2
   exit 2
 fi
+
+# 作用：恢复前先验证备份清单，避免将损坏归档写入目标数据库。
+"$(dirname "$0")/verify-postgres-backup.sh" "${backup_dir}"
 
 : "${FLOWMESH_PG_PASSWORD:?请设置 FLOWMESH_PG_PASSWORD}"
 database="${FLOWMESH_PG_DATABASE:-flowmesh}"

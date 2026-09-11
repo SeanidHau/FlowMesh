@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 作用：使用真实 RocketMQ Broker 验证 supplier -> workflow -> risk -> supplier 主链路。
+# 作用：使用真实 RocketMQ Broker 验证 Gateway -> supplier -> workflow -> risk -> supplier 主链路。
 # 脚本只管理本次 Compose 项目创建的基础设施容器，退出时删除临时数据卷。
 
 set -Eeuo pipefail
@@ -52,6 +52,7 @@ WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow
 RISK_DB_PASSWORD=flowmesh-e2e-risk
 AUDIT_DB_PASSWORD=flowmesh-e2e-audit
 REDIS_PASSWORD=flowmesh-e2e-redis
+GRAFANA_ADMIN_PASSWORD=flowmesh-e2e-grafana
 JWT_SIGNING_KEY=${JWT_KEY}
 JWT_ISSUER=flowmesh-e2e
 FLOWMESH_OUTBOX_ENABLED=true
@@ -108,10 +109,12 @@ login() {
   curl --fail --silent --show-error \
     -H 'Content-Type: application/json' \
     -d "{\"tenantId\":\"tenant-a\",\"username\":\"${username}\",\"password\":\"password123\"}" \
-    http://localhost:8081/api/v1/auth/login | json_field accessToken
+    "${API_BASE}/api/iam/api/v1/auth/login" | json_field accessToken
 }
 
-echo "打包五个 Java 服务并启动 PostgreSQL、RocketMQ..."
+API_BASE="http://localhost:8080"
+
+echo "打包六个 Java 服务并启动 PostgreSQL、RocketMQ..."
 ./mvnw -q -DskipTests package
 docker compose "${COMPOSE_ARGS[@]}" up -d postgres redis rocketmq-namesrv rocketmq-volume-init rocketmq-broker
 wait_for_tcp 127.0.0.1 9876
@@ -147,12 +150,18 @@ start_service "notification-audit" "services/notification-audit-service/target/n
   AUDIT_DB_USER=flowmesh_audit AUDIT_DB_PASSWORD=flowmesh-e2e-audit \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_AUDIT_CONSUMER_ENABLED=true
+start_service "gateway" "services/gateway-service/target/gateway-service-0.1.0-SNAPSHOT.jar" \
+  FLOWMESH_IAM_URL=http://localhost:8081 \
+  FLOWMESH_SUPPLIER_URL=http://localhost:8082 \
+  FLOWMESH_WORKFLOW_URL=http://localhost:8083 \
+  FLOWMESH_NOTIFICATION_AUDIT_URL=http://localhost:8085
 
 wait_for_url http://localhost:8081/actuator/health
 wait_for_url http://localhost:8082/actuator/health
 wait_for_url http://localhost:8083/actuator/health
 wait_for_url http://localhost:8084/actuator/health
 wait_for_url http://localhost:8085/actuator/health
+wait_for_url http://localhost:8080/actuator/health
 wait_for_url http://localhost:8081/actuator/health/liveness
 wait_for_url http://localhost:8082/actuator/health/readiness
 wait_for_url http://localhost:8083/actuator/health/readiness
@@ -170,20 +179,20 @@ APPLICATION_ID="$(curl --fail --silent --show-error \
   -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: rocketmq-e2e-application' \
   -d '{"supplierName":"RocketMQ E2E Supplier"}' \
-  http://localhost:8082/api/v1/supplier-applications | json_field id)"
+  "${API_BASE}/api/supplier/api/v1/supplier-applications" | json_field id)"
 
 REPLAYED_APPLICATION_ID="$(curl --fail --silent --show-error \
   -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
   -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: rocketmq-e2e-application' \
   -d '{"supplierName":"RocketMQ E2E Supplier"}' \
-  http://localhost:8082/api/v1/supplier-applications | json_field id)"
+  "${API_BASE}/api/supplier/api/v1/supplier-applications" | json_field id)"
 if [ "${APPLICATION_ID}" != "${REPLAYED_APPLICATION_ID}" ]; then
   echo "幂等请求没有返回同一个申请标识。" >&2
   exit 1
 fi
 
-WORKFLOW_URL="http://localhost:8083/api/v1/workflow-instances/${APPLICATION_ID}"
+WORKFLOW_URL="${API_BASE}/api/workflow/api/v1/workflow-instances/${APPLICATION_ID}"
 for attempt in $(seq 1 60); do
   if curl --fail --silent --show-error -H "Authorization: Bearer ${PURCHASER_TOKEN}" "${WORKFLOW_URL}" >/dev/null; then
     break
@@ -212,7 +221,7 @@ complete_task "${OPERATIONS_TOKEN}" OPERATIONS_ACTIVATION
 for attempt in $(seq 1 60); do
   application_status="$(curl --fail --silent --show-error \
     -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
-    "http://localhost:8082/api/v1/supplier-applications/${APPLICATION_ID}" | json_field status)"
+    "${API_BASE}/api/supplier/api/v1/supplier-applications/${APPLICATION_ID}" | json_field status)"
 if [ "${application_status}" = "ENABLED" ]; then
     break
   fi
@@ -226,7 +235,7 @@ done
 for attempt in $(seq 1 60); do
   if curl --fail --silent --show-error \
     -H "Authorization: Bearer ${APPLICANT_TOKEN}" \
-    "http://localhost:8085/api/v1/notifications" | grep -q '供应商已启用'; then
+    "${API_BASE}/api/notification/api/v1/notifications" | grep -q '供应商已启用'; then
     break
   fi
   if [ "$attempt" -eq 60 ]; then
@@ -254,7 +263,7 @@ docker compose "${COMPOSE_ARGS[@]}" exec -T postgres psql -U flowmesh -d flowmes
 
 DEAD_LETTERS="$(curl --fail --silent --show-error \
   -H "Authorization: Bearer ${OPERATIONS_TOKEN}" \
-  "http://localhost:8082/api/v1/operations/outbox/dead-letters?eventType=SupplierActivated&aggregateId=${APPLICATION_ID}")"
+  "${API_BASE}/api/supplier/api/v1/operations/outbox/dead-letters?eventType=SupplierActivated&aggregateId=${APPLICATION_ID}")"
 if ! printf '%s' "${DEAD_LETTERS}" | python3 -c \
   'import json, sys; expected=sys.argv[1]; assert any(item["eventId"] == expected for item in json.load(sys.stdin))' "${DEAD_LETTER_ID}"; then
   echo "死信查询没有返回 E2E 注入的事件。" >&2
@@ -266,7 +275,7 @@ REPLAY_RESPONSE="$(curl --fail --silent --show-error \
   -H "X-Trace-Id: rocketmq-e2e-replay" \
   -H 'Content-Type: application/json' \
   -d '{"reason":"验证受控重放和审计链路"}' \
-  -X POST "http://localhost:8082/api/v1/operations/outbox/${DEAD_LETTER_ID}/replay")"
+  -X POST "${API_BASE}/api/supplier/api/v1/operations/outbox/${DEAD_LETTER_ID}/replay")"
 REPLAY_EVENT_ID="$(printf '%s' "${REPLAY_RESPONSE}" | json_field replayEventId)"
 if [ "${REPLAY_EVENT_ID}" = "${DEAD_LETTER_ID}" ]; then
   echo "重放没有生成新的 eventId。" >&2
@@ -281,7 +290,7 @@ fi
 
 RECONCILIATION_RESULT="$(curl --fail --silent --show-error \
   -H "Authorization: Bearer ${OPERATIONS_TOKEN}" \
-  "http://localhost:8082/api/v1/operations/reconciliation/${APPLICATION_ID}")"
+  "${API_BASE}/api/supplier/api/v1/operations/reconciliation/${APPLICATION_ID}")"
 if [ "$(printf '%s' "${RECONCILIATION_RESULT}" | json_field consistent)" != "True" ]; then
   echo "完成后的跨服务对账未达到一致状态：${RECONCILIATION_RESULT}" >&2
   exit 1

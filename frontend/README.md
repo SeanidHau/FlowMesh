@@ -24,7 +24,7 @@ VITE_DEMO_MODE=true npm run dev
 VITE_DEMO_MODE=true npm run dev:web
 ```
 
-然后访问 `http://127.0.0.1:5173`。Web 模式通过 Vite 代理访问三个后端服务，
+然后访问 `http://127.0.0.1:5173`。Web 模式通过 Vite 代理访问统一 Gateway，
 因此不需要启动 Electron，也不会产生跨域请求。先按根目录文档启动后端服务即可。
 
 生产构建后的浏览器预览：
@@ -36,20 +36,20 @@ npm run preview
 
 然后访问 `http://127.0.0.1:4173`。
 
-开发模式默认访问以下后端地址：
+开发模式默认通过 Gateway 访问后端：
 
 | 服务 | 地址 |
 | --- | --- |
-| IAM | `http://localhost:8081` |
-| supplier | `http://localhost:8082` |
-| workflow | `http://localhost:8083` |
+| Gateway | `http://localhost:8080` |
+| IAM | 由 Gateway 路由到内部服务 |
+| supplier | 由 Gateway 路由到内部服务 |
+| workflow | 由 Gateway 路由到内部服务 |
+| notification | 由 Gateway 路由到内部服务 |
 
-可以通过环境变量覆盖地址：
+可以通过 `VITE_API_GATEWAY_URL` 覆盖 Gateway 地址：
 
 ```bash
-FLOWMESH_IAM_URL=http://localhost:8081 \
-FLOWMESH_SUPPLIER_URL=http://localhost:8082 \
-FLOWMESH_WORKFLOW_URL=http://localhost:8083 \
+VITE_API_GATEWAY_URL=http://localhost:8080 \
 npm run dev
 ```
 
@@ -64,12 +64,10 @@ npm run package
 `npm run build` 生成 `dist/` 和 `dist-electron/`。`npm run package` 使用
 `electron-builder` 生成当前平台的安装包，产物位于 `frontend/release/`。
 
-打包后的桌面端默认访问 `localhost` 上的三个后端端口。部署到其他环境时，在启动桌面端前设置
-`FLOWMESH_IAM_URL`、`FLOWMESH_SUPPLIER_URL` 和 `FLOWMESH_WORKFLOW_URL`。
+打包后的桌面端默认访问 `http://127.0.0.1:8080` 上的 Gateway。部署到其他环境时，在启动桌面端前设置
+`FLOWMESH_GATEWAY_URL`。
 
-生产环境的 Electron 客户端可设置 `FLOWMESH_GATEWAY_URL`，此时请求会统一发送到
-Gateway 的 `/api/{service}/api/v1/**` 路径，不再直接访问业务服务。
+桌面端请求统一发送到 Gateway 的 `/api/{service}/api/v1/**` 路径，不直接访问业务服务。
 
-本地通过 Compose 验证统一入口时可使用 `http://localhost:8080`；浏览器开发模式仍由
-Vite 代理直接转发到三个本地业务服务。申请详情页支持上传 PDF、PNG、JPG 和 DOCX 材料，
+本地通过 Compose 验证统一入口时使用 `http://localhost:8080`。申请详情页支持上传 PDF、PNG、JPG 和 DOCX 材料，
 下载使用后端签发的短期 URL。

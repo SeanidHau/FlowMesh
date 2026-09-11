@@ -11,12 +11,14 @@
 - 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**`、`/api/workflow/**` 和 `/api/notification/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
+- Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 - 提供离线备份完整性校验脚本，并通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - Outbox 发布器显式设置消息发送超时，并在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，避免参数调整后出现租约过期导致的并发重复发布。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - CI 在 PR 构建六项服务镜像，在 `main` 推送时将带提交 SHA 和 `main` 标签的镜像发布到 GHCR。
+- 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 
 验证命令：
 
@@ -44,7 +46,7 @@ helm lint infra/helm/flowmesh \
 
 ### 平台与网络
 
-- Gateway 的 TLS 终止、外部 Ingress、统一限流、审计和服务间网络策略；Helm 已提供可选 Ingress 路由模板。
+- Gateway 的统一限流、审计和服务间网络策略；Helm 已提供并校验 TLS Ingress 路由模板，目标集群仍需提供 Ingress Controller 和证书 Secret。
 - Helm 生产覆盖值已提供业务服务入口 NetworkPolicy；仍需在目标 CNI 和真实集群完成连通性演练。
 - 镜像仓库、镜像签名和运行时漏洞扫描。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。

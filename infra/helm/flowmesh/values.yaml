@@ -75,6 +75,7 @@ services:
     dbUser: flowmesh_iam
     dbPassword: ""
     loginRateLimitEnabled: true
+    loginRateLimitFailOpen: true
     replicas: 1
     resources:
       requests:

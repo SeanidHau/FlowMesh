@@ -170,10 +170,10 @@ export class FlowMeshApi {
         method: options.method ?? 'GET',
         headers: {
           Accept: 'application/json',
+          ...(options.headers ?? {}),
           ...(options.authenticated && this.session?.accessToken
             ? { Authorization: `Bearer ${this.session.accessToken}` }
             : {}),
-          ...(options.headers ?? {}),
           ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
         },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
