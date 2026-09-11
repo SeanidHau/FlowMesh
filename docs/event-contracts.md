@@ -18,6 +18,7 @@
 | `supplier-events` | `SupplementSubmitted` | `supplier-service` | `workflow-service` | 驱动下一轮采购初审 |
 | `workflow-events` | `WorkflowTaskSlaReminderRequested` | SLA CronJob | `notification-audit-service` | 审批节点 20 小时催办 |
 | `workflow-events` | `WorkflowTaskSlaEscalated` | SLA CronJob | `notification-audit-service` | 审批节点 24 小时超时通知 |
+| `workflow-events` | `WorkflowRiskRejected` | `workflow-service` | `supplier-service`、`notification-audit-service` | 同步风控拒绝终态、通知与审计 |
 | `risk-events` | `RiskCheckRequested` | `workflow-service` | `risk-service` | 请求风险校验 |
 | `risk-events` | `RiskCheckCompleted` | `risk-service` | `workflow-service` | 返回业务风险结果 |
 | `risk-events` | `RiskCheckFailed` | `risk-service` | `workflow-service` | 记录技术失败和重试 |
@@ -58,6 +59,9 @@
 `sourceEventId` 唯一约束实现重复消费幂等，并创建处于 `RISK_CHECKING` 的
 `supplier-onboarding` 流程实例投影；workflow 再写入 `RiskCheckRequested`，risk-service
 将结果和 `RiskCheckCompleted` 写入同一事务，workflow 以事件 Inbox 幂等地推进到采购审批或拒绝终态。
+
+风控拒绝时，workflow-service 在更新流程为 `REJECTED` 的同一事务内写入 `WorkflowRiskRejected`；supplier-service
+以 Inbox 幂等地将申请更新为 `REJECTED`，notification-audit-service 以同一事件生成申请人通知和不可变审计记录。
 
 审批完成后，workflow-service 在推进流程实例的同一事务内写入 `WorkflowTaskCompleted`
 Outbox；supplier-service 以事件 Inbox 去重、更新申请状态，完成运营节点后再写入

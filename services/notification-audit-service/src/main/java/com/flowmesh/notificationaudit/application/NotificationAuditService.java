@@ -126,6 +126,42 @@ public class NotificationAuditService {
     }
 
     /**
+     * 处理风控拒绝事件，为申请人生成可追溯的终止通知。
+     *
+     * @param message Workflow 风控拒绝事件信封
+     */
+    @Transactional
+    public void handleWorkflowRiskRejected(String message) {
+        JsonNode event = readEvent(message);
+        UUID eventId = EventEnvelopeValidator.requiredUuid(event, "eventId");
+        UUID aggregateId = EventEnvelopeValidator.requiredUuid(event, "aggregateId");
+        String tenantId = EventEnvelopeValidator.requiredText(event, "tenantId");
+        Instant occurredAt = Instant.parse(EventEnvelopeValidator.requiredText(event, "occurredAt"));
+        String traceId = EventEnvelopeValidator.requiredText(event, "traceId");
+        JsonNode payload = EventEnvelopeValidator.validate(event, "WorkflowRiskRejected");
+        UUID applicantUserId = EventEnvelopeValidator.requiredUuid(payload, "applicantUserId");
+        String reason = EventEnvelopeValidator.requiredText(payload, "reason");
+
+        tenantRlsInitializer.initialize(tenantId);
+        if (auditEventRepository.existsByEventId(eventId)) {
+            return;
+        }
+        auditEventRepository.insert(
+            UUID.randomUUID(), eventId, tenantId, aggregateId, "WorkflowRiskRejected", traceId,
+            message, occurredAt
+        );
+        notificationRepository.insert(Notification.unread(
+            eventId,
+            tenantId,
+            applicantUserId,
+            "SUPPLIER_RISK_REJECTED",
+            "供应商申请未通过风控",
+            "本次申请未通过风控校验：" + reason
+        ));
+        auditEventRepository.insertInbox(eventId, tenantId, aggregateId);
+    }
+
+    /**
      * 查询用户的站内通知。
      *
      * @param tenantId 租户标识

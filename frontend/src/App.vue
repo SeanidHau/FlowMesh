@@ -90,6 +90,7 @@ function displayStatus(value?: string): string {
     SUBMITTED: '已提交',
     IN_REVIEW: '审核中',
     SUPPLEMENT_REQUIRED: '待补件',
+    REJECTED: '风控未通过',
     ENABLED: '已启用',
     RUNNING: '审批中',
     RISK_CHECKING: '风控检查中',

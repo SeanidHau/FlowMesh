@@ -205,6 +205,29 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
         assertThat(supplementRequest.getTag()).isEqualTo("SupplementRequested");
     }
 
+    /**
+     * 验证风控拒绝同时终止 workflow 并写入供 supplier 与通知服务消费的事件。
+     *
+     * @throws Exception 当请求执行失败时抛出
+     */
+    @Test
+    void shouldPublishRiskRejectionForDownstreamServices() throws Exception {
+        UUID applicationId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        projectionService.project(applicationSubmittedEvent(applicationId, eventId));
+        riskCheckResultService.apply(riskCheckRejectedEvent(applicationId, eventId));
+
+        mockMvc.perform(get("/api/v1/workflow-instances/{id}", applicationId)
+                .header("Authorization", "Bearer " + token("tenant-a", Set.of("PURCHASER"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("REJECTED"))
+            .andExpect(jsonPath("$.availableTasks").isEmpty());
+
+        assertThat(outboxRepository
+            .findAllByAggregateIdAndTag(applicationId, "WorkflowRiskRejected"))
+            .hasSize(1);
+    }
+
     private String applicationSubmittedEvent(UUID applicationId, UUID eventId) {
         return """
             {
@@ -223,6 +246,17 @@ class WorkflowInstanceApiIntegrationTest extends PostgresIntegrationTest {
               "aggregateId":"%s","tenantId":"tenant-a","occurredAt":"2026-09-11T00:00:01Z",
               "traceId":"trace-test","payload":{"applicationId":"%s","decision":"PASS",
               "reason":"模拟风险校验通过","requestedEventId":"%s"}
+            }
+            """.formatted(UUID.randomUUID(), applicationId, applicationId, requestedEventId);
+    }
+
+    private String riskCheckRejectedEvent(UUID applicationId, UUID requestedEventId) {
+        return """
+            {
+              "eventId":"%s","eventType":"RiskCheckCompleted","schemaVersion":1,
+              "aggregateId":"%s","tenantId":"tenant-a","occurredAt":"2026-09-11T00:00:01Z",
+              "traceId":"trace-test","payload":{"applicationId":"%s","decision":"REJECT",
+              "reason":"供应商命中风险规则","requestedEventId":"%s"}
             }
             """.formatted(UUID.randomUUID(), applicationId, applicationId, requestedEventId);
     }

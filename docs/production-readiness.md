@@ -35,6 +35,7 @@
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
 - 审批退回补件和多轮重审已落地：workflow 持久化审批决定、意见和轮次，supplier 保存补件历史并通过 Outbox 通知下一轮初审；最多两轮，重复提交由幂等键吸收。
 - 审批 SLA 已落地：独立 `flowmesh_workflow_sla` 非超级用户维护角色由 Helm CronJob 每 5 分钟扫描，第 20 小时写催办事件，第 24 小时创建运营升级任务；业务账号不承担跨租户扫描。
+- 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。
 
 验证命令：
 

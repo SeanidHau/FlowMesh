@@ -7,5 +7,6 @@ public enum ApplicationStatus {
     SUBMITTED,
     IN_REVIEW,
     SUPPLEMENT_REQUIRED,
+    REJECTED,
     ENABLED
 }

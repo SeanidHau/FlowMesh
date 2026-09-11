@@ -14,7 +14,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | 供应商申请与审批投影 | 已实现 | 支持采购初审、法务/财务并行会签、审批意见、退回补件、最多两轮重审、运营启用、幂等和 PostgreSQL RLS。 |
 | 审批 SLA 与运营处置 | 已实现 | 第 20 小时催办、第 24 小时自动转运营升级；独立维护角色和 CronJob 扫描任务并写入 Outbox。 |
 | 供应商材料 | 已实现 | MinIO 私有桶、文件头校验、SHA-256、ClamAV 扫描、短期下载 URL 和可执行生命周期策略。 |
-| 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
+| 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；拒绝结果同步回写 supplier 终态并生成通知审计；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；支持查询和幂等标记已读。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |
 | PostgreSQL | 已实现 | 各服务使用独立 Schema 和业务账号，并通过 Flyway 管理迁移；生产连接默认要求 TLS。 |

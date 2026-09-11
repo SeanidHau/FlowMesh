@@ -126,6 +126,16 @@ public class SupplierApplication {
         status = ApplicationStatus.SUBMITTED;
     }
 
+    /**
+     * 应用风控拒绝结果，进入不可继续审批的终态。
+     */
+    public void rejectRisk() {
+        if (status != ApplicationStatus.SUBMITTED) {
+            throw new IllegalStateException("申请当前不允许应用风控拒绝结果");
+        }
+        status = ApplicationStatus.REJECTED;
+    }
+
     public long getStateVersion() {
         return stateVersion;
     }
