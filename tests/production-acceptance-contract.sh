@@ -11,6 +11,7 @@ for required_check in \
   'scripts/verify-flowmesh-images.sh' \
   'tests/kubernetes-production-smoke.sh' \
   'scripts/validate-production-dependencies.sh' \
+  'scripts/validate-backup-role.sh' \
   'scripts/validate-retention-role.sh'; do
   grep -F -- "${required_check}" "${script}" >/dev/null
 done

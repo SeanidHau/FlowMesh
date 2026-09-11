@@ -114,7 +114,7 @@ FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \
 ```
 
 该编排脚本不会替代 PostgreSQL、Redis、RocketMQ 和对象存储的 HA、故障切换、恢复或 RTO/RPO 演练；验收失败时仍会保留报告，
-便于发布记录和故障处置。生产验收默认只读验证 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，并将拓扑证据写入报告；该检查仍不替代实际故障切换和恢复演练。
+便于发布记录和故障处置。生产验收默认只读验证 PostgreSQL 主库复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS，并将拓扑证据写入报告；同时检查备份账号不是超级用户且对业务表仅具备读取权限。上述检查仍不替代实际故障切换和恢复演练。
 生产验收默认要求提供 `FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`，并只读验证观测后端已就绪、六个服务目标可见且关键告警已加载。
 生产验收默认要求 `FLOWMESH_EVIDENCE_DIR` 指向已归档的目标环境证据包；
 证据包必须包含 `kubernetes-smoke.md`、`dependency-ha.md`、`runtime-observability.md`、`service-recovery.md`、
@@ -167,6 +167,7 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 `FLOWMESH_PROMETHEUS_RELEASE`、`FLOWMESH_INGRESS_HOST`、`FLOWMESH_INGRESS_TLS_SECRET_NAME`、
 `FLOWMESH_POSTGRES_HOST`、`FLOWMESH_REDIS_HOST`、`FLOWMESH_ROCKETMQ_NAMESRV_ADDR`、
 `FLOWMESH_OBJECT_STORAGE_ENDPOINT`、`FLOWMESH_CLAMAV_HOST`、`FLOWMESH_BACKUP_POSTGRES_HOST`、
+`FLOWMESH_BACKUP_POSTGRES_USER`、
 `FLOWMESH_BACKUP_S3_URI`、`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_POSTGRES_HOST`、
 `FLOWMESH_RETENTION_SECRET_NAME`、`FLOWMESH_NOTIFICATION_WEBHOOK_URL` 和
 `FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS`。这些变量只描述目标平台地址、名称或网络范围，不包含数据库密码、JWT 密钥或对象存储密钥。
@@ -186,6 +187,7 @@ FLOWMESH_ROCKETMQ_NAMESRV_ADDR='namesrv-0.messaging.svc:9876,namesrv-1.messaging
 FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
 FLOWMESH_CLAMAV_HOST='clamav.security.svc.cluster.local' \
 FLOWMESH_BACKUP_POSTGRES_HOST='postgres-primary.database.svc' \
+FLOWMESH_BACKUP_POSTGRES_USER='flowmesh_backup' \
 FLOWMESH_BACKUP_S3_URI='s3://flowmesh-production-backups' \
 FLOWMESH_BACKUP_SECRET_NAME='flowmesh-backup-credentials' \
 FLOWMESH_RETENTION_POSTGRES_HOST='postgres-primary.database.svc' \
@@ -406,6 +408,22 @@ export FLOWMESH_BACKUP_CLEANUP_LOCAL=true
 CronJob 使用独立备份镜像，禁止同一时间运行多个备份，
 并在失败时按 `backoffLimit` 重试。备份凭据应通过 Kubernetes Secret 或云厂商工作负载身份提供，
 不能写入 values 文件。
+
+生产发布前使用与备份 CronJob 相同的数据库账号执行只读权限预检。该账号必须能够读取所有业务 Schema，使用
+`BYPASSRLS` 归档完整租户数据，但不得是超级用户、复制角色、建库/建角色账号，也不得拥有业务表写权限：
+
+```bash
+FLOWMESH_PG_HOST='postgres-primary.database.svc' \
+FLOWMESH_PG_DATABASE='flowmesh' \
+FLOWMESH_BACKUP_DB_USER='flowmesh_backup' \
+FLOWMESH_BACKUP_DB_PASSWORD="$BACKUP_DB_PASSWORD" \
+FLOWMESH_PG_SSLMODE='verify-full' \
+./scripts/validate-backup-role.sh
+```
+
+预检只读取角色、Schema 和业务表权限，不创建角色、不修改授权、不执行备份或恢复。预检账号应与业务服务账号、
+`flowmesh_retention` 和 `flowmesh_workflow_sla` 分离；如果目标平台通过 `FLOWMESH_PG_USER` 和
+`FLOWMESH_PG_PASSWORD` 注入同一组值，也可以省略备份账号专用变量，但生产环境应优先显式配置专用账号。
 
 ### 材料对象生命周期
 

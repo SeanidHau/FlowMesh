@@ -121,6 +121,7 @@ run_check() {
 run_check '镜像签名与不可变标签' "${ROOT_DIR}/scripts/verify-flowmesh-images.sh"
 run_check 'Kubernetes 生产 smoke test' "${ROOT_DIR}/tests/kubernetes-production-smoke.sh"
 run_check '外部依赖 TLS 与连通性预检' "${ROOT_DIR}/scripts/validate-production-dependencies.sh"
+run_check 'PostgreSQL 备份角色权限预检' "${ROOT_DIR}/scripts/validate-backup-role.sh"
 run_check '生命周期维护角色权限预检' "${ROOT_DIR}/scripts/validate-retention-role.sh"
 if [[ "${require_runtime_observability}" == true ]]; then
   run_check '运行时 Prometheus 与 Alertmanager 预检' "${ROOT_DIR}/scripts/validate-runtime-observability.sh"

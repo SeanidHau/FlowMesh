@@ -48,6 +48,7 @@ require_value '^    clientIpHeader:[[:space:]]*[^[:space:]]+' 'Gateway 可信客
 require_value '^backup:[[:space:]]*$' 'PostgreSQL 备份配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产 PostgreSQL 备份必须启用'
 require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '备份凭据 Secret'
+require_value '^    user:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*$' '备份专用数据库账号'
 require_value '^retention:[[:space:]]*$' '数据生命周期清理配置块'
 require_value '^  enabled:[[:space:]]*true[[:space:]]*$' '生产数据生命周期清理必须启用'
 require_value '^  credentialsSecret:[[:space:]]*[^[:space:]]+' '生命周期维护凭据 Secret'
@@ -76,6 +77,8 @@ raise "生产 PostgreSQL 不得使用明文连接" if postgresql.fetch("sslMode"
 raise "生产 PostgreSQL 必须配置 sslMode" if postgresql.fetch("sslMode", "").to_s.empty?
 raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEnabled") == true
 backup_postgresql = backup.fetch("postgres")
+backup_user = backup_postgresql.fetch("user", "").to_s
+raise "生产 PostgreSQL 备份必须使用专用数据库账号" if backup_user.empty? || %w[postgres flowmesh].include?(backup_user)
 raise "生产 PostgreSQL 备份不得使用明文连接" if backup_postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 备份必须配置 sslMode" if backup_postgresql.fetch("sslMode", "").to_s.empty?
 raise "生产 PostgreSQL 备份必须启用远端对象校验" unless backup.dig("s3", "verifyRemote") == true

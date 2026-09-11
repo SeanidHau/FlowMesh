@@ -18,6 +18,8 @@ grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_BACKUP_DB_USER:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_BACKUP_DB_PASSWORD:' "${workflow}" >/dev/null
 grep -F -- 'expect_prometheus_rule:' "${workflow}" >/dev/null
 grep -F -- 'type: choice' "${workflow}" >/dev/null
 grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null

@@ -16,6 +16,7 @@
 - PostgreSQL RLS 是最终防线。业务连接在事务开始时设置当前租户。
 - 迁移账号、系统管理账号和业务服务账号必须分离。业务服务不得使用绕过 RLS 的高权限账号。
 - 生命周期维护任务使用独立的 `flowmesh_retention` 账号。该账号不是超级用户，只具备 `BYPASSRLS`、明确清理表的 `SELECT/DELETE` 权限，以及仅用于 `FOR UPDATE` 行锁键列的列级 `UPDATE` 权限，不得复用备份账号。
+- PostgreSQL 备份使用独立的可登录非超级用户账号；该账号必须具备 `BYPASSRLS` 以归档完整租户数据，对业务表只允许 `SELECT`，不得拥有建库、建角色、复制或业务表写权限。发布前使用 `scripts/validate-backup-role.sh` 只读核验。
 - 任何越权 API、消息或文件访问必须拒绝，并保留审计记录。
 
 IAM 的登录查询发生在用户尚未认证之前，因此当前实现将 IAM Schema 作为 RLS 例外。补偿控制包括：

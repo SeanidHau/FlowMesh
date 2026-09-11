@@ -16,6 +16,7 @@ deployment_selector="app.kubernetes.io/instance=${release}"
 backup_cronjob="${release}-flowmesh-postgres-backup"
 retention_cronjob="${release}-flowmesh-retention"
 workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
+expected_backup_user="${FLOWMESH_BACKUP_POSTGRES_USER:-flowmesh_backup}"
 
 if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
@@ -147,7 +148,7 @@ raise "生命周期维护 Secret 缺少 RETENTION_DB_PASSWORD" unless keys.inclu
 '
 
 cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${backup_cronjob}" -o json)"
-CRONJOB_JSON="${cronjob_json}" ruby -e '
+CRONJOB_JSON="${cronjob_json}" EXPECTED_BACKUP_USER="${expected_backup_user}" ruby -e '
 require "json"
 cronjob = JSON.parse(ENV.fetch("CRONJOB_JSON"))
 spec = cronjob.fetch("spec")
@@ -156,6 +157,10 @@ job_spec = spec.fetch("jobTemplate").fetch("spec")
 raise "备份 CronJob 未设置 activeDeadlineSeconds" unless job_spec.fetch("activeDeadlineSeconds", 0).to_i > 0
 raise "备份 CronJob 未设置 backoffLimit" unless job_spec.fetch("backoffLimit", -1).to_i >= 0
 container = job_spec.fetch("template").fetch("spec").fetch("containers").first
+backup_user = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_USER" }
+expected_backup_user = ENV.fetch("EXPECTED_BACKUP_USER", "flowmesh_backup")
+raise "备份 CronJob 必须使用专用数据库账号" if expected_backup_user.empty? || %w[postgres flowmesh].include?(expected_backup_user)
+raise "备份 CronJob 未使用预期的专用数据库账号" unless backup_user && backup_user.fetch("value") == expected_backup_user
 ssl_mode = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLMODE" }
 raise "备份 CronJob 未设置 PostgreSQL SSL 模式" unless ssl_mode && ssl_mode.fetch("value") != "disable"
 puts "备份 CronJob 参数校验通过。"

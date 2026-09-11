@@ -13,6 +13,7 @@
 - `configure-object-storage-lifecycle.sh`：为专用材料桶启用版本化，并配置逻辑删除对象的非当前版本保留期。
 - `cleanup-flowmesh-retention.sh`：使用专用维护账号按白名单批量清理终态消息、死信、重放审计、Inbox 和幂等记录。
 - `validate-retention-role.sh`：只读核验生命周期维护账号的角色属性、RLS 能力和精确表/列权限。
+- `validate-backup-role.sh`：只读核验 PostgreSQL 备份账号的非超级用户属性、`BYPASSRLS` 和业务表只读权限。
 - `verify-flowmesh-images.sh`：部署前验证六个应用镜像、备份镜像和生命周期维护镜像均具备受信任 GitHub Actions 签名。
 - `deploy-production.sh`：校验镜像和生产参数后，以 `helm upgrade --install --atomic --wait` 发布，并执行发布后只读 smoke test。
 - `validate-production-readiness.sh`：不启动 Docker、不连接外部基础设施，聚合脚本语法、观测、供应链、生产配置和全部生产契约门禁。

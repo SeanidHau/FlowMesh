@@ -22,8 +22,9 @@
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
+- 提供只读 PostgreSQL 备份角色预检：要求备份账号为可登录的非超级用户、不可复制/建库/建角色、具备 `BYPASSRLS` 以保证全租户归档，业务表仅允许 `SELECT` 且不得拥有业务表；生产验收会执行该预检。
 - 提供离线备份完整性校验脚本，并通过真实 PostgreSQL 容器 E2E 验证归档校验、角色密码不落盘和隔离数据库恢复；通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
-- 提供可发布的 PostgreSQL 备份镜像和 Helm CronJob：定时创建归档、上传到 S3 兼容对象存储、从远端确认三个归档对象可见后再写入 `_SUCCESS`、使用服务端加密、禁止并发执行并在失败时重试；生产 Helm 要求显式注入外部数据库地址、备份目标和凭据 Secret。
+- 提供可发布的 PostgreSQL 备份镜像和 Helm CronJob：定时创建归档、上传到 S3 兼容对象存储、从远端确认三个归档对象可见后再写入 `_SUCCESS`、使用服务端加密、禁止并发执行并在失败时重试；生产 Helm 要求显式注入外部数据库地址、专用只读备份账号、备份目标和凭据 Secret。
 - Outbox 发布器显式设置消息发送超时，在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，并在每条消息发送前续租；若认领令牌已失效则跳过发送，避免参数调整或进程暂停导致的并发重复发布。
 - 四个 RocketMQ 服务支持独立 Producer/Consumer 凭据、访问通道和 TLS 配置；生产 Helm 默认开启 Producer/Consumer TLS，并要求运行时 Secret 提供四组凭据键。
 - 生产应用和备份 PostgreSQL 连接默认使用 `sslmode=require`，Redis 连接默认启用 TLS；目标平台配置 CA 后可进一步使用 PostgreSQL `verify-full` 完成服务端身份校验。
@@ -65,7 +66,7 @@ helm lint infra/helm/flowmesh \
 
 ### 依赖高可用
 
-- PostgreSQL 主备、自动切换和恢复演练；当前应用已设置连接池上限和连接超时，但不替代数据库侧 HA。生产 values 已禁止回落到本地 `postgres` 服务名。
+- PostgreSQL 主备、自动切换和恢复演练；当前应用已设置连接池上限和连接超时，但不替代数据库侧 HA。生产 values 已禁止回落到本地 `postgres` 服务名，并要求备份 CronJob 使用独立只读账号。
 - RocketMQ 多 Broker、持久卷、跨故障域部署和消息恢复演练；当前 Helm 使用外部 NameServer 地址并支持 TLS/ACL，不能把单 Broker Compose 拓扑当作 HA 证据。
 - Redis 哨兵或托管 Redis；Redis 只能作为登录限流的派生状态，生产 values 已禁止回落到本地 `redis` 服务名并默认启用 TLS，但仍需在目标平台完成 HA 和证书轮换演练。
 

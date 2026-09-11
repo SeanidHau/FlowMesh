@@ -67,7 +67,8 @@ backup:
     host: ""
     port: 5432
     database: flowmesh
-    user: flowmesh
+    # 生产发布流程必须覆写为专用只读备份账号。
+    user: flowmesh_backup
     sslMode: require
     connectTimeoutSeconds: 5
   s3:

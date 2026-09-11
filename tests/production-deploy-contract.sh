@@ -22,6 +22,8 @@ grep -F -- '发布后 smoke 失败' "${script}" >/dev/null
 grep -F -- 'global.existingSecret' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${script}" >/dev/null
+grep -F -- 'backup.postgres.user=' "${script}" >/dev/null
 
 for forbidden in \
   'global.jwtSigningKey' \
