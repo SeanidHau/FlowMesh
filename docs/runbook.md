@@ -138,6 +138,20 @@ Ingress Controller 不在 `ingress-nginx` 命名空间，执行前设置 `FLOWME
 smoke test 只读取集群状态，不证明 PostgreSQL、Redis、RocketMQ、对象存储已经完成故障切换；这些依赖
 仍需按目标平台的 HA、RocketMQ ACL/TLS 连通性和恢复剧本单独演练。
 
+### 应用服务恢复演练
+
+在隔离 Compose 环境执行单服务恢复演练，并把结果保存为不可覆盖的报告：
+
+```bash
+FLOWMESH_CHAOS_CONFIRM=YES \
+FLOWMESH_DRILL_EXPECTED_RTO_SECONDS=30 \
+FLOWMESH_DRILL_REPORT=./artifacts/risk-service-recovery-$(date +%Y%m%d%H%M%S).md \
+./tests/fault-drills/verify-service-recovery.sh risk-service http://localhost:8084/actuator/health
+```
+
+报告至少应记录服务、健康检查地址、UTC 开始时间、恢复耗时和目标 RTO；执行人还应补充消息积压、错误率、
+影响范围和是否触发告警。该演练只验证应用进程停止后的恢复，不代表 PostgreSQL、Redis、RocketMQ 或对象存储已具备故障切换能力。
+
 ## 停止与数据卷
 
 停止容器但保留演示数据：

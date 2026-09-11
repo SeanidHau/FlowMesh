@@ -36,10 +36,19 @@ PostgreSQL 备份恢复回归：
 ```bash
 FLOWMESH_ACCESS_TOKEN='<短期 Access Token>' k6 run tests/k6/supplier-onboarding.js
 FLOWMESH_CHAOS_CONFIRM=YES \
+  FLOWMESH_DRILL_EXPECTED_RTO_SECONDS=30 \
+  FLOWMESH_DRILL_REPORT=./artifacts/risk-service-recovery.md \
   ./tests/fault-drills/verify-service-recovery.sh risk-service http://localhost:8084/actuator/health
 ```
 
-故障演练会短暂停止并重启指定 Compose 服务；不要在共享环境直接执行。
+故障演练会短暂停止并重启指定 Compose 服务；不要在共享环境直接执行。设置
+`FLOWMESH_DRILL_EXPECTED_RTO_SECONDS` 后，恢复耗时超过目标会失败；设置
+`FLOWMESH_DRILL_REPORT` 后会生成不可覆盖的 Markdown 证据报告。报告只证明应用服务恢复耗时，不能替代数据库、Redis、RocketMQ
+或对象存储的故障切换演练。离线门禁可执行：
+
+```bash
+./tests/fault-drills/verify-service-recovery-contract.sh
+```
 
 目标 Kubernetes 集群发布后的只读验收：
 
