@@ -13,6 +13,7 @@ jobs:
   repository-check:
     name: Repository checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       # 检出仓库内容，供后续静态检查使用。
       - name: Check out source
@@ -467,6 +468,7 @@ jobs:
     name: RocketMQ end-to-end
     runs-on: ubuntu-latest
     needs: repository-check
+    timeout-minutes: 20
     steps:
       # 检出源码，供本机打包并连接真实 RocketMQ Broker。
       - name: Check out source
@@ -487,6 +489,7 @@ jobs:
     name: Build and publish ${{ matrix.service }} image
     runs-on: ubuntu-latest
     needs: repository-check
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
