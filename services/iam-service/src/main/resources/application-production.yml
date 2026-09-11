@@ -1,0 +1,12 @@
+# 作用：生产 profile 的 IAM 依赖就绪策略。
+
+management:
+  health:
+    redis:
+      enabled: true
+  endpoint:
+    health:
+      group:
+        readiness:
+          # 生产登录限流依赖 Redis；Redis 不可用时不应继续接收认证流量。
+          include: readinessState,db,redis

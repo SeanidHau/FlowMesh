@@ -7,48 +7,50 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 gateway_config="${repo_root}/services/gateway-service/src/main/resources/application.yml"
 iam_config="${repo_root}/services/iam-service/src/main/resources/application.yml"
+gateway_production_config="${repo_root}/services/gateway-service/src/main/resources/application-production.yml"
+iam_production_config="${repo_root}/services/iam-service/src/main/resources/application-production.yml"
+gateway_template="${repo_root}/infra/helm/flowmesh/templates/gateway.yaml"
+iam_template="${repo_root}/infra/helm/flowmesh/templates/iam.yaml"
 
-for file in "${gateway_config}" "${iam_config}"; do
+for file in "${gateway_config}" "${iam_config}" "${gateway_production_config}" \
+  "${iam_production_config}" "${gateway_template}" "${iam_template}"; do
   [[ -s "${file}" ]] || {
     printf 'readiness 配置文件不存在或为空：%s\n' "${file}" >&2
     exit 1
   }
 done
 
-awk '
-  /^        readiness:$/ { in_readiness = 1; next }
-  in_readiness && /^          include:/ {
-    if ($0 !~ /readinessState/ || $0 !~ /redis/) {
-      exit 1
-    }
-    found = 1
-    in_readiness = 0
-  }
-  in_readiness && /^[^ ]/ { in_readiness = 0 }
-  END { exit found ? 0 : 1 }
-' "${gateway_config}" || {
-  echo 'Gateway readiness 必须同时包含 readinessState 和 redis。' >&2
+grep -F -- 'include: readinessState' "${gateway_config}" >/dev/null || {
+  echo 'Gateway 默认 readiness 必须保留 readinessState。' >&2
   exit 1
 }
 
-awk '
-  /^        readiness:$/ { in_readiness = 1; next }
-  in_readiness && /^          include:/ {
-    if ($0 !~ /readinessState/ || $0 !~ /db/ || $0 !~ /redis/) {
-      exit 1
-    }
-    found = 1
-    in_readiness = 0
-  }
-  in_readiness && /^[^ ]/ { in_readiness = 0 }
-  END { exit found ? 0 : 1 }
-' "${iam_config}" || {
-  echo 'IAM readiness 必须同时包含 readinessState、db 和 redis。' >&2
+grep -F -- 'include: readinessState,db' "${iam_config}" >/dev/null || {
+  echo 'IAM 默认 readiness 必须保留 readinessState 和 db。' >&2
   exit 1
 }
 
-grep -F -- 'FLOWMESH_LOGIN_RATE_LIMIT_ENABLED' "${iam_config}" >/dev/null
-grep -F -- '  health:' "${iam_config}" >/dev/null
-grep -F -- '    redis:' "${iam_config}" >/dev/null
+for file in "${gateway_production_config}" "${iam_production_config}"; do
+  grep -F -- 'enabled: true' "${file}" >/dev/null || {
+    echo "生产 profile 必须启用 Redis health indicator：${file}" >&2
+    exit 1
+  }
+  grep -F -- 'include: readinessState,redis' "${file}" >/dev/null ||
+    grep -F -- 'include: readinessState,db,redis' "${file}" >/dev/null || {
+      echo "生产 profile readiness 必须包含 redis：${file}" >&2
+      exit 1
+    }
+done
+
+for file in "${gateway_template}" "${iam_template}"; do
+  grep -F -- 'name: SPRING_PROFILES_ACTIVE' "${file}" >/dev/null || {
+    echo "生产 Helm 模板必须激活 production profile：${file}" >&2
+    exit 1
+  }
+  grep -F -- 'value: production' "${file}" >/dev/null || {
+    echo "生产 Helm 模板必须使用 production profile：${file}" >&2
+    exit 1
+  }
+done
 
 echo 'Readiness dependency contract passed.'

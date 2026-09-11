@@ -52,6 +52,10 @@ spec:
               containerPort: {{ .Values.services.iam.port }}
           env:
             {{- include "flowmesh.observabilityEnv" . | nindent 12 }}
+            {{- if .Values.global.production }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: production
+            {{- end }}
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=iam&sslmode={{ .Values.postgresql.sslMode }}"
             - name: IAM_DB_USER
