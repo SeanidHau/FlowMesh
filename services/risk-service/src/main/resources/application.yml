@@ -23,6 +23,11 @@ spring:
     schemas: risk
     create-schemas: true
     fail-on-missing-locations: true
+    # 作用：生产启动必须校验迁移完整性，禁止清库和乱序执行，避免破坏已发布 schema。
+    validate-on-migrate: true
+    clean-disabled: true
+    out-of-order: false
+    baseline-on-migrate: false
 
 mybatis:
   mapper-locations: classpath:/mapper/*.xml
