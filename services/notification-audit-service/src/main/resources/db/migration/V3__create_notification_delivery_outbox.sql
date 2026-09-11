@@ -52,8 +52,8 @@ $$;
 -- 临时切换到专用 BYPASSRLS 角色完成表所有权和函数所有权转移。
 -- 运行时业务账号只获得 INSERT 与函数 EXECUTE，不直接获得跨租户 SELECT/UPDATE。
 GRANT USAGE, CREATE ON SCHEMA audit TO flowmesh_audit_delivery;
-SET ROLE flowmesh_audit_delivery;
 ALTER TABLE notification_deliveries OWNER TO flowmesh_audit_delivery;
+SET ROLE flowmesh_audit_delivery;
 
 CREATE OR REPLACE FUNCTION audit.claim_notification_deliveries(
     p_now TIMESTAMP WITH TIME ZONE,
