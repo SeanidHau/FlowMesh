@@ -61,6 +61,8 @@
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
     <!-- 作用：统一 Spring Cloud Gateway 与 Spring Boot 3.5 的兼容版本。 -->
     <spring-cloud.version>2025.0.3</spring-cloud.version>
+    <!-- 作用：覆盖 Spring Boot BOM 中的 Netty 补丁版本，修复当前高危/严重漏洞。 -->
+    <netty.version>4.1.138.Final</netty.version>
     <!-- 作用：统一 MinIO Java SDK 版本，用于供应商材料对象存储。 -->
     <minio.version>8.5.17</minio.version>
 
