@@ -47,6 +47,11 @@ class SupplierRlsIsolationIntegrationTest extends PostgresIntegrationTest {
         assertThat(applicationsForce).isTrue();
         assertThat(idempotencyRls).isTrue();
         assertThat(idempotencyForce).isTrue();
+        assertPolicyHasWriteCheck("supplier_applications", "tenant_isolation_applications");
+        assertPolicyHasWriteCheck("supplier_idempotency_keys", "tenant_isolation_idempotency");
+        assertPolicyHasWriteCheck(
+                "supplier_workflow_event_inbox", "tenant_isolation_supplier_workflow_event_inbox"
+        );
     }
 
     /**
@@ -109,5 +114,16 @@ class SupplierRlsIsolationIntegrationTest extends PostgresIntegrationTest {
                 id, tenantId, UUID.randomUUID(), supplierName
         );
         return id;
+    }
+
+    private void assertPolicyHasWriteCheck(String tableName, String policyName) {
+        String withCheck = jdbcTemplate.queryForObject(
+                "SELECT with_check FROM pg_policies "
+                    + "WHERE schemaname = 'supplier' AND tablename = ? AND policyname = ?",
+                String.class,
+                tableName,
+                policyName
+        );
+        assertThat(withCheck).as(policyName).contains("app.tenant_id");
     }
 }

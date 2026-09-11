@@ -36,6 +36,7 @@
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
 - CI 已提供独立源码安全工作流：对 Java/Kotlin 和 TypeScript/JavaScript 执行 CodeQL，并在 Pull Request 中以高危级别阻断依赖审查失败；生产发布仍需结合组织级 Secret Scanning、Dependabot 告警处置和代码扫描告警基线。
 - CI 已提供应用安全边界契约：校验认证入口、Actuator 匿名范围、运维与内部对账角色约束，以及 Gateway 不暴露 `/internal/` 路径，防止安全配置回归。
+- supplier 与 workflow 的历史 RLS 策略已通过 Flyway 显式补齐 `WITH CHECK`，并由 PostgreSQL 集成测试读取 `pg_policies` 验证租户写入边界。
 - 观测配置已定义 HTTP 可用性 99.9% 和 P95 1 秒 SLO，Prometheus recording rule 与告警在本地 Compose 和生产 PrometheusRule 中保持一致；目标平台仍需根据真实流量校准 SLO、错误预算和值班升级策略。
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。

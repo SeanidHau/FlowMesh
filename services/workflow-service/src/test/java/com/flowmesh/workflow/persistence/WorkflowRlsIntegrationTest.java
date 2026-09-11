@@ -33,6 +33,7 @@ class WorkflowRlsIntegrationTest extends PostgresIntegrationTest {
         assertRls("workflow.workflow_tasks");
         assertRls("workflow.workflow_risk_event_inbox");
         assertRls("workflow.workflow_supplement_event_inbox");
+        assertPolicyHasWriteCheck("workflow_instances", "tenant_isolation_workflow_instances");
     }
 
     /**
@@ -116,6 +117,17 @@ class WorkflowRlsIntegrationTest extends PostgresIntegrationTest {
             tableName
         );
         assertThat(flags).as(tableName).containsExactly(true, true);
+    }
+
+    private void assertPolicyHasWriteCheck(String tableName, String policyName) {
+        String withCheck = jdbcTemplate.queryForObject(
+            "SELECT with_check FROM pg_policies "
+                + "WHERE schemaname = 'workflow' AND tablename = ? AND policyname = ?",
+            String.class,
+            tableName,
+            policyName
+        );
+        assertThat(withCheck).as(policyName).contains("app.tenant_id");
     }
 
     private <T> T inTransaction(String tenantId, java.util.function.Supplier<T> action) {
