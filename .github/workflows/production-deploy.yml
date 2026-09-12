@@ -43,6 +43,8 @@ jobs:
       # 生产环境通过 GitHub Environment protection rules 审批后才允许进入此 Job。
       - name: Check out source
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Require main branch
         run: |

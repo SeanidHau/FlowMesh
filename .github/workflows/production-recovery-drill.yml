@@ -63,6 +63,8 @@ jobs:
       # 该工作流具有破坏性，只能在 production Environment 审批后执行。
       - name: Check out source
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Require main branch
         run: |

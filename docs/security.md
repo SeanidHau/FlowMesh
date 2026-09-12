@@ -32,6 +32,7 @@ IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查�
 - Secret 不得写入镜像、日志、错误响应或测试快照。
 - 主分支镜像使用完整 Git SHA、Trivy 和 Cosign keyless 签名；Kubernetes 可通过 `infra/policies/kyverno/verify-flowmesh-images.yaml` 拒绝未签名镜像。
 - GitHub Actions 工作流统一固定到完整提交 SHA，并在行尾保留对应版本标签作为人工可读说明；CI 契约会拒绝可变版本标签。
+- GitHub Actions 的 `actions/checkout` 统一关闭 `persist-credentials`，避免将工作流 Token 持久化到 Runner 工作区。
 
 ## 文件访问
 
