@@ -8,9 +8,9 @@ workflow="${repo_root}/.github/workflows/security.yml"
 
 test -s "${workflow}"
 
-grep -F -- 'github/codeql-action/init@v4' "${workflow}" >/dev/null
-grep -F -- 'github/codeql-action/analyze@v4' "${workflow}" >/dev/null
-grep -F -- 'actions/dependency-review-action@v4' "${workflow}" >/dev/null
+grep -F -- 'github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4' "${workflow}" >/dev/null
+grep -F -- 'github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4' "${workflow}" >/dev/null
+grep -F -- 'actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4' "${workflow}" >/dev/null
 grep -F -- 'java-kotlin' "${workflow}" >/dev/null
 grep -F -- 'javascript-typescript' "${workflow}" >/dev/null
 grep -F -- 'build-mode: manual' "${workflow}" >/dev/null

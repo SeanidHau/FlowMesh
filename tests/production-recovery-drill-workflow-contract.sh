@@ -27,7 +27,7 @@ if grep -F -- './tests/fault-drills/verify-kubernetes-service-recovery.sh "${{ i
   exit 1
 fi
 grep -F -- 'verify-kubernetes-service-recovery.sh' "${workflow}" >/dev/null
-grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
+grep -F -- 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
 grep -F -- 'refs/heads/main' "${workflow}" >/dev/null

@@ -11,7 +11,15 @@ grep -F -- 'cancel-in-progress: true' "${workflow}" >/dev/null
 grep -F -- 'timeout-minutes: 30' "${workflow}" >/dev/null
 grep -F -- 'timeout-minutes: 20' "${workflow}" >/dev/null
 grep -F -- 'timeout 15m ./tests/rocketmq-e2e.sh' "${workflow}" >/dev/null
-grep -F -- 'sigstore/cosign-installer@v4.1.2' "${workflow}" >/dev/null
+grep -F -- 'sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2' "${workflow}" >/dev/null
 grep -F -- "cosign-release: 'v3.1.3'" "${workflow}" >/dev/null
+
+# 作用：拒绝使用可变的 GitHub Actions 标签，避免供应链依赖在未审查时被替换。
+if rg -n --glob '*.yml' --glob '*.yaml' \
+  '^[[:space:]]*uses:[[:space:]]+[^[:space:]]+@(v[0-9]|main|master|latest)' \
+  "${repo_root}/.github/workflows" >/dev/null; then
+  echo 'GitHub Actions 必须固定到完整提交 SHA。' >&2
+  exit 1
+fi
 
 echo 'CI workflow contract passed.'

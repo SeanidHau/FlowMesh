@@ -14,7 +14,7 @@ workflow="${repo_root}/.github/workflows/production-acceptance.yml"
 grep -F -- 'workflow_dispatch:' "${workflow}" >/dev/null
 grep -F -- 'environment: production' "${workflow}" >/dev/null
 grep -F -- 'runs-on: [self-hosted, linux, flowmesh-production]' "${workflow}" >/dev/null
-grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
+grep -F -- 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
