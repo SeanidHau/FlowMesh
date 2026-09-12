@@ -47,7 +47,10 @@ public record ObjectStorageProperties(
         }
         if (!("http".equalsIgnoreCase(endpointUri.getScheme())
             || "https".equalsIgnoreCase(endpointUri.getScheme()))
-            || endpointUri.getHost() == null) {
+            || endpointUri.getHost() == null
+            || endpointUri.getUserInfo() != null
+            || endpointUri.getQuery() != null
+            || endpointUri.getFragment() != null) {
             throw new IllegalArgumentException(
                 "flowmesh.object-storage.endpoint must be a valid HTTP(S) URL"
             );

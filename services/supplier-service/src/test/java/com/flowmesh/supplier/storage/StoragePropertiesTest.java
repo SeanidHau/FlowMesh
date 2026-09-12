@@ -55,5 +55,17 @@ class StoragePropertiesTest {
             300, 20 * 1024 * 1024 + 1L, false
         )).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("max-file-size");
+
+        assertThatThrownBy(() -> new ObjectStorageProperties(
+            "https://access:secret@minio.example.com", "access", "secret", "flowmesh-documents", true,
+            300, 20 * 1024 * 1024, false
+        )).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("endpoint");
+
+        assertThatThrownBy(() -> new ObjectStorageProperties(
+            "https://minio.example.com?access=secret", "access", "secret", "flowmesh-documents", true,
+            300, 20 * 1024 * 1024, false
+        )).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("endpoint");
     }
 }
