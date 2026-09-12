@@ -39,6 +39,7 @@
 Helm 校验使用临时凭据执行 `helm lint` 和 `helm template`，并验证生产备份目标、加密算法和缺失参数门禁，不提交任何真实密钥。
 五个业务服务的 Flyway 配置还通过契约测试统一校验迁移完整性、禁止清库、禁止乱序迁移和禁止自动 baseline。
 `tests/postgres-backup-upload-contract.sh` 使用本地替身命令验证 S3 上传参数、`_SUCCESS` 完成标记和失败清理，不访问真实云账号。
+对账 HTTP 客户端使用 JDK 内置 HTTP Server 回归测试，验证存在 Trace 上下文时透传 `X-Trace-Id`，无上下文时不伪造链路标识。
 
 压测使用 `tests/k6/supplier-onboarding.js`，本地 Compose 故障恢复使用
 `tests/fault-drills/verify-service-recovery.sh`，目标 Kubernetes 故障恢复使用

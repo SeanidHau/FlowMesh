@@ -1,6 +1,7 @@
 package com.flowmesh.supplier.config;
 
 import com.flowmesh.supplier.application.WorkflowStateClient;
+import com.flowmesh.common.security.TraceIdFilter;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import java.time.Duration;
+import org.slf4j.MDC;
 
 /**
  * 配置 supplier 到 workflow 的内部对账读取客户端。
@@ -42,11 +44,15 @@ public class WorkflowClientConfiguration {
             .build();
         return (tenantId, applicationId, bearerToken) -> {
             try {
-                WorkflowSnapshot response = client.get()
+                var request = client.get()
                     .uri("/internal/v1/reconciliation/workflow-instances/{applicationId}", applicationId)
                     .header("Authorization", bearerToken)
-                    .header("X-Tenant-Id", tenantId)
-                    .retrieve()
+                    .header("X-Tenant-Id", tenantId);
+                String traceId = MDC.get("traceId");
+                if (traceId != null && !traceId.isBlank()) {
+                    request.header(TraceIdFilter.TRACE_ID_HEADER, traceId);
+                }
+                WorkflowSnapshot response = request.retrieve()
                     .body(WorkflowSnapshot.class);
                 return Optional.ofNullable(response).map(snapshot -> new WorkflowStateClient.WorkflowState(
                     snapshot.status(), snapshot.currentTask(), snapshot.outboxPendingCount(), snapshot.outboxEventCount()

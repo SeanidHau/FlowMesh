@@ -23,7 +23,7 @@
 - IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
 - 提供独立的 PostgreSQL 生命周期维护镜像和 Helm CronJob，使用非超级用户 `flowmesh_retention` 清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录；SQL 使用固定表白名单、批量上限和 `FOR UPDATE SKIP LOCKED`，并通过 PostgreSQL E2E 验证强制 RLS 表的清理边界。
 - 提供只读的 `flowmesh_retention` 角色权限预检，核验 `NOSUPERUSER`、`NOINHERIT`、`BYPASSRLS`、Schema 使用权限、清理白名单和行锁键列级 `UPDATE` 权限；契约测试和生命周期 PostgreSQL E2E 均会执行该预检。
-- 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文。
+- 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文；supplier 对账调用 workflow 时会继续透传当前 `X-Trace-Id`，避免跨服务 HTTP 链路断裂。
 - RocketMQ 消费者已暴露按消费者区分的处理耗时直方图，并提供消费处理 P95 超过 5 秒的 Prometheus 告警；观测配置校验会防止这条告警被误删。
 - 提供 PostgreSQL custom-format 备份与恢复脚本；备份目录默认被 Git 忽略。
 - 备份与恢复脚本统一校验并使用 `FLOWMESH_PG_SSLMODE` 和 `FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS`；生产恢复不得退回未加密或无限等待的数据库连接。
