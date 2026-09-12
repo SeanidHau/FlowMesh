@@ -94,7 +94,15 @@ PostgreSQL CA 配置契约：
 ./tests/postgresql-ca-contract.sh
 ```
 
-该测试验证生产 PostgreSQL 使用 `verify-ca`/`verify-full` 时，应用、SLA、备份和生命周期任务均可挂载外部 CA Secret；证书不打包进镜像，单独的本地 `disable` 和生产 `require` 默认保持兼容。
+该测试验证生产 PostgreSQL 使用 `verify-ca`/`verify-full` 时，应用、SLA、备份和生命周期任务均可挂载外部 CA Secret；证书不打包进镜像，本地 `disable` 与生产 `verify-full` 配置彼此隔离。
+
+NetworkPolicy 出站边界契约：
+
+```bash
+./tests/networkpolicy-egress-contract.sh
+```
+
+该测试验证生产出口 CIDR 不得使用 `0.0.0.0/0` 或 `::/0`，避免固定端口白名单被误配置为全网出口。
 
 Workflow 审批 SLA PostgreSQL 回归：
 

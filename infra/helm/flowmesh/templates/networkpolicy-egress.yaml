@@ -31,6 +31,9 @@ spec:
         - protocol: TCP
           port: 53
     {{- range .Values.networkPolicy.egress.externalCidrs }}
+    {{- if or (eq . "0.0.0.0/0") (eq . "::/0") }}
+    {{- fail "networkPolicy.egress.externalCidrs must not allow an unrestricted default route" }}
+    {{- end }}
     - to:
         - ipBlock:
             cidr: {{ . | quote }}

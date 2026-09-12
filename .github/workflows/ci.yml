@@ -113,6 +113,9 @@ jobs:
       - name: Validate PostgreSQL CA configuration
         run: bash tests/postgresql-ca-contract.sh
 
+      - name: Validate NetworkPolicy egress boundaries
+        run: bash tests/networkpolicy-egress-contract.sh
+
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 
@@ -263,6 +266,18 @@ jobs:
           fi
           if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'sslrootcert=/etc/flowmesh/postgresql/ca.crt' || true)" -ne 5 ]]; then
             echo 'All PostgreSQL application JDBC URLs must use the production CA file.' >&2
+            exit 1
+          fi
+          if helm template flowmesh infra/helm/flowmesh \
+            -f infra/helm/flowmesh/values-production.yaml \
+            --set-string global.imageTag="production-ci-sha" \
+            --set ingress.host=api.ci.flowmesh.example.com \
+            --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
+            --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
+            --set 'networkPolicy.egress.externalCidrs[0]=0.0.0.0/0' \
+            --set global.existingSecret=flowmesh-runtime-secrets \
+            "${backup_test_args[@]}" >/dev/null 2>&1; then
+            echo 'Production NetworkPolicy must reject unrestricted default routes.' >&2
             exit 1
           fi
           if ! printf '%s\n' "$rendered_production" | grep -q 'app.kubernetes.io/component: workflow-sla' || \

@@ -136,6 +136,12 @@ for cidr in "${raw_cidrs[@]}"; do
     printf 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS 包含无效 CIDR：%s\n' "${cidr}" >&2
     exit 64
   }
+  case "${cidr}" in
+    0.0.0.0/0|::/0)
+      printf 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS 不得允许全网出口：%s\n' "${cidr}" >&2
+      exit 64
+      ;;
+  esac
   external_cidrs+=("${cidr}")
 done
 [[ "${#external_cidrs[@]}" -gt 0 ]] || {
