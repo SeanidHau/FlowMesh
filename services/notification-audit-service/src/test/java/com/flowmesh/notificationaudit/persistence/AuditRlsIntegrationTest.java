@@ -148,6 +148,12 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
         assertThat(inTransaction("tenant-a", () -> notificationDeliveryRepository.renewClaim(
             expiredDeliveryId, expiredClaimToken, now.plusSeconds(240)
         ))).isZero();
+
+        Boolean deliveryRoleCanCreateInAuditSchema = jdbcTemplate.queryForObject(
+            "SELECT has_schema_privilege('flowmesh_audit_delivery', 'audit', 'CREATE')",
+            Boolean.class
+        );
+        assertThat(deliveryRoleCanCreateInAuditSchema).isFalse();
     }
 
     private <T> T inTransaction(String tenantId, java.util.function.Supplier<T> action) {
