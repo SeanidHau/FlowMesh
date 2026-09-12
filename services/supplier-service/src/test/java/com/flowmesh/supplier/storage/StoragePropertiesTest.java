@@ -33,26 +33,26 @@ class StoragePropertiesTest {
     @Test
     void shouldRejectInvalidObjectStorageConfiguration() {
         assertThatThrownBy(() -> new ObjectStorageProperties(
-            "ftp://minio:9000", "access", "secret", "flowmesh-documents", 300,
-            20 * 1024 * 1024, false
+            "ftp://minio:9000", "access", "secret", "flowmesh-documents", true,
+            300, 20 * 1024 * 1024, false
         )).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("endpoint");
 
         assertThatThrownBy(() -> new ObjectStorageProperties(
-            "http://minio:9000", "access", "secret", "FlowMesh", 300,
-            20 * 1024 * 1024, false
+            "http://minio:9000", "access", "secret", "FlowMesh", true,
+            300, 20 * 1024 * 1024, false
         )).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("bucket");
 
         assertThatThrownBy(() -> new ObjectStorageProperties(
-            "http://minio:9000", "access", "secret", "flowmesh-documents", 3601,
-            20 * 1024 * 1024, false
+            "http://minio:9000", "access", "secret", "flowmesh-documents", true,
+            3601, 20 * 1024 * 1024, false
         )).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("presigned-url");
 
         assertThatThrownBy(() -> new ObjectStorageProperties(
-            "http://minio:9000", "access", "secret", "flowmesh-documents", 300,
-            20 * 1024 * 1024 + 1L, false
+            "http://minio:9000", "access", "secret", "flowmesh-documents", true,
+            300, 20 * 1024 * 1024 + 1L, false
         )).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("max-file-size");
     }

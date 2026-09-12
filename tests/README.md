@@ -141,6 +141,14 @@ Workflow 审批 SLA PostgreSQL 回归：
 
 该测试离线验证专用材料桶的版本化、非当前版本保留期、删除标记清理和 HTTPS endpoint 门禁，不访问真实云账号。
 
+对象存储运行策略契约测试：
+
+```bash
+./tests/object-storage-runtime-contract.sh
+```
+
+该测试验证本地环境允许按需自动创建材料桶，而生产 Helm 关闭自动创建并将配置正确传入 supplier，避免应用运行账号隐式获得建桶权限。
+
 性能与故障演练：
 
 ```bash

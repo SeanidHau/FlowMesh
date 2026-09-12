@@ -96,7 +96,13 @@ public class MinioObjectStorageService implements ObjectStorageService {
     }
 
     private void ensureBucket() throws Exception {
-        if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(properties.bucket()).build())) {
+        if (!properties.autoCreateBucket()) {
+            return;
+        }
+        boolean bucketExists = minioClient.bucketExists(
+            BucketExistsArgs.builder().bucket(properties.bucket()).build()
+        );
+        if (!bucketExists) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(properties.bucket()).build());
         }
     }

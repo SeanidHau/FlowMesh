@@ -72,6 +72,8 @@ redis:
 objectStorage:
   endpoint: http://minio:9000
   bucket: flowmesh-documents
+  # 本地环境允许首次上传时创建桶；生产覆盖值必须关闭并由平台预创建材料桶。
+  autoCreateBucket: true
   accessKey: flowmesh
   secretKey: ""
 

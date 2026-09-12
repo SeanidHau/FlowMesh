@@ -58,6 +58,7 @@ class MinioHealthIndicatorTest {
             "access-key",
             "secret-key",
             "flowmesh-documents",
+            true,
             300,
             20 * 1024 * 1024,
             readinessEnabled

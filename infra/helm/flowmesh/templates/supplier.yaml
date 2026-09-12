@@ -96,6 +96,8 @@ spec:
                   key: OBJECT_STORAGE_SECRET_KEY
             - name: FLOWMESH_OBJECT_STORAGE_BUCKET
               value: {{ .Values.objectStorage.bucket | quote }}
+            - name: FLOWMESH_OBJECT_STORAGE_AUTO_CREATE_BUCKET
+              value: {{ .Values.objectStorage.autoCreateBucket | quote }}
             - name: FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED
               value: "true"
             - name: FLOWMESH_FILE_SCAN_ENABLED

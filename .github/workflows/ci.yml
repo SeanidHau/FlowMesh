@@ -133,6 +133,9 @@ jobs:
       - name: Validate object storage lifecycle contract
         run: bash tests/object-storage-lifecycle-contract.sh
 
+      - name: Validate object storage runtime contract
+        run: bash tests/object-storage-runtime-contract.sh
+
       - name: Validate retention cleanup contract
         run: bash tests/retention-cleanup-contract.sh
 

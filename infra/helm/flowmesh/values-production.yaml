@@ -183,6 +183,8 @@ ingress:
 objectStorage:
   endpoint: https://minio.internal.example.com
   bucket: flowmesh-documents
+  # 生产运行账号不得拥有建桶权限；材料桶必须由平台预创建并完成生命周期配置。
+  autoCreateBucket: false
 
 fileScan:
   enabled: true

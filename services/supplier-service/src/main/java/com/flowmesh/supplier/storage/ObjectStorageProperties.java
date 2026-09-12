@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param accessKey 访问账号
  * @param secretKey 访问密钥
  * @param bucket 材料对象桶名称
+ * @param autoCreateBucket 桶不存在时是否允许应用自动创建
  * @param presignedUrlExpirySeconds 下载 URL 有效期，单位为秒
  * @param maxFileSizeBytes 单个文件最大字节数
  * @param readinessEnabled 是否将对象存储连通性纳入 readiness
@@ -20,6 +21,7 @@ public record ObjectStorageProperties(
     String accessKey,
     String secretKey,
     String bucket,
+    boolean autoCreateBucket,
     int presignedUrlExpirySeconds,
     long maxFileSizeBytes,
     boolean readinessEnabled

@@ -86,6 +86,7 @@ flowmesh:
     access-key: ${FLOWMESH_OBJECT_STORAGE_ACCESS_KEY:flowmesh}
     secret-key: ${FLOWMESH_OBJECT_STORAGE_SECRET_KEY:change-me-minio}
     bucket: ${FLOWMESH_OBJECT_STORAGE_BUCKET:flowmesh-documents}
+    auto-create-bucket: ${FLOWMESH_OBJECT_STORAGE_AUTO_CREATE_BUCKET:true}
     presigned-url-expiry-seconds: ${FLOWMESH_OBJECT_STORAGE_PRESIGNED_URL_EXPIRY_SECONDS:300}
     max-file-size-bytes: ${FLOWMESH_DOCUMENT_MAX_FILE_SIZE_BYTES:20971520}
     readiness-enabled: ${FLOWMESH_OBJECT_STORAGE_READINESS_ENABLED:false}

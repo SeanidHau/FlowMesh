@@ -19,6 +19,7 @@
 - 生产 Helm 为 Gateway 单独渲染入站 NetworkPolicy，只允许指定 Ingress Controller 命名空间和监控命名空间访问，避免绕过 TLS、审计和入口限流直接调用 Gateway Service。
 - Spring Boot 启用优雅停机、连接超时和请求体大小边界。
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
+- 生产 Helm 关闭对象存储桶自动创建，避免应用运行账号获得建桶权限；材料桶必须由平台预创建，且通过 readiness 检查后才接收材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
 - IAM 用户、用户角色关系、Refresh Token 和安全审计表均启用 `FORCE ROW LEVEL SECURITY`；登录、刷新和登出先设置事务级租户上下文，跨租户 Refresh Token 清理按租户使用独立事务执行，并通过 PostgreSQL 集成测试验证跨租户读写边界。
