@@ -2,8 +2,9 @@ package com.flowmesh.notificationaudit.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.flowmesh.notificationaudit.support.PostgresIntegrationTest;
 import com.flowmesh.notificationaudit.repository.NotificationDeliveryRepository;
+import com.flowmesh.notificationaudit.support.PostgresIntegrationTest;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -118,7 +119,8 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
                     + "notification_type, title, content, status, next_attempt_at, claimed_until, claim_token) "
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)",
                 deliveryId, notificationId, sourceEventId, "tenant-a", UUID.randomUUID(),
-                "SUPPLIER_ACTIVATED", "title", "content", now, now.plusSeconds(30), claimToken
+                "SUPPLIER_ACTIVATED", "title", "content", Timestamp.from(now),
+                Timestamp.from(now.plusSeconds(30)), claimToken
             );
             jdbcTemplate.update(
                 "INSERT INTO audit.notifications "
@@ -133,7 +135,8 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
                     + "notification_type, title, content, status, next_attempt_at, claimed_until, claim_token) "
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)",
                 expiredDeliveryId, expiredNotificationId, expiredSourceEventId, "tenant-a", UUID.randomUUID(),
-                "SUPPLIER_ACTIVATED", "expired title", "expired content", now, now.minusSeconds(1),
+                "SUPPLIER_ACTIVATED", "expired title", "expired content", Timestamp.from(now),
+                Timestamp.from(now.minusSeconds(1)),
                 expiredClaimToken
             );
         });
