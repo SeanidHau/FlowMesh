@@ -22,6 +22,7 @@ grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT:' "${workflow}" >/dev/null
 grep -F -- 'evidence_environment:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_DB_USER:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_DB_PASSWORD:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME: ${{ vars.FLOWMESH_POSTGRES_CA_SECRET_NAME }}' "${workflow}" >/dev/null
 grep -F -- 'expect_prometheus_rule:' "${workflow}" >/dev/null
 grep -F -- 'type: choice' "${workflow}" >/dev/null
 grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
