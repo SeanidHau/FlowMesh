@@ -48,7 +48,7 @@
 - JWT 签名密钥。
 - Redis 密码或认证信息。
 - IAM、Supplier、Workflow、Risk、Notification Audit 的 PostgreSQL 密码。
-- IAM、Supplier、Workflow、Risk、Notification Audit 的 Flyway 迁移账号密码；迁移账号必须与运行时业务账号不同。
+- IAM、Supplier、Workflow、Risk、Notification Audit 的 Flyway 迁移账号密码；这些凭据只由 Helm pre-install/pre-upgrade 迁移 Job 使用，不能注入应用 Deployment；迁移账号必须与运行时业务账号不同。
 - RocketMQ Producer 和 Consumer 的独立凭据。
 - RocketMQ TLS 所需的认证信息。
 - MinIO/对象存储访问密钥。
@@ -135,7 +135,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 1. 从 `main` 分支手动触发 `Production deploy` 工作流。
 2. 输入待发布的完整 40 位提交 SHA、namespace、Helm release 和 Prometheus Operator 选项。
 3. 通过 `production` Environment 审批。
-4. 工作流执行 `helm upgrade --install --atomic --wait`，随后执行 Kubernetes smoke test。
+4. 工作流执行 `helm upgrade --install --atomic --wait --wait-for-jobs`；五个 Flyway 迁移 Job 全部成功后才会创建或更新应用 Deployment，随后执行 Kubernetes smoke test。
 5. 检查部署日志、Pod 就绪状态、Ingress、PDB、HPA、NetworkPolicy、镜像提交 SHA 和 CronJob 配置。
 
 如果 GHCR 或目标镜像仓库不是公开可读，先创建包含拉取权限的 Kubernetes Secret，并在生产发布工作流的 Environment Variable 中设置

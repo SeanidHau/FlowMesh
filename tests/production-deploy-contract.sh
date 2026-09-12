@@ -13,6 +13,7 @@ grep -F -- 'helm lint' "${script}" >/dev/null
 grep -F -- 'helm upgrade --install' "${script}" >/dev/null
 grep -F -- '--atomic' "${script}" >/dev/null
 grep -F -- '--wait' "${script}" >/dev/null
+grep -F -- '--wait-for-jobs' "${script}" >/dev/null
 grep -F -- '--timeout' "${script}" >/dev/null
 grep -F -- 'tests/kubernetes-production-smoke.sh' "${script}" >/dev/null
 grep -F -- 'helm history' "${script}" >/dev/null

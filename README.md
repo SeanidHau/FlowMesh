@@ -17,7 +17,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | 异步风控 | 已实现 | 独立 risk-service 通过 RocketMQ 接收风控请求，以结果事件推进或终止 workflow；拒绝结果同步回写 supplier 终态并生成通知审计；提供默认关闭的 FAIL/TIMEOUT 故障演练开关。 |
 | 通知与审计 | 已实现 | 独立服务消费供应商启用事件，写入租户隔离审计记录和申请人站内通知；外部通知通过事务投递队列、HMAC 签名、幂等键、租约重试和死信闭环交付。 |
 | RocketMQ | 已实现 | 主链使用 Outbox、认领租约、指数退避、失败终态、死信重放和基础发布指标；生产 Helm 支持 Producer/Consumer 独立凭据和 TLS。 |
-| PostgreSQL | 已实现 | 各服务使用独立 Schema、运行时业务账号和 Flyway 迁移账号，并通过 Flyway 管理迁移；生产连接默认要求 TLS。 |
+| PostgreSQL | 已实现 | 各服务使用独立 Schema、运行时业务账号和 Flyway 迁移账号；生产 Helm 通过独立迁移 Job 执行 Flyway，应用 Pod 不持有迁移凭据，生产连接默认要求 TLS。 |
 | 消息与幂等数据生命周期 | 已实现 | 独立维护 CronJob 先预检专用非超级用户权限，再按 90/30 天窗口清理终态 Outbox、DLQ、重放审计、Inbox 和幂等记录，使用固定表白名单。 |
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed，并默认启用 Redis TLS。 |

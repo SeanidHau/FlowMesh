@@ -23,6 +23,11 @@ postgresql:
   caSecretName: ""
   caSecretKey: ca.crt
 
+migrations:
+  # 生产发布通过 Helm pre-install/pre-upgrade Job 执行迁移，失败时阻止应用升级。
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+
 workflowSla:
   # 生产环境启用独立 CronJob；本地默认关闭，避免不需要时消耗资源。
   enabled: false

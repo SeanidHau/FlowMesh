@@ -194,9 +194,14 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 `sha256:<64 位小写十六进制>`；这些变量只描述目标平台地址、镜像摘要、名称或网络范围，不包含数据库密码、JWT 密钥或对象存储密钥。
 
 如果需要执行实际发布，使用仓库提供的生产发布入口。它会先校验八个镜像的 Cosign 签名、校验生产
-values，再执行 `helm upgrade --install --atomic --wait`，最后运行只读 Kubernetes smoke test。
+values，再执行 `helm upgrade --install --atomic --wait --wait-for-jobs`，最后运行只读 Kubernetes smoke test。
 发布入口只引用预先创建的运行时 Secret，不接收数据库密码、JWT 密钥或对象存储密钥参数：
 以下地址均为文档占位值，执行前必须替换为目标环境真实地址；发布脚本会拒绝 `example.com`、本机和已知占位地址。
+
+发布过程中的五个 Flyway 迁移 Job 使用当前提交对应的业务镜像和专用迁移账号，按服务 Schema 执行
+`db/migration`。应用 Deployment 不会在启动时执行迁移，也不会注入 `SPRING_FLYWAY_USER` 或
+`SPRING_FLYWAY_PASSWORD`。任一迁移 Job 失败都会阻止新版本应用更新；迁移脚本必须遵循向后兼容的
+expand/contract 顺序，禁止在仍有旧版本实例运行时直接删除或重命名旧字段。
 
 ```bash
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \

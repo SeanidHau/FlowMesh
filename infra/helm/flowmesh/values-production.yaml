@@ -24,6 +24,11 @@ postgresql:
   caSecretName: flowmesh-postgresql-ca
   caSecretKey: ca.crt
 
+migrations:
+  # 迁移 Job 超时或重试耗尽时，Helm 发布必须失败，不得更新应用 Deployment。
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+
 workflowSla:
   # 生产环境必须启用独立 SLA 维护任务；密码由 global.existingSecret 提供。
   enabled: true

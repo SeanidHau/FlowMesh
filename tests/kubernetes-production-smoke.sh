@@ -94,6 +94,9 @@ if name.end_with?("-gateway", "-iam")
   raise "#{name} 必须启用 Redis TLS" unless env["REDIS_SSL_ENABLED"] == "true"
 end
 unless name.end_with?("-gateway")
+  raise "#{name} 必须关闭应用 Pod 内的 Flyway" unless env["SPRING_FLYWAY_ENABLED"] == "false"
+  raise "#{name} 不得持有 Flyway 迁移账号" if env.key?("SPRING_FLYWAY_USER")
+  raise "#{name} 不得持有 Flyway 迁移密码" if env.key?("SPRING_FLYWAY_PASSWORD")
   jdbc_url = env["SPRING_DATASOURCE_URL"].to_s
   raise "#{name} 必须使用 PostgreSQL 加密连接" unless jdbc_url.match?(/(?:\?|&)sslmode=(require|verify-ca|verify-full)(?:&|$)/)
   if jdbc_url.include?("sslmode=verify-ca") || jdbc_url.include?("sslmode=verify-full")

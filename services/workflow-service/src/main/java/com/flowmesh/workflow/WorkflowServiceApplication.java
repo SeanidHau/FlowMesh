@@ -1,5 +1,6 @@
 package com.flowmesh.workflow;
 
+import com.flowmesh.common.migration.FlowMeshFlywayMigration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -20,6 +21,10 @@ public class WorkflowServiceApplication {
      * @param args Spring Boot 启动参数
      */
     public static void main(String[] args) {
+        if (FlowMeshFlywayMigration.isRequested()) {
+            System.exit(FlowMeshFlywayMigration.migrate("workflow"));
+            return;
+        }
         SpringApplication.run(WorkflowServiceApplication.class, args);
     }
 }

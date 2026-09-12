@@ -25,6 +25,18 @@
   <description>Shared technical contracts for FlowMesh services.</description>
 
   <dependencies>
+    <!-- 作用：让生产迁移 Job 可以在不启动业务 Spring Context 的情况下执行 Flyway。 -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+
+    <!-- 作用：提供 Flyway 的 PostgreSQL 数据库支持。 -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
     <!-- 作用：提供 @ConfigurationProperties 等 Spring Boot 配置契约。 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

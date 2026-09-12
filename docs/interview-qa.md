@@ -234,6 +234,12 @@ A: Chart 对 JWT 签名密钥、五个业务数据库密码和对象存储密钥
 
 CI 中使用仅用于校验的临时值执行 `helm lint` 和 `helm template`，同时验证缺少凭据时渲染必须失败。真实密钥不会提交到仓库。
 
+Q: 为什么不让业务 Pod 在启动时执行 Flyway？
+A: 生产环境将迁移职责与运行职责分离。Helm 为 IAM、Supplier、Workflow、Risk 和 Notification-Audit 分别创建 pre-install/pre-upgrade Job，使用对应的 `flowmesh_<service>_migrator` 账号和同版本业务镜像执行迁移；业务 Deployment 显式关闭 Flyway，只持有运行时业务账号。这样应用实例被入侵时不会同时暴露 DDL 权限，也能让迁移失败直接阻止发布，而不是让部分副本先后执行迁移。
+
+Q: Flyway 迁移 Job 失败或升级中断时如何处理？
+A: Helm 使用 `--wait-for-jobs` 等待五个迁移 Job 完成，任何 Job 失败都会使原子发布失败，新的 Deployment 不会继续推进；已有 release 由 `--atomic` 保持上一版本。迁移脚本必须采用向后兼容的 expand/contract 方式，先增加兼容结构，再发布代码，最后在后续版本清理旧结构，避免新 Schema 破坏仍在运行的旧实例。
+
 Q: 生产镜像如何保证来源可追溯且没有明显漏洞？
 A: 主分支 CI 为六个应用服务、一个备份镜像和一个生命周期维护镜像发布完整 Git 提交 SHA 标签，先用 Trivy 扫描不可变标签，再使用 GitHub OIDC 生成 Cosign keyless 签名。Helm 发布前通过 `verify-flowmesh-images.sh` 校验八个镜像的提交标签和签名，Kyverno 策略还会在集群准入阶段拒绝未签名镜像；目标集群仍需配置持续漏洞扫描。
 
@@ -281,4 +287,4 @@ A: 最能体现的是对分布式系统一致性边界的理解：不把消息�
 Q: 如果只有 3 分钟，你会选择哪个技术点展开？
 A: 优先展开“Supplier 创建申请 + Outbox + Workflow 消费”的链路：先讲本地事务为什么同时写业务表和 Outbox，再讲 `FOR UPDATE SKIP LOCKED` 如何认领、发送成功后的状态确认、宕机后的重复窗口，以及消费者如何用幂等吸收重复消息。最后主动说明这是至少一次投递和最终一致性，而不是恰好一次。
 
-<!-- 共 59 组问答。 -->
+<!-- 共 61 组问答。 -->

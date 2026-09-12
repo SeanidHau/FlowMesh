@@ -35,8 +35,8 @@
 - 生产应用、SLA、备份和生命周期任务的 PostgreSQL 连接默认使用 `sslmode=verify-full`，Redis 连接默认启用 TLS；Helm 通过 `postgresql.caSecretName`、`backup.postgres.caSecretName` 和 `retention.postgres.caSecretName` 挂载外部 CA，并将 CA 文件传给 JDBC/`libpq` 完成服务端身份校验。
 - 所有生产 PostgreSQL 预检和维护脚本在 `verify-ca`/`verify-full` 模式下都强制要求 `FLOWMESH_PG_SSLROOTCERT` 指向存在且可读的 CA 文件，禁止无意间退回 Runner 系统信任库。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
-- 五个业务服务统一启用 Flyway `validate-on-migrate`，并显式禁止 `clean`、乱序迁移和自动 baseline；迁移校验失败时 Pod 不会继续接收流量，数据库变更必须随版本提交并经过发布验证。
-- 五个业务服务的 Flyway 均使用独立的 `flowmesh_<service>_migrator` 账号；运行时业务账号不再承担 Schema 所有权或 DDL 权限。新环境初始化脚本、测试容器和 Helm Secret 均要求对应迁移密码，迁移账号缺失时启动会失败。
+- 五个业务服务统一启用 Flyway `validate-on-migrate`，并显式禁止 `clean`、乱序迁移和自动 baseline；生产 Helm 通过五个 pre-install/pre-upgrade Job 在应用发布前执行迁移，迁移校验失败时 Helm 发布失败且不会更新应用 Deployment。
+- 五个业务服务的 Flyway 均使用独立的 `flowmesh_<service>_migrator` 账号；运行时业务账号不再承担 Schema 所有权或 DDL 权限。生产应用 Pod 显式关闭 Spring Boot Flyway，迁移账号密码只注入迁移 Job；新环境初始化脚本、测试容器和 Helm Secret 均要求对应迁移密码。
 - Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
@@ -120,7 +120,7 @@ helm lint infra/helm/flowmesh \
 - 提供受保护的 `Production recovery drill` 工作流：仅手动触发、仅从 `main` 执行、必须经过 `production` Environment 审批并输入 `YES`，执行后归档恢复报告。
 - 提供只读生产验收编排脚本，统一执行镜像签名、Kubernetes smoke、外部依赖 TLS 预检和生命周期角色权限预检，并生成不可覆盖的 Markdown 证据报告。
 - 提供仅手动触发、绑定 GitHub `production` Environment 审批的自托管 Runner 验收工作流；工作流只执行上述只读验收并上传报告，不包含部署、迁移、故障切换或 `FLOWMESH_REQUIRE_*` 绕过路径，并且只允许从 `main` 分支执行。
-- 提供独立生产发布入口：签名校验、生产配置校验、`helm upgrade --install --atomic --wait` 和发布后 Kubernetes smoke 必须串联执行；smoke 失败时自动回滚到升级前 revision，首次安装失败则卸载应用资源并保留 Helm 历史；运行时凭据只通过预先创建的 Secret 引用，不通过命令行传递。
+- 提供独立生产发布入口：签名校验、生产配置校验、`helm upgrade --install --atomic --wait --wait-for-jobs` 和发布后 Kubernetes smoke 必须串联执行；Flyway 迁移 Job 失败会阻止应用更新，smoke 失败时自动回滚到升级前 revision，首次安装失败则卸载应用资源并保留 Helm 历史；运行时凭据只通过预先创建的 Secret 引用，不通过命令行传递。
 - 提供仅手动触发、绑定同一 `production` Environment 的生产发布工作流；工作流只允许从 `main` 分支执行，使用并发互斥防止同时发布，复用生产发布入口，并将部署日志归档供审计追踪。
 - 生产验收编排脚本可选要求目标环境证据包；未提供真实目标环境的 HA、观测、恢复、备份、压测、安全回归和告警路由证据时，不得将版本标记为生产完成。
 - 生产验收编排脚本可选执行运行时 Prometheus/Alertmanager 预检，但仍不替代平台侧告警通知、日志聚合、Trace 后端和值班演练。

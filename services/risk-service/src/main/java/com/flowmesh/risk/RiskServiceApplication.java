@@ -1,5 +1,6 @@
 package com.flowmesh.risk;
 
+import com.flowmesh.common.migration.FlowMeshFlywayMigration;
 import com.flowmesh.risk.config.RiskFaultInjectionProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,6 +21,10 @@ public class RiskServiceApplication {
      * @param args Spring Boot 启动参数
      */
     public static void main(String[] args) {
+        if (FlowMeshFlywayMigration.isRequested()) {
+            System.exit(FlowMeshFlywayMigration.migrate("risk"));
+            return;
+        }
         SpringApplication.run(RiskServiceApplication.class, args);
     }
 }

@@ -1,5 +1,6 @@
 package com.flowmesh.supplier;
 
+import com.flowmesh.common.migration.FlowMeshFlywayMigration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -19,6 +20,10 @@ public class SupplierServiceApplication {
      * @param args Spring Boot 启动参数
      */
     public static void main(String[] args) {
+        if (FlowMeshFlywayMigration.isRequested()) {
+            System.exit(FlowMeshFlywayMigration.migrate("supplier"));
+            return;
+        }
         SpringApplication.run(SupplierServiceApplication.class, args);
     }
 }

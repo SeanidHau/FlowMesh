@@ -1,0 +1,69 @@
+{{- include "flowmesh.postgresqlValidation" . -}}
+{{- $root := . -}}
+{{- $migrations := list
+  (dict "name" "iam" "schema" "iam" "service" $root.Values.services.iam "passwordKey" "IAM_DB_MIGRATOR_PASSWORD")
+  (dict "name" "supplier" "schema" "supplier" "service" $root.Values.services.supplier "passwordKey" "SUPPLIER_DB_MIGRATOR_PASSWORD")
+  (dict "name" "workflow" "schema" "workflow" "service" $root.Values.services.workflow "passwordKey" "WORKFLOW_DB_MIGRATOR_PASSWORD")
+  (dict "name" "risk" "schema" "risk" "service" $root.Values.services.risk "passwordKey" "RISK_DB_MIGRATOR_PASSWORD")
+  (dict "name" "notification-audit" "schema" "audit" "service" $root.Values.services.notificationAudit "passwordKey" "AUDIT_DB_MIGRATOR_PASSWORD")
+}}
+{{- range $migration := $migrations }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "flowmesh.fullname" $root }}-{{ $migration.name }}-migration
+  labels:
+    {{- include "flowmesh.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $migration.name }}-migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ $root.Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ $root.Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "flowmesh.labels" $root | nindent 8 }}
+        app.kubernetes.io/component: {{ $migration.name }}-migration
+    spec:
+      {{- include "flowmesh.imagePullSecrets" $root | nindent 6 }}
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migration
+          image: {{ include "flowmesh.imageReference" (dict "root" $root "service" $migration.service) | quote }}
+          imagePullPolicy: {{ $root.Values.global.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: FLOWMESH_MIGRATION_MODE
+              value: "true"
+            - name: FLOWMESH_MIGRATION_JDBC_URL
+              value: {{ include "flowmesh.postgresqlJdbcUrl" (dict "root" $root "schema" $migration.schema) | quote }}
+            - name: FLOWMESH_MIGRATION_USER
+              value: {{ $migration.service.dbMigratorUser | quote }}
+            - name: FLOWMESH_MIGRATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" $root }}
+                  key: {{ $migration.passwordKey }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- include "flowmesh.postgresqlCaVolumeMount" (dict "secretName" $root.Values.postgresql.caSecretName "secretKey" $root.Values.postgresql.caSecretKey) | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- include "flowmesh.postgresqlCaVolume" (dict "secretName" $root.Values.postgresql.caSecretName "secretKey" $root.Values.postgresql.caSecretKey) | nindent 8 }}
+---
+{{- end }}

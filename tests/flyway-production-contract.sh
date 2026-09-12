@@ -47,4 +47,29 @@ for role in iam supplier workflow risk audit; do
 done
 grep -F -- 'ALTER DEFAULT PRIVILEGES' "${init_script}" >/dev/null
 
+migration_template="${repo_root}/infra/helm/flowmesh/templates/migrations.yaml"
+test -s "${migration_template}"
+grep -F -- 'migrations:' "${repo_root}/infra/helm/flowmesh/values-production.yaml" >/dev/null
+grep -F -- 'helm.sh/hook": pre-install,pre-upgrade' "${migration_template}" >/dev/null
+grep -F -- 'FLOWMESH_MIGRATION_MODE' "${migration_template}" >/dev/null
+grep -F -- 'FLOWMESH_MIGRATION_PASSWORD' "${migration_template}" >/dev/null
+for service in iam supplier workflow risk notification-audit; do
+  grep -F -- "(dict \"name\" \"${service}\"" "${migration_template}" >/dev/null || {
+    echo "Helm 迁移 Job 缺少服务：${service}" >&2
+    exit 1
+  }
+done
+
+for service in iam supplier workflow risk notification-audit; do
+  deployment="${repo_root}/infra/helm/flowmesh/templates/${service}.yaml"
+  grep -F -- 'SPRING_FLYWAY_ENABLED' "${deployment}" >/dev/null || {
+    echo "${deployment} 未显式关闭应用 Pod 内的 Flyway" >&2
+    exit 1
+  }
+  if grep -E 'SPRING_FLYWAY_(USER|PASSWORD)' "${deployment}" >/dev/null; then
+    echo "${deployment} 不得向应用 Pod 注入 Flyway 凭据" >&2
+    exit 1
+  fi
+done
+
 echo 'Flyway production contract passed.'

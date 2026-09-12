@@ -213,6 +213,7 @@ helm upgrade --install "${release}" "${chart_path}" \
   --create-namespace \
   --atomic \
   --wait \
+  --wait-for-jobs \
   --timeout "${helm_timeout}" \
   -f "${values_path}" \
   "${helm_overrides[@]}"
