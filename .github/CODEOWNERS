@@ -1,0 +1,9 @@
+# 默认由仓库维护者审查所有变更。
+* @SeanidHau
+
+# 关键生产控制面显式声明责任范围。
+/.github/ @SeanidHau
+/infra/ @SeanidHau
+/scripts/ @SeanidHau
+/services/ @SeanidHau
+/frontend/ @SeanidHau
