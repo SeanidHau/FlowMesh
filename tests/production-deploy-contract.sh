@@ -27,6 +27,8 @@ grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${script}" >/dev/null
 grep -F -- 'workflowSla.imageDigest=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME' "${script}" >/dev/null
+grep -F -- 'observability.alertmanagerConfig.webhookSecretName=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${script}" >/dev/null
 grep -F -- 'backup.postgres.user=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME' "${script}" >/dev/null
@@ -35,6 +37,7 @@ grep -F -- 'backup.postgres.caSecretName=' "${script}" >/dev/null
 grep -F -- 'retention.postgres.caSecretName=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_PULL_SECRET_NAME' "${script}" >/dev/null
 grep -F -- 'global.imagePullSecrets[0].name=' "${script}" >/dev/null
+grep -F -- 'observability.alertmanagerConfig.enabled=' "${script}" >/dev/null
 
 for forbidden in \
   'global.jwtSigningKey' \

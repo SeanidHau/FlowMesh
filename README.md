@@ -22,7 +22,7 @@ FlowMesh 是一个面向多租户 B2B SaaS 的云原生供应商准入与采购�
 | Electron + Vue 工作台 | 已实现 | 支持桌面端和浏览器预览。 |
 | Redis 登录限流 | 已实现 | IAM 使用 Lua 脚本按租户账号和客户端地址原子限流；本地默认降级放行，生产 Helm 默认 fail-closed，并默认启用 Redis TLS。 |
 | Camunda、Redis 缓存 | 计划中 | 当前不参与运行链路，不能作为已部署能力对外宣称。 |
-| Prometheus、Alertmanager、Grafana | 本地基线 + 生产验收入口 | 提供抓取、路由、告警规则、Grafana 概览 Dashboard，以及只读运行时后端校验；生产环境仍需接入实际观测平台和通知渠道。 |
+| Prometheus、Alertmanager、Grafana | 本地基线 + 生产配置入口 | 提供抓取、告警规则、AlertmanagerConfig、Grafana 概览 Dashboard，以及只读运行时后端校验；生产环境仍需接入实际观测平台、选择 AlertmanagerConfig 并完成通知演练。 |
 | DLQ 重放、跨服务对账 | 已实现 | 提供 OPERATIONS 受控重放、审计和申请/流程状态对账入口。 |
 | 镜像供应链 | 已实现 | 主分支发布完整提交 SHA 镜像，并执行 Trivy 扫描和 Cosign keyless 签名；Workflow SLA 的 PostgreSQL 客户端镜像在生产发布时强制绑定 sha256 digest；仓库提供 Kyverno 集群准入策略。 |
 | OpenTelemetry Trace | 已提供可选出口 | 六个服务支持 Micrometer Tracing 和 OTLP/HTTP 导出；默认关闭，目标平台仍需提供 Collector、存储和查询后端。 |

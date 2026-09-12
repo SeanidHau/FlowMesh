@@ -79,6 +79,12 @@
 
 备份账号必须通过 `scripts/validate-backup-role.sh` 验证；生命周期账号必须通过 `scripts/validate-retention-role.sh` 验证。两个账号都不得使用 `postgres` 或业务账号。
 
+### 3.4 Alertmanager 通知 Secret
+
+生产 values 默认渲染 `AlertmanagerConfig`，`flowmesh-alertmanager-webhook`（或覆盖后的名称）必须预先创建，且包含 `url` 键。
+该键只保存告警接收端的 HTTPS Webhook URL；URL 不得写入 Helm values、命令行参数或验收报告。目标 Alertmanager 必须通过
+`alertmanagerConfigSelector` 选择带有 `release: kube-prometheus-stack` 标签的资源，并在生产环境先发送一条测试告警验证通知和恢复消息。
+
 ## 4. GitHub Environment 配置
 
 GitHub `production` Environment 需要启用人工审批、分支保护和部署记录。下表列出工作流使用的配置名；值由目标平台管理员填写。
@@ -94,6 +100,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 | `FLOWMESH_INGRESS_NAMESPACE` | Ingress Controller 命名空间 |
 | `FLOWMESH_MONITORING_NAMESPACE` | Prometheus 命名空间 |
 | `FLOWMESH_PROMETHEUS_RELEASE` | Prometheus Operator release 标签 |
+| `FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME` | Alertmanager Webhook URL Secret 名称；默认 `flowmesh-alertmanager-webhook` |
 | `FLOWMESH_INGRESS_HOST` | 生产 API 域名 |
 | `FLOWMESH_INGRESS_TLS_SECRET_NAME` | API TLS Secret 名称 |
 | `FLOWMESH_POSTGRES_HOST` | 应用 PostgreSQL 地址 |
@@ -122,6 +129,9 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 - `FLOWMESH_BACKUP_DB_PASSWORD`
 - `FLOWMESH_RETENTION_DB_PASSWORD`
 - `FLOWMESH_REDIS_PASSWORD`
+
+Alertmanager Webhook URL 不通过 GitHub Actions Secret 或 Helm 参数传递，而是由目标 Kubernetes 集群中的
+`FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME` Secret 提供。
 
 如果目标 Redis 使用 ACL，还需要在 Helm 发布参数中设置 `redis.username`；单密码认证模式保持为空。
 

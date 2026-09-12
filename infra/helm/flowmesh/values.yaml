@@ -185,6 +185,17 @@ observability:
   prometheusRule:
     enabled: false
     labels: {}
+  # Prometheus Operator 的 AlertmanagerConfig；生产环境通过外部 Secret 提供通知 Webhook URL。
+  alertmanagerConfig:
+    enabled: false
+    labels: {}
+    receiverName: flowmesh-alerts
+    webhookSecretName: ""
+    webhookSecretKey: url
+    groupBy: [alertname, job, route]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
 
 gateway:
   image: flowmesh/gateway-service

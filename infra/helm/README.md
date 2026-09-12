@@ -103,6 +103,10 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 中提供 `NOTIFICATION_WEBHOOK_SIGNING_SECRET`；接收端应校验 HMAC 签名和 `Idempotency-Key`。数据库初始化时还要预先创建
 `flowmesh_audit_delivery` 投递维护角色，并确保 `flowmesh_audit` 不继承该角色，具体权限以通知投递 Flyway 迁移为准。
 
+生产覆盖值同时默认渲染 Prometheus Operator `AlertmanagerConfig`。请预先创建包含 `url` 键的
+`flowmesh-alertmanager-webhook` Secret，并让 Alertmanager 的 `alertmanagerConfigSelector` 选择
+`release: kube-prometheus-stack` 标签；Webhook URL 不得写入 values 或命令行。部署后必须执行一条测试告警，验证触发和恢复通知均能到达值班渠道。
+
 生产覆盖值默认启用 RocketMQ Producer 和 Consumer 的 TLS，并将访问通道设为 `CLOUD`；如果使用自建
 RocketMQ 集群，发布流程可以将 `rocketmq.accessChannel` 覆盖为 `LOCAL`，但仍必须保留 TLS，并为生产者、消费者
 配置具备最小权限的独立凭据。四个消息服务都会从外部 Secret 读取这些凭据，缺少任一 Secret 键时 Pod 不会启动。

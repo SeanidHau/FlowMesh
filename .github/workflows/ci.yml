@@ -336,11 +336,17 @@ jobs:
             --set observability.prometheusRule.enabled=true \
             --set observability.prometheusRule.labels.release=kube-prometheus-stack)"
           for alert in FlowMeshWorkflowSlaCronJobStale FlowMeshPostgresBackupCronJobStale FlowMeshPostgresRetentionCronJobStale; do
-            if ! printf '%s\n' "$rendered_alerts" | grep -q "alert: $alert"; then
-              echo "PrometheusRule must render scheduled-job alert: $alert" >&2
-              exit 1
-            fi
+          if ! printf '%s\n' "$rendered_alerts" | grep -q "alert: $alert"; then
+            echo "PrometheusRule must render scheduled-job alert: $alert" >&2
+            exit 1
+          fi
           done
+          if [[ "$(printf '%s\n' "$rendered_alerts" | grep -c '^kind: AlertmanagerConfig$' || true)" -ne 1 ]] || \
+             ! printf '%s\n' "$rendered_alerts" | grep -q 'flowmesh-alertmanager-webhook' || \
+             ! printf '%s\n' "$rendered_alerts" | grep -q 'key: "url"'; then
+            echo 'Production AlertmanagerConfig must reference the external webhook Secret.' >&2
+            exit 1
+          fi
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \

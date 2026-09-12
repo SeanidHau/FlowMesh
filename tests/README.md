@@ -88,6 +88,8 @@ Gateway 请求体边界契约：
 
 该测试验证生产 values 默认启用 `ServiceMonitor` 和 `PrometheusRule`，并提供 Prometheus Operator 选择标签。
 
+生产告警通知配置由 Helm 的 `AlertmanagerConfig` 提供；Webhook URL 必须放在外部 Secret 中，目标集群还需让 Alertmanager 选择该资源并完成通知演练。
+
 Redis ACL 配置契约：
 
 ```bash

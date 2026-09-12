@@ -13,5 +13,11 @@ grep -Eq '^    enabled:[[:space:]]*true[[:space:]]*$' "${values_file}"
 
 grep -F -- 'kind: ServiceMonitor' "${repo_root}/infra/helm/flowmesh/templates/servicemonitor.yaml" >/dev/null
 grep -F -- 'kind: PrometheusRule' "${repo_root}/infra/helm/flowmesh/templates/prometheusrule.yaml" >/dev/null
+grep -Eq '^  alertmanagerConfig:[[:space:]]*$' "${values_file}"
+grep -Eq '^    enabled:[[:space:]]*true[[:space:]]*$' "${values_file}"
+grep -Eq '^    receiverName:[[:space:]]*[^[:space:]]+' "${values_file}"
+grep -Eq '^    webhookSecretName:[[:space:]]*[^[:space:]]+' "${values_file}"
+grep -F -- 'kind: AlertmanagerConfig' "${repo_root}/infra/helm/flowmesh/templates/alertmanagerconfig.yaml" >/dev/null
+grep -F -- 'urlSecret:' "${repo_root}/infra/helm/flowmesh/templates/alertmanagerconfig.yaml" >/dev/null
 
 echo 'Production observability contract passed.'

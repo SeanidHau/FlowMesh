@@ -17,6 +17,7 @@ migration_secret="${FLOWMESH_MIGRATION_SECRET_NAME:-}"
 ingress_namespace="${FLOWMESH_INGRESS_NAMESPACE:-ingress-nginx}"
 monitoring_namespace="${FLOWMESH_MONITORING_NAMESPACE:-monitoring}"
 prometheus_release="${FLOWMESH_PROMETHEUS_RELEASE:-kube-prometheus-stack}"
+alertmanager_config_secret="${FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME:-flowmesh-alertmanager-webhook}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-true}"
 image_pull_secret="${FLOWMESH_IMAGE_PULL_SECRET_NAME:-}"
 postgres_ca_secret="${FLOWMESH_POSTGRES_CA_SECRET_NAME:-flowmesh-postgresql-ca}"
@@ -79,6 +80,7 @@ require_safe_name FLOWMESH_MIGRATION_SECRET_NAME "${migration_secret}"
 require_safe_name FLOWMESH_INGRESS_NAMESPACE "${ingress_namespace}"
 require_safe_name FLOWMESH_MONITORING_NAMESPACE "${monitoring_namespace}"
 require_safe_name FLOWMESH_PROMETHEUS_RELEASE "${prometheus_release}"
+require_safe_name FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME "${alertmanager_config_secret}"
 require_safe_name FLOWMESH_POSTGRES_CA_SECRET_NAME "${postgres_ca_secret}"
 if [[ -n "${image_pull_secret}" ]]; then
   require_safe_name FLOWMESH_IMAGE_PULL_SECRET_NAME "${image_pull_secret}"
@@ -199,8 +201,11 @@ helm_overrides=(
   --set-string "ingress.tls[0].hosts[0]=${FLOWMESH_INGRESS_HOST}"
   --set "observability.serviceMonitor.enabled=${expect_prometheus_rule}"
   --set "observability.prometheusRule.enabled=${expect_prometheus_rule}"
+  --set "observability.alertmanagerConfig.enabled=${expect_prometheus_rule}"
   --set-string "observability.serviceMonitor.labels.release=${prometheus_release}"
   --set-string "observability.prometheusRule.labels.release=${prometheus_release}"
+  --set-string "observability.alertmanagerConfig.labels.release=${prometheus_release}"
+  --set-string "observability.alertmanagerConfig.webhookSecretName=${alertmanager_config_secret}"
 )
 
 if [[ -n "${image_pull_secret}" ]]; then

@@ -49,6 +49,7 @@
 - 生产 Helm 模式强制启用 Ingress，并要求发布流程显式注入真实域名和 TLS Secret；缺失时渲染失败。
 - Helm 提供可选的 Prometheus Operator `ServiceMonitor`，启用后统一抓取六个应用服务的 Actuator 指标。
 - Helm 提供可选的 Prometheus Operator `PrometheusRule`，覆盖服务不可用、HTTP 5xx、Outbox 积压、死信、消费失败、消费延迟、确认失败、外部通知积压/死信/失败，以及 PostgreSQL 备份、生命周期清理和 Workflow SLA CronJob 长时间未成功执行告警；CronJob 告警依赖 kube-state-metrics，生产环境仍需配置 Alertmanager 路由和值班通知。
+- Helm 提供可选的 Prometheus Operator `AlertmanagerConfig`，通过外部 Secret 注入 Webhook URL，统一分组 FlowMesh 告警并发送恢复通知；目标平台仍需让 Alertmanager 通过 `alertmanagerConfigSelector` 选择该资源，并完成通知接收端、静默策略和值班演练。
 - 六个服务已提供可选 Micrometer Tracing 和 OTLP/HTTP 出口；默认关闭，生产启用时 Helm 要求显式提供 Collector 地址。
 - 提供只读运行时观测预检：检查 Prometheus/Alertmanager 就绪、六个 FlowMesh 服务目标可见，以及关键告警规则已加载；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY=false` 才能跳过。
 - 提供只读外部依赖 HA 拓扑预检：检查 PostgreSQL 主库复制数、Redis 主从可见性、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；生产验收默认强制执行该检查，非生产预检必须显式设置 `FLOWMESH_REQUIRE_DEPENDENCY_HA=false` 才能跳过。
@@ -101,7 +102,7 @@ helm lint infra/helm/flowmesh \
 
 ### 可观测性与恢复
 
-- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard 和本地 Alertmanager 路由基线；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端。
+- 已提供 Prometheus 抓取配置、可选 ServiceMonitor、服务/Outbox/死信/Gateway 限流告警、Grafana Dashboard、本地 Alertmanager 路由基线和生产 AlertmanagerConfig；生产环境仍需接入托管 Prometheus、Grafana、Alertmanager、日志聚合、OpenTelemetry Collector 和 Trace 后端，并验证通知接收。
 - 消息消费耗时已纳入 Prometheus 指标和告警；生产环境仍需根据实际 SLO 调整阈值，并完成告警通知路由和值班演练。
 - SLA CronJob 已提供独立维护账号、最小表权限、`SKIP LOCKED` 和 Outbox 事件；超时升级同时锁定任务行与 workflow instance，避免并行审批推进时留下半完成状态，并通过临时 PostgreSQL E2E 验证催办、升级和状态收敛。Helm PrometheusRule 已提供 SLA CronJob 长时间未成功告警。目标平台仍需轮换 `WORKFLOW_SLA_DB_PASSWORD`、验证数据库连接 TLS，并完成告警和值班演练。
 - PostgreSQL 备份已经提供 Helm CronJob、S3 上传、服务端加密、失败重试和 CI 恢复回归；目标平台仍需配置对象存储跨故障域复制、生命周期、定期恢复验证和实际 RTO/RPO 记录。

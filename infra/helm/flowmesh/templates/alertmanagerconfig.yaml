@@ -1,0 +1,34 @@
+{{- if and .Values.global.production .Values.observability.alertmanagerConfig.enabled (not .Values.observability.alertmanagerConfig.webhookSecretName) }}
+{{- fail "observability.alertmanagerConfig.webhookSecretName is required when AlertmanagerConfig is enabled in production mode" }}
+{{- end }}
+{{- if .Values.observability.alertmanagerConfig.enabled }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ include "flowmesh.fullname" . }}-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "flowmesh.labels" . | nindent 4 }}
+    {{- with .Values.observability.alertmanagerConfig.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  route:
+    receiver: {{ .Values.observability.alertmanagerConfig.receiverName | quote }}
+    groupBy:
+      {{- toYaml .Values.observability.alertmanagerConfig.groupBy | nindent 6 }}
+    groupWait: {{ .Values.observability.alertmanagerConfig.groupWait | quote }}
+    groupInterval: {{ .Values.observability.alertmanagerConfig.groupInterval | quote }}
+    repeatInterval: {{ .Values.observability.alertmanagerConfig.repeatInterval | quote }}
+    matchers:
+      - name: namespace
+        matchType: '='
+        value: {{ .Release.Namespace | quote }}
+  receivers:
+    - name: {{ .Values.observability.alertmanagerConfig.receiverName | quote }}
+      webhookConfigs:
+        - sendResolved: true
+          urlSecret:
+            name: {{ .Values.observability.alertmanagerConfig.webhookSecretName | quote }}
+            key: {{ .Values.observability.alertmanagerConfig.webhookSecretKey | quote }}
+{{- end }}

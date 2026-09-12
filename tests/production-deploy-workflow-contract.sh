@@ -21,6 +21,7 @@ grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_PULL_SECRET_NAME:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_MIGRATION_SECRET_NAME:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME: ${{ vars.FLOWMESH_POSTGRES_CA_SECRET_NAME }}' "${workflow}" >/dev/null

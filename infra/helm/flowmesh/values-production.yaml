@@ -160,6 +160,18 @@ observability:
     enabled: true
     labels:
       release: kube-prometheus-stack
+  # 目标 Alertmanager 必须通过 alertmanagerConfigSelector 选择该资源；Webhook URL 只从外部 Secret 读取。
+  alertmanagerConfig:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+    receiverName: flowmesh-production
+    webhookSecretName: flowmesh-alertmanager-webhook
+    webhookSecretKey: url
+    groupBy: [alertname, job, route]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
 
 # 生产部署必须由发布流程注入真实域名和 TLS Secret；留空会让 Helm 渲染失败。
 ingress:

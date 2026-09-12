@@ -27,7 +27,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | PostgreSQL 备份镜像和 Helm CronJob 已支持定时执行、S3 兼容对象存储上传、服务端加密、并发互斥和失败重试；生产渲染要求显式提供外部数据库地址、备份 URI 和凭据 Secret。 |
 | 已完成 | 提供对象存储生命周期配置脚本和离线契约测试；专用材料桶启用版本化，逻辑删除对象的非当前版本默认保留 7 天。 |
 | 已完成 | 六个服务提供默认关闭的 Micrometer Tracing 和 OTLP/HTTP 导出配置；生产 Helm 在开启导出但缺少 Collector 地址时拒绝渲染。 |
-| 已完成 | Helm 提供可选 Prometheus Operator `PrometheusRule`，CI 验证启用时能够渲染关键服务、HTTP 和消息告警规则。 |
+| 已完成 | Helm 提供可选 Prometheus Operator `PrometheusRule` 和 `AlertmanagerConfig`；CI 验证启用时能够渲染关键服务、HTTP、消息告警规则及外部 Webhook Secret 引用。目标平台仍需让 Alertmanager 选择资源并验证通知。 |
 | 已完成 | 生产 NetworkPolicy 已允许可配置监控命名空间访问 Actuator 指标端口，CI 验证生产渲染包含该入口。 |
 | 已完成 | 提供只读 Kubernetes 生产 smoke test，验证发布后的 Deployment、提交 SHA 镜像、PDB/HPA/NetworkPolicy、Secret 和备份 CronJob。 |
 | 已完成 | Gateway 已接入 Redis Lua 令牌桶限流，Redis 故障 fail-closed 返回 `503`、额度耗尽返回 `429`，并提供 Micrometer 指标、Prometheus 告警和本地 Alertmanager 路由基线。 |
@@ -98,7 +98,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 - Camunda 8 BPMN 流程编排。
 - Redis 缓存、短期幂等加速；登录尝试限流属于当前迭代范围。
 - 外部邮件/短信通道的具体供应商适配；当前迭代已完成通用 HTTPS Webhook 投递、HMAC 签名、幂等键、重试和死信闭环。
-- 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地基线，但真实平台接入和告警通知属于上线前必需证据。
+- 生产级托管 Prometheus、Grafana、日志聚合和 OpenTelemetry Trace 后端；仓库已提供本地基线和 AlertmanagerConfig，但真实平台接入、资源选择和告警通知属于上线前必需证据。
 - RocketMQ、PostgreSQL 多副本高可用、对象存储跨故障域复制、备份恢复和 Chaos 故障演练；这些不是“可选功能”，而是生产环境验收项。
 
 Camunda 和 Redis 缓存只有在对应业务场景、数据边界和测试环境明确后再接入，不为了扩充简历技术栈而提前引入。

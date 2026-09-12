@@ -36,6 +36,7 @@ IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查�
 - 发布镜像 Dockerfile 的基础镜像固定到已审核的多架构 digest；更新基础镜像时必须同步更新契约测试并重新通过漏洞扫描。
 - GitHub Actions 工作流统一固定到完整提交 SHA，并在行尾保留对应版本标签作为人工可读说明；CI 契约会拒绝可变版本标签。
 - GitHub Actions 的 `actions/checkout` 统一关闭 `persist-credentials`，避免将工作流 Token 持久化到 Runner 工作区。
+- Alertmanager Webhook URL 只允许通过外部 Kubernetes Secret 注入，不能写入 Helm values、Release 参数或证据报告。
 
 ## 文件访问
 

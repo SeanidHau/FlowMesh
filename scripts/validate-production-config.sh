@@ -63,6 +63,10 @@ require_value '^  serviceMonitor:[[:space:]]*$' '生产 ServiceMonitor 配置块
 require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 ServiceMonitor 必须启用'
 require_value '^  prometheusRule:[[:space:]]*$' '生产 PrometheusRule 配置块'
 require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 PrometheusRule 必须启用'
+require_value '^  alertmanagerConfig:[[:space:]]*$' '生产 AlertmanagerConfig 配置块'
+require_value '^    enabled:[[:space:]]*true[[:space:]]*$' '生产 AlertmanagerConfig 必须启用'
+require_value '^    receiverName:[[:space:]]*[^[:space:]]+' '生产 Alertmanager receiver 名称'
+require_value '^    webhookSecretName:[[:space:]]*[^[:space:]]+' '生产 Alertmanager Webhook Secret'
 require_value '^    replicas:[[:space:]]*2[[:space:]]*$' 'IAM 双副本'
 require_value '^  supplier:[[:space:]]*$' 'supplier 服务配置块'
 require_value '^  workflow:[[:space:]]*$' 'workflow 服务配置块'
@@ -82,6 +86,11 @@ raise "生产副本拓扑分散必须使用 DoNotSchedule" unless topology_sprea
 observability = values.fetch("observability")
 raise "生产 ServiceMonitor 必须启用" unless observability.dig("serviceMonitor", "enabled") == true
 raise "生产 PrometheusRule 必须启用" unless observability.dig("prometheusRule", "enabled") == true
+alertmanager_config = observability.fetch("alertmanagerConfig")
+raise "生产 AlertmanagerConfig 必须启用" unless alertmanager_config.fetch("enabled") == true
+raise "生产 AlertmanagerConfig 必须配置 receiver" if alertmanager_config.fetch("receiverName", "").to_s.empty?
+raise "生产 AlertmanagerConfig 必须引用外部 Webhook Secret" if alertmanager_config.fetch("webhookSecretName", "").to_s.empty?
+raise "生产 AlertmanagerConfig 必须配置 Secret key" if alertmanager_config.fetch("webhookSecretKey", "").to_s.empty?
 backup = values.fetch("backup")
 raise "生产 PostgreSQL 备份必须启用" unless backup.fetch("enabled") == true
 raise "生产备份必须配置凭据 Secret" if backup.fetch("credentialsSecret", "").to_s.empty?
