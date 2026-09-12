@@ -27,6 +27,7 @@ grep -F 'REVOKE ALL ON notification_deliveries FROM flowmesh_audit' "${migration
 grep -F 'SET ROLE flowmesh_audit_delivery' "${repo_root}/services/notification-audit-service/src/main/resources/db/migration/V4__grant_notification_delivery_retention.sql" >/dev/null
 grep -F 'getMaxAttempts' "${publisher}" >/dev/null
 grep -F 'DEAD_LETTER' "${publisher}" >/dev/null
+grep -F 'flowmesh.notification.delivery.confirmation_failed' "${publisher}" >/dev/null
 grep -F 'X-FlowMesh-Signature' "${webhook}" >/dev/null
 grep -F 'Idempotency-Key' "${webhook}" >/dev/null
 grep -F '"https".equalsIgnoreCase' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null

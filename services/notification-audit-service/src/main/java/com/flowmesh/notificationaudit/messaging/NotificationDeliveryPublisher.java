@@ -32,6 +32,7 @@ public class NotificationDeliveryPublisher {
     private final Counter failedCounter;
     private final Counter retryCounter;
     private final Counter deadLetterCounter;
+    private final Counter confirmationFailedCounter;
 
     /**
      * 创建通知投递发布器。
@@ -61,6 +62,8 @@ public class NotificationDeliveryPublisher {
             .description("外部通知重试次数").register(meterRegistry);
         this.deadLetterCounter = Counter.builder("flowmesh.notification.delivery.dead_lettered")
             .description("外部通知进入死信次数").register(meterRegistry);
+        this.confirmationFailedCounter = Counter.builder("flowmesh.notification.delivery.confirmation_failed")
+            .description("Webhook 已发送但未完成通知队列确认的次数").register(meterRegistry);
         Gauge.builder("flowmesh.notification.delivery.pending", repository,
                 NotificationDeliveryRepository::countPending)
             .description("外部通知待投递数量").register(meterRegistry);
@@ -91,6 +94,9 @@ public class NotificationDeliveryPublisher {
                 webhookClient.send(delivery);
                 if (markDelivered(delivery)) {
                     deliveredCounter.increment();
+                } else {
+                    confirmationFailedCounter.increment();
+                    log.warn("notification delivery sent but confirmation failed: deliveryId={}", delivery.getId());
                 }
             } catch (RuntimeException exception) {
                 recordFailure(delivery, exception);

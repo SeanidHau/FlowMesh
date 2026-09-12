@@ -1,5 +1,6 @@
 package com.flowmesh.notificationaudit.messaging;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -37,6 +38,7 @@ class NotificationDeliveryPublisherTest {
 
     private NotificationDeliveryProperties properties;
     private NotificationDeliveryPublisher publisher;
+    private SimpleMeterRegistry meterRegistry;
 
     /**
      * 使用安全的测试参数创建发布器。
@@ -47,8 +49,9 @@ class NotificationDeliveryPublisherTest {
         properties.setEnabled(true);
         properties.setMaxAttempts(3);
         properties.setRetryBaseDelaySeconds(1);
+        meterRegistry = new SimpleMeterRegistry();
         publisher = new NotificationDeliveryPublisher(
-            repository, claimService, webhookClient, properties, new SimpleMeterRegistry()
+            repository, claimService, webhookClient, properties, meterRegistry
         );
     }
 
@@ -67,6 +70,24 @@ class NotificationDeliveryPublisherTest {
 
         verify(webhookClient).send(delivery);
         verify(repository).markDelivered(eq(delivery.getId()), eq(delivery.getClaimToken()), any(Instant.class));
+    }
+
+    /**
+     * Webhook 已发送但队列确认失败时，必须记录确认失败指标，便于发现潜在重复投递。
+     */
+    @Test
+    void shouldRecordConfirmationFailureWhenDeliveryCannotBeMarked() {
+        NotificationDelivery delivery = delivery(0);
+        when(claimService.claimBatch()).thenReturn(List.of(delivery));
+        when(claimService.renew(delivery)).thenReturn(true);
+        when(repository.markDelivered(eq(delivery.getId()), eq(delivery.getClaimToken()), any(Instant.class)))
+            .thenReturn(0);
+
+        publisher.publishBatch();
+
+        verify(webhookClient).send(delivery);
+        assertThat(meterRegistry.get("flowmesh.notification.delivery.confirmation_failed")
+            .counter().count()).isEqualTo(1.0);
     }
 
     /**

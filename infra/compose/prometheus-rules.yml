@@ -77,6 +77,14 @@ groups:
         annotations:
           summary: "FlowMesh 外部通知持续失败"
           description: "外部通知 Webhook 最近五分钟持续投递失败。"
+      - alert: FlowMeshNotificationDeliveryConfirmationFailures
+        expr: sum(rate(flowmesh_notification_delivery_confirmation_failed_total[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FlowMesh 外部通知确认失败"
+          description: "外部通知已发送但本地队列确认失败，可能发生重复投递。"
 
   - name: flowmesh-http
     rules:
