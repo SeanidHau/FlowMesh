@@ -38,7 +38,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 风控拒绝闭环已落地：workflow 的 `REJECTED` 终态通过 `WorkflowRiskRejected` 幂等同步到 supplier，并由 notification-audit-service 生成通知与审计记录。 |
 | 已完成 | 已提供独立生命周期维护镜像和 Helm CronJob，按固定白名单清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录，并通过契约测试与 PostgreSQL E2E 验证 RLS、终态判断和保留窗口。 |
 | 已完成 | 提供只读生命周期角色权限预检，核验专用账号的非超级用户、不可继承、BYPASSRLS、白名单表和锁键列权限；CI 契约测试与 PostgreSQL 生命周期 E2E 会执行该预检。 |
-| 已完成 | 生产外部依赖连接安全已补齐：RocketMQ Producer/Consumer 使用独立 Secret 凭据和 TLS，PostgreSQL 默认 `sslmode=require`，Redis 默认启用 TLS；本地 Compose 保持关闭 TLS 的兼容默认值。 |
+| 已完成 | 生产外部依赖连接安全已补齐：RocketMQ Producer/Consumer 使用独立 Secret 凭据和 TLS，PostgreSQL 默认 `sslmode=require` 并支持通过外部 CA Secret 使用 `verify-ca`/`verify-full`，Redis 默认启用 TLS；本地 Compose 保持关闭 TLS 的兼容默认值。 |
 | 已完成 | 提供只读外部依赖 HA 拓扑预检，检查 PostgreSQL 复制数、Redis 主从端点、至少两个 RocketMQ NameServer TLS 端点和对象存储 HTTPS；实际故障切换、备份恢复和 RTO/RPO 仍需目标平台执行并留存证据。 |
 | 已完成 | 提供只读生产证据包门禁，要求目标环境提交 Kubernetes smoke、依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并使用清单和 SHA-256 校验和验证完整性；实际证据仍需由目标平台执行生成。 |
 | 已完成 | 提供生产发布入口：先校验完整提交 SHA 镜像签名和生产 values，再执行 Helm 原子等待发布，最后执行只读 Kubernetes smoke；smoke 失败会自动回滚或清理首次安装资源；运行时凭据只通过预先创建的 Secret 引用。 |

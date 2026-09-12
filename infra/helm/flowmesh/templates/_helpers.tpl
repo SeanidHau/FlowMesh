@@ -120,3 +120,38 @@ imagePullSecrets:
 {{- end }}
 {{- if $registry }}{{ printf "%s/%s" $registry .Values.retention.image }}{{ else }}{{ .Values.retention.image }}{{ end }}:{{ $tag }}
 {{- end }}
+
+{{/* 作用：生产使用 PostgreSQL 服务端身份校验时，强制要求 CA Secret，避免 verify 模式退化为未验证的连接。 */}}
+{{- define "flowmesh.postgresqlValidation" -}}
+{{- if and .Values.global.production (has .Values.postgresql.sslMode (list "verify-ca" "verify-full")) (not .Values.postgresql.caSecretName) }}
+{{- fail "postgresql.caSecretName is required when PostgreSQL sslMode is verify-ca or verify-full in production mode" }}
+{{- end }}
+{{- end }}
+
+{{/* 作用：统一生成业务服务使用的 PostgreSQL JDBC URL，并在提供 CA Secret 时启用证书校验文件。 */}}
+{{- define "flowmesh.postgresqlJdbcUrl" -}}
+{{- $root := .root -}}
+{{- printf "jdbc:postgresql://%s:%v/%s?currentSchema=%s&sslmode=%s%s" $root.Values.postgresql.host $root.Values.postgresql.port $root.Values.postgresql.database .schema $root.Values.postgresql.sslMode (ternary "&sslrootcert=/etc/flowmesh/postgresql/ca.crt" "" (ne (default "" $root.Values.postgresql.caSecretName) "")) -}}
+{{- end }}
+
+{{/* 作用：向应用或维护任务挂载外部 PostgreSQL CA Secret，不在镜像中内置环境相关证书。 */}}
+{{- define "flowmesh.postgresqlCaVolumeMount" -}}
+{{- if .secretName }}
+- name: postgresql-ca
+  mountPath: /etc/flowmesh/postgresql
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{/* 作用：将外部 PostgreSQL CA Secret 以只读、固定文件名挂载到 Pod。 */}}
+{{- define "flowmesh.postgresqlCaVolume" -}}
+{{- if .secretName }}
+- name: postgresql-ca
+  secret:
+    secretName: {{ .secretName | quote }}
+    items:
+      - key: {{ default "ca.crt" .secretKey | quote }}
+        path: ca.crt
+        mode: 0444
+{{- end }}
+{{- end }}

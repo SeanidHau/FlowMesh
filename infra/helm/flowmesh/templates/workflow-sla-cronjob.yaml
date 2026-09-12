@@ -59,6 +59,10 @@ spec:
                       key: WORKFLOW_SLA_DB_PASSWORD
                 - name: PGSSLMODE
                   value: {{ .Values.postgresql.sslMode | quote }}
+                {{- if .Values.postgresql.caSecretName }}
+                - name: PGSSLROOTCERT
+                  value: /etc/flowmesh/postgresql/ca.crt
+                {{- end }}
               command: ["/bin/bash", "-ec"]
               args:
                 - |
@@ -143,6 +147,14 @@ spec:
                   END $$;
                   COMMIT;
                   SQL
+              {{- if .Values.postgresql.caSecretName }}
+              volumeMounts:
+                {{- include "flowmesh.postgresqlCaVolumeMount" (dict "secretName" .Values.postgresql.caSecretName "secretKey" .Values.postgresql.caSecretKey) | nindent 16 }}
+              {{- end }}
               resources:
                 {{- toYaml .Values.workflowSla.resources | nindent 16 }}
+          {{- if .Values.postgresql.caSecretName }}
+          volumes:
+            {{- include "flowmesh.postgresqlCaVolume" (dict "secretName" .Values.postgresql.caSecretName "secretKey" .Values.postgresql.caSecretKey) | nindent 12 }}
+          {{- end }}
 {{- end }}

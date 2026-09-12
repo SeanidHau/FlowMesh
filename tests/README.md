@@ -88,6 +88,14 @@ Redis ACL 配置契约：
 
 该测试验证 Gateway、IAM、Compose 和 Helm 均支持 Redis ACL 用户名；单密码 Redis 保持用户名为空的兼容行为。
 
+PostgreSQL CA 配置契约：
+
+```bash
+./tests/postgresql-ca-contract.sh
+```
+
+该测试验证生产 PostgreSQL 使用 `verify-ca`/`verify-full` 时，应用、SLA、备份和生命周期任务均可挂载外部 CA Secret；证书不打包进镜像，单独的本地 `disable` 和生产 `require` 默认保持兼容。
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

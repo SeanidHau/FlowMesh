@@ -71,6 +71,10 @@ spec:
                   value: {{ .Values.backup.postgres.user | quote }}
                 - name: FLOWMESH_PG_SSLMODE
                   value: {{ .Values.backup.postgres.sslMode | quote }}
+                {{- if .Values.backup.postgres.caSecretName }}
+                - name: FLOWMESH_PG_SSLROOTCERT
+                  value: /etc/flowmesh/postgresql/ca.crt
+                {{- end }}
                 - name: FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS
                   value: {{ .Values.backup.postgres.connectTimeoutSeconds | quote }}
                 - name: FLOWMESH_PG_PASSWORD
@@ -125,9 +129,11 @@ spec:
                   mountPath: /backup
                 - name: tmp
                   mountPath: /tmp
+                {{- include "flowmesh.postgresqlCaVolumeMount" (dict "secretName" .Values.backup.postgres.caSecretName "secretKey" .Values.backup.postgres.caSecretKey) | nindent 16 }}
           volumes:
             - name: backup
               emptyDir: {}
             - name: tmp
               emptyDir: {}
+            {{- include "flowmesh.postgresqlCaVolume" (dict "secretName" .Values.backup.postgres.caSecretName "secretKey" .Values.backup.postgres.caSecretKey) | nindent 12 }}
 {{- end }}

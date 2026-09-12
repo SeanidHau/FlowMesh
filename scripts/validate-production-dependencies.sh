@@ -51,6 +51,7 @@ pg_port="${FLOWMESH_PG_PORT:-5432}"
 pg_database="${FLOWMESH_PG_DATABASE:-flowmesh}"
 pg_user="${FLOWMESH_PG_USER:-}"
 pg_sslmode="${FLOWMESH_PG_SSLMODE:-require}"
+pg_sslrootcert="${FLOWMESH_PG_SSLROOTCERT:-}"
 redis_host="${FLOWMESH_REDIS_HOST:-}"
 redis_port="${FLOWMESH_REDIS_PORT:-6379}"
 redis_user="${FLOWMESH_REDIS_USER:-default}"
@@ -98,6 +99,9 @@ tls_error_file="$(mktemp "${TMPDIR:-/tmp}/flowmesh-rocketmq-tls.XXXXXX")"
 trap 'rm -f -- "${tls_error_file}"' EXIT
 
 export PGSSLMODE="${pg_sslmode}"
+if [[ -n "${pg_sslrootcert}" ]]; then
+  export PGSSLROOTCERT="${pg_sslrootcert}"
+fi
 if ! run_with_timeout "${timeout_seconds}" pg_isready \
   --host="${pg_host}" --port="${pg_port}" --username="${pg_user}" --dbname="${pg_database}" \
   --timeout="${timeout_seconds}" >/dev/null; then
@@ -142,5 +146,5 @@ case "${http_status}" in
     ;;
 esac
 
-unset PGSSLMODE REDISCLI_AUTH
+unset PGSSLMODE PGSSLROOTCERT REDISCLI_AUTH
 printf '生产依赖预检通过：PostgreSQL TLS、Redis TLS/PING、RocketMQ NameServer TLS、对象存储 HTTPS。\n'

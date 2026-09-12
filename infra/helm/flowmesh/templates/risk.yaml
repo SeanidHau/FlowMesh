@@ -57,7 +57,7 @@ spec:
             {{- include "flowmesh.rocketmqProducerEnv" . | nindent 12 }}
             {{- include "flowmesh.rocketmqConsumerEnv" . | nindent 12 }}
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://{{ .Values.postgresql.host }}:{{ .Values.postgresql.port }}/{{ .Values.postgresql.database }}?currentSchema=risk&sslmode={{ .Values.postgresql.sslMode }}"
+              value: {{ include "flowmesh.postgresqlJdbcUrl" (dict "root" . "schema" "risk") | quote }}
             - name: RISK_DB_USER
               value: {{ .Values.services.risk.dbUser | quote }}
             - name: RISK_DB_PASSWORD
@@ -95,9 +95,11 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- include "flowmesh.postgresqlCaVolumeMount" (dict "secretName" .Values.postgresql.caSecretName "secretKey" .Values.postgresql.caSecretKey) | nindent 12 }}
       volumes:
         - name: tmp
           emptyDir: {}
+        {{- include "flowmesh.postgresqlCaVolume" (dict "secretName" .Values.postgresql.caSecretName "secretKey" .Values.postgresql.caSecretKey) | nindent 8 }}
 ---
 apiVersion: v1
 kind: Service

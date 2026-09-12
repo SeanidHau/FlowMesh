@@ -33,7 +33,7 @@ chmod 700 "${backup_dir}"
 
 cleanup_failed_backup() {
   local status=$?
-  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
+  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE PGSSLROOTCERT
   if [[ "${status}" -ne 0 && -d "${backup_dir}" ]]; then
     rm -rf -- "${backup_dir}"
   fi
@@ -44,6 +44,9 @@ trap cleanup_failed_backup EXIT
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD}"
 export PGCONNECT_TIMEOUT="${FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS:-5}"
 export PGSSLMODE="${ssl_mode}"
+if [[ -n "${FLOWMESH_PG_SSLROOTCERT:-}" ]]; then
+  export PGSSLROOTCERT="${FLOWMESH_PG_SSLROOTCERT}"
+fi
 
 pg_dump \
   --format=custom \
@@ -154,6 +157,6 @@ if [[ -n "${FLOWMESH_BACKUP_S3_URI:-}" ]]; then
 fi
 
 trap - EXIT
-unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
+unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE PGSSLROOTCERT
 
 printf 'PostgreSQL 备份已创建：%s\n' "${backup_dir}"

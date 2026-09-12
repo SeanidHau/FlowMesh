@@ -40,13 +40,16 @@ command -v psql >/dev/null 2>&1 || {
 }
 
 cleanup() {
-  unset PGPASSWORD PGSSLMODE PGCONNECT_TIMEOUT
+  unset PGPASSWORD PGSSLMODE PGSSLROOTCERT PGCONNECT_TIMEOUT
 }
 trap cleanup EXIT
 
 export PGPASSWORD="${password}"
 export PGSSLMODE="${sslmode}"
 export PGCONNECT_TIMEOUT="${connect_timeout}"
+if [[ -n "${FLOWMESH_PG_SSLROOTCERT:-}" ]]; then
+  export PGSSLROOTCERT="${FLOWMESH_PG_SSLROOTCERT}"
+fi
 
 # 通过当前备份账号检查自身属性，避免预检账号拥有管理员权限却绕过真实备份账号边界。
 psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 \

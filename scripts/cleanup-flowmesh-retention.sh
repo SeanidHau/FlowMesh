@@ -55,7 +55,7 @@ fi
 sql_file="$(mktemp)"
 cleanup() {
   rm -f -- "${sql_file}"
-  unset PGPASSWORD
+  unset PGPASSWORD PGSSLMODE PGSSLROOTCERT PGCONNECT_TIMEOUT
 }
 trap cleanup EXIT
 
@@ -78,6 +78,9 @@ psql_args=(
 
 export PGSSLMODE="${sslmode}"
 export PGCONNECT_TIMEOUT="${connect_timeout}"
+if [[ -n "${FLOWMESH_PG_SSLROOTCERT:-}" ]]; then
+  export PGSSLROOTCERT="${FLOWMESH_PG_SSLROOTCERT}"
+fi
 
 role_status="$(psql "${psql_args[@]}" --command "SELECT CASE WHEN rolsuper = false AND rolbypassrls = true THEN 'ok' ELSE 'reject' END FROM pg_roles WHERE rolname = current_user;")"
 if [[ "$(printf '%s' "${role_status}" | tr -d '[:space:]')" != "ok" ]]; then

@@ -19,6 +19,9 @@ postgresql:
   port: 5432
   database: flowmesh
   sslMode: disable
+  # 生产使用 verify-ca/verify-full 时，引用预先创建的 CA Secret；空值保持本地兼容。
+  caSecretName: ""
+  caSecretKey: ca.crt
 
 workflowSla:
   # 生产环境启用独立 CronJob；本地默认关闭，避免不需要时消耗资源。
@@ -102,6 +105,8 @@ backup:
     database: flowmesh
     user: flowmesh
     sslMode: disable
+    caSecretName: ""
+    caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   s3:
     uri: ""
@@ -140,6 +145,8 @@ retention:
     port: 5432
     database: flowmesh
     sslMode: disable
+    caSecretName: ""
+    caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   confirmation: "YES"
   outboxRetentionDays: 90

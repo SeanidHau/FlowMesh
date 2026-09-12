@@ -20,6 +20,9 @@ postgresql:
   port: 5432
   database: flowmesh
   sslMode: require
+  # sslMode 改为 verify-ca/verify-full 时，发布流程必须同时注入 CA Secret 名称和键。
+  caSecretName: ""
+  caSecretKey: ca.crt
 
 workflowSla:
   # 生产环境必须启用独立 SLA 维护任务；密码由 global.existingSecret 提供。
@@ -75,6 +78,8 @@ backup:
     # 生产发布流程必须覆写为专用只读备份账号。
     user: flowmesh_backup
     sslMode: require
+    caSecretName: ""
+    caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   s3:
     uri: ""
@@ -112,6 +117,8 @@ retention:
     port: 5432
     database: flowmesh
     sslMode: require
+    caSecretName: ""
+    caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   confirmation: "YES"
   outboxRetentionDays: 90

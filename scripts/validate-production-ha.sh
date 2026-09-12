@@ -60,6 +60,7 @@ pg_port="${FLOWMESH_PG_PORT:-5432}"
 pg_database="${FLOWMESH_PG_DATABASE:-flowmesh}"
 pg_user="${FLOWMESH_PG_USER:-}"
 pg_sslmode="${FLOWMESH_PG_SSLMODE:-verify-full}"
+pg_sslrootcert="${FLOWMESH_PG_SSLROOTCERT:-}"
 expected_pg_replicas="${FLOWMESH_HA_EXPECTED_PG_REPLICAS:-}"
 redis_hosts="${FLOWMESH_HA_REDIS_HOSTS:-}"
 redis_password="${FLOWMESH_REDIS_PASSWORD:-}"
@@ -133,6 +134,9 @@ trap 'rm -f -- "${temp_report}"' EXIT
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 export PGSSLMODE="${pg_sslmode}"
+if [[ -n "${pg_sslrootcert}" ]]; then
+  export PGSSLROOTCERT="${pg_sslrootcert}"
+fi
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD:-}"
 if [[ -z "${PGPASSWORD}" ]]; then
   require_value FLOWMESH_PG_PASSWORD "${PGPASSWORD}"
@@ -207,7 +211,7 @@ case "${http_status}" in
     ;;
 esac
 
-unset PGSSLMODE PGPASSWORD REDISCLI_AUTH
+unset PGSSLMODE PGSSLROOTCERT PGPASSWORD REDISCLI_AUTH
 {
   echo '# FlowMesh 外部依赖 HA 拓扑预检报告'
   echo

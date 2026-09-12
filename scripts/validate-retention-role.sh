@@ -36,13 +36,16 @@ command -v psql >/dev/null 2>&1 || {
 }
 
 cleanup() {
-  unset PGPASSWORD PGSSLMODE PGCONNECT_TIMEOUT
+  unset PGPASSWORD PGSSLMODE PGSSLROOTCERT PGCONNECT_TIMEOUT
 }
 trap cleanup EXIT
 
 export PGPASSWORD="${password}"
 export PGSSLMODE="${sslmode}"
 export PGCONNECT_TIMEOUT="${connect_timeout}"
+if [[ -n "${FLOWMESH_PG_SSLROOTCERT:-}" ]]; then
+  export PGSSLROOTCERT="${FLOWMESH_PG_SSLROOTCERT}"
+fi
 
 # psql 变量不能直接在 DO $$...$$ 内展开，因此先写入本连接会话参数，再由 PL/pgSQL 读取。
 psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 \

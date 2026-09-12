@@ -64,6 +64,10 @@ spec:
                   value: {{ .Values.retention.postgres.database | quote }}
                 - name: FLOWMESH_PG_SSLMODE
                   value: {{ .Values.retention.postgres.sslMode | quote }}
+                {{- if .Values.retention.postgres.caSecretName }}
+                - name: FLOWMESH_PG_SSLROOTCERT
+                  value: /etc/flowmesh/postgresql/ca.crt
+                {{- end }}
                 - name: FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS
                   value: {{ .Values.retention.postgres.connectTimeoutSeconds | quote }}
                 - name: FLOWMESH_RETENTION_DB_USER
@@ -88,7 +92,9 @@ spec:
               volumeMounts:
                 - name: tmp
                   mountPath: /tmp
+                {{- include "flowmesh.postgresqlCaVolumeMount" (dict "secretName" .Values.retention.postgres.caSecretName "secretKey" .Values.retention.postgres.caSecretKey) | nindent 16 }}
           volumes:
             - name: tmp
               emptyDir: {}
+            {{- include "flowmesh.postgresqlCaVolume" (dict "secretName" .Values.retention.postgres.caSecretName "secretKey" .Values.retention.postgres.caSecretKey) | nindent 12 }}
 {{- end }}

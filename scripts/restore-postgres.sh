@@ -43,8 +43,11 @@ user="${FLOWMESH_PG_USER:-flowmesh}"
 export PGPASSWORD="${FLOWMESH_PG_PASSWORD}"
 export PGCONNECT_TIMEOUT="${connect_timeout}"
 export PGSSLMODE="${ssl_mode}"
+if [[ -n "${FLOWMESH_PG_SSLROOTCERT:-}" ]]; then
+  export PGSSLROOTCERT="${FLOWMESH_PG_SSLROOTCERT}"
+fi
 cleanup_client_environment() {
-  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE
+  unset PGPASSWORD PGCONNECT_TIMEOUT PGSSLMODE PGSSLROOTCERT
 }
 trap cleanup_client_environment EXIT
 
