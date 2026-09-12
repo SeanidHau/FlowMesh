@@ -61,6 +61,7 @@ public class OutboxPublisher {
         @Value("${flowmesh.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds,
         @Value("${flowmesh.outbox.send-timeout-ms:3000}") long sendTimeoutMillis
     ) {
+        validateConfiguration(maxAttempts, retryBaseDelaySeconds, sendTimeoutMillis);
         this.outboxEventRepository = outboxEventRepository;
         this.rocketMQTemplate = rocketMQTemplate;
         this.outboxClaimService = outboxClaimService;
@@ -156,6 +157,23 @@ public class OutboxPublisher {
                 event.getId(),
                 nextAttempt,
                 exception
+            );
+        }
+    }
+
+    private void validateConfiguration(int configuredMaxAttempts, long configuredRetryBaseDelaySeconds,
+                                       long configuredSendTimeoutMillis) {
+        if (configuredMaxAttempts < 1 || configuredMaxAttempts > 20) {
+            throw new IllegalArgumentException("flowmesh.outbox.max-attempts must be between 1 and 20");
+        }
+        if (configuredRetryBaseDelaySeconds < 1 || configuredRetryBaseDelaySeconds > 900) {
+            throw new IllegalArgumentException(
+                "flowmesh.outbox.retry-base-delay-seconds must be between 1 and 900"
+            );
+        }
+        if (configuredSendTimeoutMillis < 100 || configuredSendTimeoutMillis > 60_000) {
+            throw new IllegalArgumentException(
+                "flowmesh.outbox.send-timeout-ms must be between 100 and 60000"
             );
         }
     }

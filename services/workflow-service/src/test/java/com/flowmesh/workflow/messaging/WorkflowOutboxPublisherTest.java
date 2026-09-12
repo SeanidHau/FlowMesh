@@ -1,6 +1,7 @@
 package com.flowmesh.workflow.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -22,6 +23,23 @@ import org.springframework.messaging.Message;
  * 验证 workflow Outbox 发布器的 ACK 确认和指标语义。
  */
 class WorkflowOutboxPublisherTest {
+
+    /**
+     * 验证 workflow 发布器拒绝超过边界的最大重试次数。
+     */
+    @Test
+    void shouldRejectUnsafePublisherConfiguration() {
+        assertThatThrownBy(() -> new WorkflowOutboxPublisher(
+            mock(WorkflowOutboxEventRepository.class),
+            mock(RocketMQTemplate.class),
+            mock(WorkflowOutboxClaimService.class),
+            new SimpleMeterRegistry(),
+            21,
+            1,
+            3000
+        )).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("max-attempts");
+    }
 
     /**
      * 验证只有数据库确认更新成功后才计入发布成功。

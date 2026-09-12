@@ -1,6 +1,7 @@
 package com.flowmesh.risk.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,6 +22,24 @@ import org.junit.jupiter.api.Test;
  * 验证风控 Outbox 发布前的租约续期和租约失效保护。
  */
 class RiskOutboxPublisherTest {
+
+    /**
+     * 验证风控发布器拒绝超过边界的退避时间。
+     */
+    @Test
+    void shouldRejectUnsafePublisherConfiguration() {
+        assertThatThrownBy(() -> new RiskOutboxPublisher(
+            mock(RiskOutboxRepository.class),
+            mock(RocketMQTemplate.class),
+            new SimpleMeterRegistry(),
+            1,
+            60,
+            3,
+            901,
+            3000
+        )).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("retry-base-delay-seconds");
+    }
 
     /**
      * 持有租约时才允许发送并在数据库确认成功后计入发布指标。

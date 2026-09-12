@@ -58,6 +58,7 @@ public class WorkflowOutboxPublisher {
         @Value("${flowmesh.workflow.outbox.retry-base-delay-seconds:1}") long retryBaseDelaySeconds,
         @Value("${flowmesh.workflow.outbox.send-timeout-ms:3000}") long sendTimeoutMillis
     ) {
+        validateConfiguration(maxAttempts, retryBaseDelaySeconds, sendTimeoutMillis);
         this.repository = repository;
         this.rocketMQTemplate = rocketMQTemplate;
         this.claimService = claimService;
@@ -154,6 +155,25 @@ public class WorkflowOutboxPublisher {
                     exception
                 );
             }
+        }
+    }
+
+    private void validateConfiguration(int configuredMaxAttempts, long configuredRetryBaseDelaySeconds,
+                                       long configuredSendTimeoutMillis) {
+        if (configuredMaxAttempts < 1 || configuredMaxAttempts > 20) {
+            throw new IllegalArgumentException(
+                "flowmesh.workflow.outbox.max-attempts must be between 1 and 20"
+            );
+        }
+        if (configuredRetryBaseDelaySeconds < 1 || configuredRetryBaseDelaySeconds > 900) {
+            throw new IllegalArgumentException(
+                "flowmesh.workflow.outbox.retry-base-delay-seconds must be between 1 and 900"
+            );
+        }
+        if (configuredSendTimeoutMillis < 100 || configuredSendTimeoutMillis > 60_000) {
+            throw new IllegalArgumentException(
+                "flowmesh.workflow.outbox.send-timeout-ms must be between 100 and 60000"
+            );
         }
     }
 }

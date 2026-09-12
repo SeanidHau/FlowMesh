@@ -33,6 +33,7 @@
 - 提供离线备份完整性校验脚本，并通过真实 PostgreSQL 容器 E2E 验证归档校验、角色密码不落盘和隔离数据库恢复；通过环境变量限制数据库连接池上限、连接超时和连接生命周期。
 - 提供可发布的 PostgreSQL 备份镜像和 Helm CronJob：定时创建归档、上传到 S3 兼容对象存储、从远端确认三个归档对象可见后再写入 `_SUCCESS`、使用服务端加密、禁止并发执行并在失败时重试；生产 Helm 要求显式注入外部数据库地址、专用只读备份账号、备份目标和凭据 Secret。
 - Outbox 发布器显式设置消息发送超时，在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，并在每条消息发送前续租；若认领令牌已失效则跳过发送，避免参数调整或进程暂停导致的并发重复发布。
+- supplier、workflow 和 risk 的 Outbox 启动配置统一限制发送超时为 100 ms 至 60 s、重试退避为 1 至 900 s、最大尝试次数为 1 至 20，避免错误配置造成无限重试或长时间占用调度线程。
 - 四个 RocketMQ 服务支持独立 Producer/Consumer 凭据、访问通道和 TLS 配置；生产 Helm 默认开启 Producer/Consumer TLS，并要求运行时 Secret 提供四组凭据键。
 - 生产应用、SLA、备份和生命周期任务的 PostgreSQL 连接默认使用 `sslmode=verify-full`，Redis 连接默认启用 TLS；Helm 通过 `postgresql.caSecretName`、`backup.postgres.caSecretName` 和 `retention.postgres.caSecretName` 挂载外部 CA，并将 CA 文件传给 JDBC/`libpq` 完成服务端身份校验。
 - 所有生产 PostgreSQL 预检和维护脚本在 `verify-ca`/`verify-full` 模式下都强制要求 `FLOWMESH_PG_SSLROOTCERT` 指向存在且可读的 CA 文件，禁止无意间退回 Runner 系统信任库。

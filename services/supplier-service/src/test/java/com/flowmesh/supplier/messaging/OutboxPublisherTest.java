@@ -1,6 +1,7 @@
 package com.flowmesh.supplier.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,6 +24,23 @@ import org.springframework.messaging.Message;
  * 验证 Outbox 发布器的成功确认、重试和死信分支。
  */
 class OutboxPublisherTest {
+
+    /**
+     * 验证发布器拒绝过大的发送超时，避免单条事件长期占用调度线程。
+     */
+    @Test
+    void shouldRejectUnsafePublisherConfiguration() {
+        assertThatThrownBy(() -> new OutboxPublisher(
+            mock(OutboxEventRepository.class),
+            mock(RocketMQTemplate.class),
+            mock(OutboxClaimService.class),
+            new SimpleMeterRegistry(),
+            3,
+            1,
+            60_001
+        )).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("send-timeout-ms");
+    }
 
     /**
      * 验证 RocketMQ ACK 返回后才确认 Outbox 已发布。

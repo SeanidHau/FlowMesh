@@ -135,8 +135,10 @@ public class RiskOutboxPublisher {
         if (configuredBatchSize < 1 || configuredBatchSize > 100) {
             throw new IllegalArgumentException("flowmesh.risk.batch-size must be between 1 and 100");
         }
-        if (configuredSendTimeoutMillis < 100) {
-            throw new IllegalArgumentException("flowmesh.risk.send-timeout-ms must be at least 100");
+        if (configuredSendTimeoutMillis < 100 || configuredSendTimeoutMillis > 60_000) {
+            throw new IllegalArgumentException(
+                "flowmesh.risk.send-timeout-ms must be between 100 and 60000"
+            );
         }
         long minimumLeaseSeconds = (configuredBatchSize * configuredSendTimeoutMillis + 999) / 1000 + 10;
         if (configuredLeaseSeconds < minimumLeaseSeconds) {
@@ -144,11 +146,13 @@ public class RiskOutboxPublisher {
                 "flowmesh.risk.lease-seconds must cover the batch send timeout plus a safety margin"
             );
         }
-        if (configuredMaxAttempts < 1) {
-            throw new IllegalArgumentException("flowmesh.risk.max-attempts must be at least 1");
+        if (configuredMaxAttempts < 1 || configuredMaxAttempts > 20) {
+            throw new IllegalArgumentException("flowmesh.risk.max-attempts must be between 1 and 20");
         }
-        if (configuredRetryBaseDelaySeconds < 1) {
-            throw new IllegalArgumentException("flowmesh.risk.retry-base-delay-seconds must be at least 1");
+        if (configuredRetryBaseDelaySeconds < 1 || configuredRetryBaseDelaySeconds > 900) {
+            throw new IllegalArgumentException(
+                "flowmesh.risk.retry-base-delay-seconds must be between 1 and 900"
+            );
         }
     }
 

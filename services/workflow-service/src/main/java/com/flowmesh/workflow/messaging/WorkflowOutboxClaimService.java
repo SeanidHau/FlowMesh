@@ -69,8 +69,10 @@ public class WorkflowOutboxClaimService {
         if (configuredBatchSize < 1 || configuredBatchSize > 100) {
             throw new IllegalArgumentException("flowmesh.workflow.outbox.batch-size must be between 1 and 100");
         }
-        if (configuredSendTimeoutMillis < 100) {
-            throw new IllegalArgumentException("flowmesh.workflow.outbox.send-timeout-ms must be at least 100");
+        if (configuredSendTimeoutMillis < 100 || configuredSendTimeoutMillis > 60_000) {
+            throw new IllegalArgumentException(
+                "flowmesh.workflow.outbox.send-timeout-ms must be between 100 and 60000"
+            );
         }
         long minimumLeaseSeconds = (configuredBatchSize * configuredSendTimeoutMillis + 999) / 1000 + 10;
         if (configuredLeaseSeconds < minimumLeaseSeconds) {
