@@ -53,6 +53,8 @@ rocketmq:
 redis:
   host: redis
   port: 6379
+  # Redis ACL 用户名；单密码认证模式留空。
+  username: ""
   sslEnabled: false
 
 objectStorage:

@@ -36,6 +36,9 @@ bash "${root_dir}/tests/production-topology-spread-contract.sh"
 echo '校验生产观测资源……'
 bash "${root_dir}/tests/production-observability-contract.sh"
 
+echo '校验 Redis ACL 配置……'
+bash "${root_dir}/tests/redis-acl-contract.sh"
+
 while IFS= read -r contract; do
   echo "执行生产契约：${contract#"${root_dir}/"}"
   bash "${contract}"

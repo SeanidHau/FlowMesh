@@ -107,6 +107,9 @@ jobs:
       - name: Validate production observability resources
         run: bash tests/production-observability-contract.sh
 
+      - name: Validate Redis ACL configuration
+        run: bash tests/redis-acl-contract.sh
+
       - name: Validate runtime observability contract
         run: bash tests/runtime-observability-contract.sh
 

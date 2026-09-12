@@ -80,6 +80,14 @@ Gateway 请求体边界契约：
 
 该测试验证生产 values 默认启用 `ServiceMonitor` 和 `PrometheusRule`，并提供 Prometheus Operator 选择标签。
 
+Redis ACL 配置契约：
+
+```bash
+./tests/redis-acl-contract.sh
+```
+
+该测试验证 Gateway、IAM、Compose 和 Helm 均支持 Redis ACL 用户名；单密码 Redis 保持用户名为空的兼容行为。
+
 Workflow 审批 SLA PostgreSQL 回归：
 
 ```bash

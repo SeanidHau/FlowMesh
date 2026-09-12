@@ -11,6 +11,7 @@
 - 生产 values 提供 gateway 和五个业务服务的双副本、PodDisruptionBudget、拓扑分散和基于 CPU 的 HPA 配置。
 - 生产拓扑分散使用 `DoNotSchedule` 强制同一服务的副本跨 Kubernetes 节点分布；本地默认使用 `ScheduleAnyway`，兼容单节点开发环境。
 - 生产 values 默认启用 Prometheus Operator 的 `ServiceMonitor` 和 `PrometheusRule`，并提供默认选择标签；发布到使用其他观测接入方式的平台时必须显式覆盖并通过运行时观测验收。
+- Gateway 和 IAM 的 Redis 连接支持 ACL 用户名与密码认证；单密码 Redis 保持用户名为空，不改变本地 Compose 行为。
 - 已补齐 `gateway-service`，统一暴露 `/api/iam/**`、`/api/supplier/**`、`/api/workflow/**` 和 `/api/notification/**`；业务服务保持 ClusterIP，Gateway 具备资源限制、探针和优雅终止配置。
 - Gateway 已使用 Redis Lua 令牌桶对所有业务路由执行分布式限流，并暴露允许、拒绝和 Redis 故障指标；生产入口必须覆写配置的客户端地址请求头，避免公网请求伪造限流身份。
 - Gateway 已按业务路由配置请求体上限：认证、流程和通知接口默认为 1 MB，供应商材料上传默认为 21 MB；入口限制与下游 Spring multipart 限制保持一致，防止超大请求先占用下游资源。

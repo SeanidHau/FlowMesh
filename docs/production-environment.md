@@ -107,6 +107,8 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 - `FLOWMESH_RETENTION_DB_PASSWORD`
 - `FLOWMESH_REDIS_PASSWORD`
 
+如果目标 Redis 使用 ACL，还需要在 Helm 发布参数中设置 `redis.username`；单密码认证模式保持为空。
+
 如果目标平台要求 RocketMQ、对象存储或其他依赖通过 GitHub Actions 读取证书内容，应使用 GitHub Secret 或 Runner 的受保护文件路径，并确认脚本不会把内容写入报告。证书文件路径可以通过变量传入，但证书内容不能写入变量值。
 
 ## 5. 首次上线顺序

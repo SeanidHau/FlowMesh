@@ -33,6 +33,8 @@ workflowSla:
 redis:
   host: redis.internal.example.com
   port: 6379
+  # 托管 Redis 使用 ACL 时由发布参数覆盖；单密码认证模式留空。
+  username: ""
   sslEnabled: true
 
 rocketmq:
