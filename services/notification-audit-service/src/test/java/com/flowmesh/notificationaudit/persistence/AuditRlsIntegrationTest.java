@@ -3,6 +3,8 @@ package com.flowmesh.notificationaudit.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.flowmesh.notificationaudit.support.PostgresIntegrationTest;
+import com.flowmesh.notificationaudit.repository.NotificationDeliveryRepository;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,9 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private NotificationDeliveryRepository notificationDeliveryRepository;
 
     /**
      * 验证审计事件 Inbox 启用并强制执行 RLS。
@@ -82,6 +87,64 @@ class AuditRlsIntegrationTest extends PostgresIntegrationTest {
             notificationId, "tenant-a", userId
         ));
         assertThat(ownUserUpdate).isEqualTo(1);
+    }
+
+    /**
+     * 验证通知投递租约只允许在原令牌匹配且租约尚未过期时续租。
+     */
+    @Test
+    void shouldRenewOnlyActiveNotificationDeliveryClaim() {
+        UUID notificationId = UUID.randomUUID();
+        UUID sourceEventId = UUID.randomUUID();
+        UUID deliveryId = UUID.randomUUID();
+        UUID claimToken = UUID.randomUUID();
+        UUID expiredNotificationId = UUID.randomUUID();
+        UUID expiredSourceEventId = UUID.randomUUID();
+        UUID expiredDeliveryId = UUID.randomUUID();
+        UUID expiredClaimToken = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        inTransaction("tenant-a", () -> {
+            jdbcTemplate.update(
+                "INSERT INTO audit.notifications "
+                    + "(id, source_event_id, tenant_id, recipient_user_id, notification_type, title, content, status) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, 'UNREAD')",
+                notificationId, sourceEventId, "tenant-a", UUID.randomUUID(),
+                "SUPPLIER_ACTIVATED", "title", "content"
+            );
+            jdbcTemplate.update(
+                "INSERT INTO audit.notification_deliveries "
+                    + "(id, notification_id, source_event_id, tenant_id, recipient_user_id, "
+                    + "notification_type, title, content, status, next_attempt_at, claimed_until, claim_token) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)",
+                deliveryId, notificationId, sourceEventId, "tenant-a", UUID.randomUUID(),
+                "SUPPLIER_ACTIVATED", "title", "content", now, now.plusSeconds(30), claimToken
+            );
+            jdbcTemplate.update(
+                "INSERT INTO audit.notifications "
+                    + "(id, source_event_id, tenant_id, recipient_user_id, notification_type, title, content, status) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, 'UNREAD')",
+                expiredNotificationId, expiredSourceEventId, "tenant-a", UUID.randomUUID(),
+                "SUPPLIER_ACTIVATED", "expired title", "expired content"
+            );
+            jdbcTemplate.update(
+                "INSERT INTO audit.notification_deliveries "
+                    + "(id, notification_id, source_event_id, tenant_id, recipient_user_id, "
+                    + "notification_type, title, content, status, next_attempt_at, claimed_until, claim_token) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)",
+                expiredDeliveryId, expiredNotificationId, expiredSourceEventId, "tenant-a", UUID.randomUUID(),
+                "SUPPLIER_ACTIVATED", "expired title", "expired content", now, now.minusSeconds(1),
+                expiredClaimToken
+            );
+        });
+
+        assertThat(inTransaction("tenant-a", () -> notificationDeliveryRepository.renewClaim(
+            deliveryId, claimToken, now.plusSeconds(120)
+        ))).isEqualTo(1);
+
+        assertThat(inTransaction("tenant-a", () -> notificationDeliveryRepository.renewClaim(
+            expiredDeliveryId, expiredClaimToken, now.plusSeconds(240)
+        ))).isZero();
     }
 
     private <T> T inTransaction(String tenantId, java.util.function.Supplier<T> action) {
