@@ -29,7 +29,7 @@ grep -F 'getMaxAttempts' "${publisher}" >/dev/null
 grep -F 'DEAD_LETTER' "${publisher}" >/dev/null
 grep -F 'X-FlowMesh-Signature' "${webhook}" >/dev/null
 grep -F 'Idempotency-Key' "${webhook}" >/dev/null
-grep -F 'https://' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
+grep -F '"https".equalsIgnoreCase' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
 grep -F 'new URI' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
 grep -F 'uri.getUserInfo() == null' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
 grep -F 'sendTimeoutMillis > 60_000' "${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/config/NotificationDeliveryProperties.java" >/dev/null
