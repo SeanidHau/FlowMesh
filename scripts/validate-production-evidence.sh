@@ -37,7 +37,7 @@ if [[ "${expected_environment}" == *$'\n'* || "${expected_environment}" == *$'\r
   echo 'FLOWMESH_EVIDENCE_ENVIRONMENT 包含非法或敏感内容。' >&2
   exit 2
 fi
-[[ -d "${evidence_directory}" ]] || {
+[[ -d "${evidence_directory}" && ! -L "${evidence_directory}" ]] || {
   printf '生产证据目录不存在：%s\n' "${evidence_directory}" >&2
   exit 2
 }

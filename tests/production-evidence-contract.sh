@@ -102,6 +102,16 @@ FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
   FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${script}" >/dev/null
 
+linked_evidence_directory="${temporary_directory}/linked-evidence"
+ln -s -- "${temporary_directory}" "${linked_evidence_directory}"
+if FLOWMESH_EVIDENCE_DIR="${linked_evidence_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null 2>&1; then
+  echo '证据目录不应允许使用符号链接。' >&2
+  exit 1
+fi
+rm -f -- "${linked_evidence_directory}"
+
 cp -- "${temporary_directory}/load-test.md" "${temporary_directory}/load-test-original.md"
 rm -f -- "${temporary_directory}/load-test.md"
 ln -s -- "${temporary_directory}/backup-restore.md" "${temporary_directory}/load-test.md"

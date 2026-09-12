@@ -53,7 +53,7 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 `manifest.md` 和 `checksums.sha256`；该工具不会创建或修改任何演练报告，且会在报告校验失败时删除本次生成的清单与校验和：
 
 八份报告正文都必须包含与命令参数一致的 `环境标识` 和 `镜像提交` 字段，生成器不会替报告补写这些字段。
-证据报告、清单和校验和必须是证据目录内的普通文件，校验器会拒绝符号链接。
+证据目录、报告、清单和校验和必须是普通文件或真实目录，校验器会拒绝符号链接。
 
 ```bash
 FLOWMESH_EVIDENCE_DIR='./artifacts/flowmesh-production-evidence' \

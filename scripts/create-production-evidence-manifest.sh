@@ -50,7 +50,7 @@ require_value FLOWMESH_EVIDENCE_DIR "${evidence_directory}"
 require_value FLOWMESH_EVIDENCE_ENVIRONMENT "${environment_name}"
 require_value FLOWMESH_EVIDENCE_OPERATOR "${operator_name}"
 require_value FLOWMESH_IMAGE_TAG "${image_tag}"
-[[ -d "${evidence_directory}" ]] || {
+[[ -d "${evidence_directory}" && ! -L "${evidence_directory}" ]] || {
   printf '生产证据目录不存在：%s\n' "${evidence_directory}" >&2
   exit 2
 }
