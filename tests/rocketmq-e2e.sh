@@ -47,11 +47,16 @@ POSTGRES_USER=flowmesh
 POSTGRES_PASSWORD=flowmesh-e2e-postgres
 POSTGRES_DB=flowmesh
 IAM_DB_PASSWORD=flowmesh-e2e-iam
+IAM_DB_MIGRATOR_PASSWORD=flowmesh-e2e-iam-migrator
 SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier
+SUPPLIER_DB_MIGRATOR_PASSWORD=flowmesh-e2e-supplier-migrator
 WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow
+WORKFLOW_DB_MIGRATOR_PASSWORD=flowmesh-e2e-workflow-migrator
 WORKFLOW_SLA_DB_PASSWORD=flowmesh-e2e-workflow-sla
 RISK_DB_PASSWORD=flowmesh-e2e-risk
+RISK_DB_MIGRATOR_PASSWORD=flowmesh-e2e-risk-migrator
 AUDIT_DB_PASSWORD=flowmesh-e2e-audit
+AUDIT_DB_MIGRATOR_PASSWORD=flowmesh-e2e-audit-migrator
 RETENTION_DB_PASSWORD=flowmesh-e2e-retention
 REDIS_PASSWORD=flowmesh-e2e-redis
 GRAFANA_ADMIN_PASSWORD=flowmesh-e2e-grafana
@@ -142,28 +147,33 @@ sleep 10
 start_service "iam" "services/iam-service/target/iam-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=iam" \
   IAM_DB_USER=flowmesh_iam IAM_DB_PASSWORD=flowmesh-e2e-iam \
+  SPRING_FLYWAY_USER=flowmesh_iam_migrator SPRING_FLYWAY_PASSWORD=flowmesh-e2e-iam-migrator \
   REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=flowmesh-e2e-redis \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" FLOWMESH_DEMO_DATA_ENABLED=true \
   FLOWMESH_LOGIN_RATE_LIMIT_ENABLED=true
 start_service "supplier" "services/supplier-service/target/supplier-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=supplier" \
   SUPPLIER_DB_USER=flowmesh_supplier SUPPLIER_DB_PASSWORD=flowmesh-e2e-supplier \
+  SPRING_FLYWAY_USER=flowmesh_supplier_migrator SPRING_FLYWAY_PASSWORD=flowmesh-e2e-supplier-migrator \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_OUTBOX_ENABLED=true FLOWMESH_SUPPLIER_CONSUMER_ENABLED=true \
   FLOWMESH_WORKFLOW_BASE_URL=http://localhost:8083
 start_service "workflow" "services/workflow-service/target/workflow-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=workflow" \
   WORKFLOW_DB_USER=flowmesh_workflow WORKFLOW_DB_PASSWORD=flowmesh-e2e-workflow \
+  SPRING_FLYWAY_USER=flowmesh_workflow_migrator SPRING_FLYWAY_PASSWORD=flowmesh-e2e-workflow-migrator \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_WORKFLOW_OUTBOX_ENABLED=true FLOWMESH_WORKFLOW_CONSUMER_ENABLED=true
 start_service "risk" "services/risk-service/target/risk-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=risk" \
   RISK_DB_USER=flowmesh_risk RISK_DB_PASSWORD=flowmesh-e2e-risk \
+  SPRING_FLYWAY_USER=flowmesh_risk_migrator SPRING_FLYWAY_PASSWORD=flowmesh-e2e-risk-migrator \
   ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_RISK_CONSUMER_ENABLED=true FLOWMESH_RISK_OUTBOX_ENABLED=true
 start_service "notification-audit" "services/notification-audit-service/target/notification-audit-service-0.1.0-SNAPSHOT.jar" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/flowmesh?currentSchema=audit" \
   AUDIT_DB_USER=flowmesh_audit AUDIT_DB_PASSWORD=flowmesh-e2e-audit \
+  SPRING_FLYWAY_USER=flowmesh_audit_migrator SPRING_FLYWAY_PASSWORD=flowmesh-e2e-audit-migrator \
   JWT_ISSUER=flowmesh-e2e JWT_SIGNING_KEY="${JWT_KEY}" ROCKETMQ_NAMESRV_ADDR=localhost:9876 \
   FLOWMESH_AUDIT_CONSUMER_ENABLED=true
 start_service "gateway" "services/gateway-service/target/gateway-service-0.1.0-SNAPSHOT.jar" \
