@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
  * @param comment 审批意见；退回补件时必填
  */
 public record CompleteTaskRequest(
-    @NotBlank String taskKey,
+    @NotBlank @Size(max = 64) String taskKey,
     String decision,
     @Size(max = 2000) String comment
 ) {

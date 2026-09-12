@@ -13,6 +13,6 @@ import jakarta.validation.constraints.Size;
 public record LoginRequest(
     @NotBlank @Size(max = 64) String tenantId,
     @NotBlank @Size(max = 64) String username,
-    @NotBlank String password
+    @NotBlank @Size(max = 128) String password
 ) {
 }

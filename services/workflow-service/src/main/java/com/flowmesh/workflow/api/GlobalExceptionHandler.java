@@ -9,7 +9,12 @@ import com.flowmesh.workflow.application.DeadLetterEventNotFoundException;
 import com.flowmesh.workflow.application.InvalidReplayException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,6 +26,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 映射请求字段校验错误。
@@ -38,6 +45,25 @@ public class GlobalExceptionHandler {
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .toList();
         return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "请求参数校验失败。", request, details);
+    }
+
+    /**
+     * 处理请求体格式、查询参数类型或必填参数错误。
+     *
+     * @param exception 请求绑定异常
+     * @param request HTTP 请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler({
+        HttpMessageNotReadableException.class,
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ErrorResponse> handleRequestBinding(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请求格式或参数类型不正确。", request);
     }
 
     /**
@@ -128,6 +154,22 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return response(HttpStatus.BAD_REQUEST, "INVALID_REPLAY_EVENT", "死信事件载荷不是有效的事件信封。", request);
+    }
+
+    /**
+     * 处理未预期异常，避免向客户端暴露堆栈、SQL 或依赖错误详情。
+     *
+     * @param exception 未预期异常
+     * @param request HTTP 请求
+     * @return 500 错误响应
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        log.error("未预期异常", exception);
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "服务内部错误。", request);
     }
 
     private ResponseEntity<ErrorResponse> response(

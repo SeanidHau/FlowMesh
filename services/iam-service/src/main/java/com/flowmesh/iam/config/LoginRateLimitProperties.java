@@ -20,4 +20,31 @@ public record LoginRateLimitProperties(
     Duration window,
     boolean failOpen
 ) {
+
+    /**
+     * 在限流功能启用时校验配置，避免零值或负值导致所有请求被错误拒绝，
+     * 或 Redis 使用无效的过期时间。
+     */
+    public LoginRateLimitProperties {
+        if (enabled && accountMaxAttempts < 1) {
+            throw new IllegalArgumentException("account-max-attempts must be positive");
+        }
+        if (enabled && clientMaxAttempts < 1) {
+            throw new IllegalArgumentException("client-max-attempts must be positive");
+        }
+        if (enabled && (window == null || window.isZero() || window.isNegative())) {
+            throw new IllegalArgumentException("window must be positive");
+        }
+    }
+
+    /**
+     * 计算 HTTP {@code Retry-After} 所需的向上取整秒数。
+     *
+     * @return 至少为 1 的重试等待秒数
+     */
+    public long retryAfterSeconds() {
+        long seconds = window.toSeconds();
+        boolean hasSubSecondPart = !window.minusSeconds(seconds).isZero();
+        return Math.max(1L, hasSubSecondPart ? seconds + 1L : seconds);
+    }
 }

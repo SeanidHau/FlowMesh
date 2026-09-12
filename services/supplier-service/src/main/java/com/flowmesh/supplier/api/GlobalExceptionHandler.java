@@ -20,6 +20,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -50,6 +53,27 @@ public class GlobalExceptionHandler {
                 traceId(request),
                 details
             ));
+    }
+
+    /**
+     * 处理请求体格式、查询参数类型或必填参数错误。
+     *
+     * @param exception 请求绑定异常
+     * @param request HTTP 请求
+     * @return 400 错误响应
+     */
+    @ExceptionHandler({
+        HttpMessageNotReadableException.class,
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ErrorResponse> handleRequestBinding(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(ErrorResponse.of(
+            "INVALID_REQUEST", "请求格式或参数类型不正确。", traceId(request)
+        ));
     }
 
     @ExceptionHandler(MissingIdempotencyKeyException.class)

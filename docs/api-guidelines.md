@@ -21,6 +21,9 @@
 | `POST` | `/api/v1/auth/logout` | `tenantId`、`refreshToken` | 按租户建立 RLS 上下文后撤销当前令牌 |
 
 `tenantId` 最大长度为 64 个字符；`refreshToken` 只以哈希形式保存，不能写入日志、审计记录或错误响应。
+`username` 最大长度为 64 个字符，`password` 最大长度为 128 个字符，`refreshToken` 最大长度为 128 个字符。
+认证请求中的必填字段为空时返回 `400`，登录限流触发时返回 `429`
+并携带按限流窗口计算的 `Retry-After` 秒数。
 
 ## 创建与幂等
 
@@ -32,6 +35,7 @@ Idempotency-Key: 3a0c3fb8-7d60-4c69-8b2b-8656c4a7d8ee
 ```
 
 服务端以 `tenantId + userId + Idempotency-Key` 建立唯一记录并持久化首次响应快照。重复请求返回首次响应，不得创建第二个申请或流程实例。
+`supplierName` 最大长度为 255 个字符，超过限制时返回 `400`。
 
 ## 审批流程
 
@@ -42,7 +46,7 @@ workflow-service 提供以下最小审批接口：
 | `GET` | `/api/v1/workflow-instances/{applicationId}` | 查询当前租户可见的流程实例 |
 | `POST` | `/api/v1/workflow-instances/{applicationId}/tasks` | 完成当前角色任务并推进流程 |
 
-任务请求体使用待办任务键，例如 `{"taskKey":"PURCHASER_REVIEW","decision":"APPROVE"}`。服务端从 JWT
+任务请求体使用不超过 64 个字符的待办任务键，例如 `{"taskKey":"PURCHASER_REVIEW","decision":"APPROVE"}`。服务端从 JWT
 读取租户和角色；任务键不在响应的 `availableTasks` 中返回 `409`，角色不足返回 `403`。
 采购初审完成后，`LEGAL_REVIEW` 和 `FINANCE_REVIEW` 可以同时出现在 `availableTasks`；
 两个会签任务都完成后才生成 `OPERATIONS_ACTIVATION`。
@@ -121,6 +125,9 @@ notification-audit-service 提供当前登录用户的通知查询和已读操�
 | `429` | 触发网关限流 |
 | `500` | 未预期服务错误 |
 | `503` | 依赖不可用或暂时无法处理 |
+
+非法 JSON、查询参数类型错误或缺少必填查询参数统一返回 `INVALID_REQUEST`；未预期的服务端异常统一返回
+`INTERNAL_ERROR`，响应不包含堆栈、SQL、凭据或下游依赖的内部详情。
 
 ## 分页与时间
 

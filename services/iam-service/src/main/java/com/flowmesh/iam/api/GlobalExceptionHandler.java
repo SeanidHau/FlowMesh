@@ -5,12 +5,16 @@ import com.flowmesh.common.security.TraceIdFilter;
 import com.flowmesh.iam.application.auth.InvalidCredentialsException;
 import com.flowmesh.iam.application.auth.LoginRateLimitExceededException;
 import com.flowmesh.iam.application.auth.LoginRateLimitUnavailableException;
+import com.flowmesh.iam.config.LoginRateLimitProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -23,6 +27,17 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final LoginRateLimitProperties loginRateLimitProperties;
+
+    /**
+     * 创建 IAM 全局异常处理器。
+     *
+     * @param loginRateLimitProperties 登录限流配置，用于生成准确的重试等待时间
+     */
+    public GlobalExceptionHandler(LoginRateLimitProperties loginRateLimitProperties) {
+        this.loginRateLimitProperties = loginRateLimitProperties;
+    }
 
     /**
      * 处理请求参数校验失败。
@@ -47,6 +62,27 @@ public class GlobalExceptionHandler {
                 traceId(request),
                 details
             ));
+    }
+
+    /**
+     * 处理请求体格式、查询参数类型或必填参数错误。
+     *
+     * @param exception 请求绑定异常
+     * @param request HTTP 请求
+     * @return 400 ErrorResponse
+     */
+    @ExceptionHandler({
+        HttpMessageNotReadableException.class,
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ErrorResponse> handleRequestBinding(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(ErrorResponse.of(
+            "INVALID_REQUEST", "请求格式或参数类型不正确。", traceId(request)
+        ));
     }
 
     /**
@@ -84,7 +120,7 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
             .status(HttpStatus.TOO_MANY_REQUESTS)
-            .header("Retry-After", "60")
+            .header("Retry-After", Long.toString(loginRateLimitProperties.retryAfterSeconds()))
             .body(ErrorResponse.of(
                 "LOGIN_RATE_LIMITED",
                 "登录尝试过于频繁，请稍后再试。",
