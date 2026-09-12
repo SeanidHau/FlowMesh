@@ -19,6 +19,8 @@ grep -F 'claim_token' "${migration}" >/dev/null
 grep -F 'renew_notification_delivery' "${renewal_migration}" >/dev/null
 grep -F 'SECURITY DEFINER' "${renewal_migration}" >/dev/null
 grep -F 'claimed_until > now()' "${renewal_migration}" >/dev/null
+grep -F 'GRANT USAGE, CREATE ON SCHEMA audit TO flowmesh_audit_delivery' "${renewal_migration}" >/dev/null
+grep -F 'REVOKE CREATE ON SCHEMA audit FROM flowmesh_audit_delivery' "${renewal_migration}" >/dev/null
 grep -F 'renew(' "${claim_service}" >/dev/null
 grep -F 'claimService.renew(delivery)' "${publisher}" >/dev/null
 grep -F 'REVOKE ALL ON notification_deliveries FROM flowmesh_audit' "${migration}" >/dev/null
