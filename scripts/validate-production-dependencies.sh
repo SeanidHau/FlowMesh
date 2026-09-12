@@ -3,6 +3,8 @@
 # 脚本不执行迁移、写入、故障切换或任何数据变更；HA/备份恢复仍需单独演练。
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 require_command() {
   command -v "$1" >/dev/null 2>&1 || {
     printf '生产依赖预检缺少命令：%s\n' "$1" >&2
@@ -76,6 +78,7 @@ case "${pg_sslmode}" in
     exit 2
     ;;
 esac
+flowmesh_require_postgres_ca "${pg_sslmode}" "${pg_sslrootcert}"
 [[ "${redis_tls}" == "true" ]] || {
   printf '生产依赖预检要求 Redis TLS_ENABLED=true。\n' >&2
   exit 2

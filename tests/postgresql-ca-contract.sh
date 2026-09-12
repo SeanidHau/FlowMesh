@@ -37,6 +37,7 @@ RUBY
 assert_contains "${helpers}" 'sslrootcert=/etc/flowmesh/postgresql/ca.crt'
 assert_contains "${helpers}" 'postgresql.caSecretName is required'
 assert_contains "${helpers}" 'mode: 0444'
+assert_contains "${root_dir}/scripts/lib/postgres-tls.sh" 'flowmesh_require_postgres_ca'
 
 for schema_template in iam supplier workflow risk notification-audit; do
   template="${chart_dir}/templates/${schema_template}.yaml"
@@ -57,5 +58,23 @@ for script in backup-postgres.sh restore-postgres.sh cleanup-flowmesh-retention.
   validate-production-ha.sh; do
   assert_contains "${root_dir}/scripts/${script}" 'PGSSLROOTCERT'
 done
+
+if FLOWMESH_PG_SSLMODE=verify-full \
+  FLOWMESH_PG_SSLROOTCERT= \
+    bash -c 'source "$1"; flowmesh_require_postgres_ca "$FLOWMESH_PG_SSLMODE" "$FLOWMESH_PG_SSLROOTCERT"' \
+      _ "${root_dir}/scripts/lib/postgres-tls.sh" >/dev/null 2>&1; then
+  echo 'PostgreSQL CA 契约失败：verify-full 不应允许缺少 CA 文件。' >&2
+  exit 1
+fi
+
+missing_ca_file="$(mktemp)"
+rm -f -- "${missing_ca_file}"
+if FLOWMESH_PG_SSLMODE=verify-ca \
+  FLOWMESH_PG_SSLROOTCERT="${missing_ca_file}" \
+    bash -c 'source "$1"; flowmesh_require_postgres_ca "$FLOWMESH_PG_SSLMODE" "$FLOWMESH_PG_SSLROOTCERT"' \
+      _ "${root_dir}/scripts/lib/postgres-tls.sh" >/dev/null 2>&1; then
+  echo 'PostgreSQL CA 契约失败：verify-ca 不应允许不可读 CA 文件。' >&2
+  exit 1
+fi
 
 printf 'PostgreSQL CA contract passed.\n'

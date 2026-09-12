@@ -9,6 +9,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo '校验 Shell 脚本语法……'
 bash -n \
   "${root_dir}"/scripts/*.sh \
+  "${root_dir}"/scripts/lib/*.sh \
   "${root_dir}"/infra/backup/entrypoint.sh \
   "${root_dir}"/infra/retention/entrypoint.sh \
   "${root_dir}"/tests/fault-drills/*.sh \

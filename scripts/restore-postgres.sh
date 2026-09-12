@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 # 作用：将 custom-format PostgreSQL 备份恢复到目标数据库。
 # 为避免误覆盖线上数据，恢复必须显式设置 FLOWMESH_CONFIRM_RESTORE=YES。
 
@@ -25,6 +27,7 @@ case "${ssl_mode}" in
     exit 1
     ;;
 esac
+flowmesh_require_postgres_ca "${ssl_mode}" "${FLOWMESH_PG_SSLROOTCERT:-}"
 
 connect_timeout="${FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS:-5}"
 if [[ ! "${connect_timeout}" =~ ^[1-9][0-9]*$ ]]; then

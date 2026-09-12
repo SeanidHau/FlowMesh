@@ -4,6 +4,8 @@
 
 set -Eeuo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 require_value() {
   local name="$1"
   local value="$2"
@@ -33,6 +35,7 @@ case "${sslmode}" in
     exit 2
     ;;
 esac
+flowmesh_require_postgres_ca "${sslmode}" "${FLOWMESH_PG_SSLROOTCERT:-}"
 
 command -v psql >/dev/null 2>&1 || {
   echo '未找到 psql，请使用 PostgreSQL 客户端执行备份角色预检。' >&2

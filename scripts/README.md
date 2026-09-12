@@ -64,7 +64,7 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 
 备份文件默认写入被 Git 忽略的 `backups/` 目录。生产环境使用 Helm `CronJob` 定时执行备份。备份镜像
 通过 `FLOWMESH_PG_SSLMODE` 控制 PostgreSQL 传输加密；生产 Helm 默认使用 `verify-full`，脚本可通过
-`FLOWMESH_PG_SSLROOTCERT` 指向挂载的 CA 文件。Helm 维护任务会将
+`FLOWMESH_PG_SSLROOTCERT` 指向挂载的 CA 文件；使用 `verify-ca` 或 `verify-full` 时该变量必须指向存在且可读的文件。Helm 维护任务会将
 `backup.postgres.caSecretName` 或 `retention.postgres.caSecretName` 挂载为 `/etc/flowmesh/postgresql/ca.crt`。
 备份镜像包含 PostgreSQL 客户端和 AWS CLI，脚本会先创建 custom-format 归档，再将三个归档文件上传到 S3 兼容对象存储，
 最后上传 `_SUCCESS` 标记。恢复工具或平台只应使用存在 `_SUCCESS` 标记的备份前缀。

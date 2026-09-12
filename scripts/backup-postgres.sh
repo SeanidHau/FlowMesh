@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 # 作用：将 FlowMesh PostgreSQL 数据库和角色定义导出为可验证的备份目录。
 # 密码只通过 FLOWMESH_PG_PASSWORD 注入，不出现在命令行参数中。
 
@@ -20,6 +22,7 @@ case "${ssl_mode}" in
     exit 1
     ;;
 esac
+flowmesh_require_postgres_ca "${ssl_mode}" "${FLOWMESH_PG_SSLROOTCERT:-}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_dir="${backup_root}/${timestamp}"
 

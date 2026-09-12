@@ -4,6 +4,8 @@
 
 set -Eeuo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 require_command() {
   command -v "$1" >/dev/null 2>&1 || {
     printf '生产 HA 预检缺少命令：%s\n' "$1" >&2
@@ -94,6 +96,7 @@ require_value FLOWMESH_OBJECT_STORAGE_ENDPOINT "${object_storage_endpoint}"
   echo '生产 HA 预检要求 PostgreSQL 使用 verify-ca 或 verify-full。' >&2
   exit 2
 }
+flowmesh_require_postgres_ca "${pg_sslmode}" "${pg_sslrootcert}"
 [[ "${object_storage_endpoint}" == https://* ]] || {
   echo '生产 HA 预检要求对象存储使用 HTTPS。' >&2
   exit 2

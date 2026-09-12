@@ -8,8 +8,11 @@ temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/flowmesh-postgres-restore-cont
 fake_bin="${temporary_directory}/bin"
 backup_directory="${temporary_directory}/backup"
 restore_log="${temporary_directory}/restore.log"
+ca_file="${temporary_directory}/postgresql-ca.crt"
 mkdir -p "${fake_bin}" "${backup_directory}"
 trap 'rm -rf -- "${temporary_directory}"' EXIT
+
+printf 'test-only CA\n' > "${ca_file}"
 
 printf 'fake dump\n' > "${backup_directory}/flowmesh.dump"
 printf 'fake globals\n' > "${backup_directory}/globals.sql"
@@ -34,6 +37,7 @@ RESTORE_LOG="${restore_log}" \
 FLOWMESH_CONFIRM_RESTORE=YES \
 FLOWMESH_PG_PASSWORD=test-only \
 FLOWMESH_PG_SSLMODE=verify-full \
+FLOWMESH_PG_SSLROOTCERT="${ca_file}" \
 FLOWMESH_PG_CONNECT_TIMEOUT_SECONDS=9 \
   "${repo_root}/scripts/restore-postgres.sh" "${backup_directory}" >/dev/null
 

@@ -33,6 +33,7 @@
 - Outbox 发布器显式设置消息发送超时，在启动时校验“批量发送窗口 + 安全余量”不超过认领租约，并在每条消息发送前续租；若认领令牌已失效则跳过发送，避免参数调整或进程暂停导致的并发重复发布。
 - 四个 RocketMQ 服务支持独立 Producer/Consumer 凭据、访问通道和 TLS 配置；生产 Helm 默认开启 Producer/Consumer TLS，并要求运行时 Secret 提供四组凭据键。
 - 生产应用、SLA、备份和生命周期任务的 PostgreSQL 连接默认使用 `sslmode=verify-full`，Redis 连接默认启用 TLS；Helm 通过 `postgresql.caSecretName`、`backup.postgres.caSecretName` 和 `retention.postgres.caSecretName` 挂载外部 CA，并将 CA 文件传给 JDBC/`libpq` 完成服务端身份校验。
+- 所有生产 PostgreSQL 预检和维护脚本在 `verify-ca`/`verify-full` 模式下都强制要求 `FLOWMESH_PG_SSLROOTCERT` 指向存在且可读的 CA 文件，禁止无意间退回 Runner 系统信任库。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - 五个业务服务统一启用 Flyway `validate-on-migrate`，并显式禁止 `clean`、乱序迁移和自动 baseline；迁移校验失败时 Pod 不会继续接收流量，数据库变更必须随版本提交并经过发布验证。
 - Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。

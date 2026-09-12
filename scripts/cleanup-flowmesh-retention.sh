@@ -4,6 +4,8 @@
 
 set -Eeuo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/postgres-tls.sh"
+
 if [[ "${FLOWMESH_RETENTION_CONFIRM:-}" != "YES" ]]; then
   echo 'FLOWMESH_RETENTION_CONFIRM 必须精确设置为 YES，才允许执行数据清理。' >&2
   exit 64
@@ -46,6 +48,7 @@ case "${sslmode}" in
     exit 64
     ;;
 esac
+flowmesh_require_postgres_ca "${sslmode}" "${FLOWMESH_PG_SSLROOTCERT:-}"
 
 if ! command -v psql >/dev/null 2>&1; then
   echo '未找到 psql，请使用包含 PostgreSQL 客户端的维护镜像或安装客户端。' >&2
