@@ -15,6 +15,11 @@ import com.flowmesh.supplier.application.WorkflowTaskCompletedService;
 import com.flowmesh.supplier.support.PostgresIntegrationTest;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -119,6 +124,82 @@ class SupplierApplicationIdempotencyIntegrationTest extends PostgresIntegrationT
         JsonNode firstJson = objectMapper.readTree(first.getResponse().getContentAsString());
         JsonNode secondJson = objectMapper.readTree(second.getResponse().getContentAsString());
         assertThat(secondJson.get("id").asText()).isEqualTo(firstJson.get("id").asText());
+    }
+
+    /**
+     * 验证同一幂等键的并发首请求都能得到确定响应，且数据库只创建一条申请和一条 Outbox 事件。
+     *
+     * <p>该场景覆盖数据库唯一约束仲裁后，失败事务通过独立事务读取获胜请求响应快照的路径。</p>
+     *
+     * @throws Exception 当并发请求或断言执行失败时抛出
+     */
+    @Test
+    void shouldReplayWinnerForConcurrentSameKey() throws Exception {
+        String token = applicantToken();
+        String body = "{\"supplierName\":\"并发幂等供应商\"}";
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<MvcResult> first = submitCreate(executor, start, token, body);
+            Future<MvcResult> second = submitCreate(executor, start, token, body);
+            start.countDown();
+
+            MvcResult firstResult = first.get(30, TimeUnit.SECONDS);
+            MvcResult secondResult = second.get(30, TimeUnit.SECONDS);
+            assertThat(firstResult.getResponse().getStatus()).isEqualTo(201);
+            assertThat(secondResult.getResponse().getStatus()).isEqualTo(201);
+
+            UUID firstApplicationId = applicationId(firstResult);
+            UUID secondApplicationId = applicationId(secondResult);
+            assertThat(secondApplicationId).isEqualTo(firstApplicationId);
+            assertThat(outboxEventRepository.countByTenantIdAndAggregateIdAndTag(
+                "tenant-a", firstApplicationId, "ApplicationSubmitted"
+            )).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * 提交一个由并发闸门控制的申请创建请求。
+     *
+     * @param executor 并发执行器
+     * @param start 并发闸门
+     * @param token Access Token
+     * @param body 请求体
+     * @return 异步请求结果
+     */
+    private Future<MvcResult> submitCreate(
+        ExecutorService executor,
+        CountDownLatch start,
+        String token,
+        String body
+    ) {
+        return executor.submit(() -> {
+            if (!start.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("并发测试未能在规定时间内开始");
+            }
+            return mockMvc.perform(post("/api/v1/supplier-applications")
+                    .header("Authorization", "Bearer " + token)
+                    .header("Idempotency-Key", "concurrent-key-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
+                .andReturn();
+        });
+    }
+
+    /**
+     * 从创建响应中读取申请标识。
+     *
+     * @param result MockMvc 响应
+     * @return 申请标识
+     * @throws Exception 当响应不是合法 JSON 时抛出
+     */
+    private UUID applicationId(MvcResult result) throws Exception {
+        return UUID.fromString(objectMapper.readTree(
+            result.getResponse().getContentAsString()
+        ).get("id").asText());
     }
 
     /**
