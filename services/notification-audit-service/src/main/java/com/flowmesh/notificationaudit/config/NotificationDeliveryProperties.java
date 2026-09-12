@@ -1,5 +1,7 @@
 package com.flowmesh.notificationaudit.config;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -27,9 +29,9 @@ public class NotificationDeliveryProperties {
         if (!enabled) {
             return;
         }
-        if (webhookUrl == null || !webhookUrl.startsWith("https://")) {
+        if (!isValidWebhookUrl(webhookUrl)) {
             throw new IllegalArgumentException(
-                "flowmesh.notification.delivery.webhook-url must use HTTPS when delivery is enabled"
+                "flowmesh.notification.delivery.webhook-url must be a valid HTTPS URL without user info"
             );
         }
         if (signingSecret == null || signingSecret.length() < 32) {
@@ -43,8 +45,10 @@ public class NotificationDeliveryProperties {
         if (maxAttempts < 1 || maxAttempts > 20) {
             throw new IllegalArgumentException("flowmesh.notification.delivery.max-attempts must be between 1 and 20");
         }
-        if (retryBaseDelaySeconds < 1 || sendTimeoutMillis < 100 || publishIntervalMillis < 100) {
-            throw new IllegalArgumentException("notification delivery timing values are below the safe minimum");
+        if (retryBaseDelaySeconds < 1 || retryBaseDelaySeconds > 900
+            || sendTimeoutMillis < 100 || sendTimeoutMillis > 60_000
+            || publishIntervalMillis < 100 || publishIntervalMillis > 60_000) {
+            throw new IllegalArgumentException("notification delivery timing values are outside the safe range");
         }
         long minimumLeaseSeconds = (batchSize * sendTimeoutMillis + 999) / 1000 + 10;
         if (leaseSeconds < minimumLeaseSeconds) {
@@ -73,4 +77,19 @@ public class NotificationDeliveryProperties {
     public void setRetryBaseDelaySeconds(long retryBaseDelaySeconds) { this.retryBaseDelaySeconds = retryBaseDelaySeconds; }
     public void setSendTimeoutMillis(long sendTimeoutMillis) { this.sendTimeoutMillis = sendTimeoutMillis; }
     public void setPublishIntervalMillis(long publishIntervalMillis) { this.publishIntervalMillis = publishIntervalMillis; }
+
+    private static boolean isValidWebhookUrl(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        try {
+            URI uri = new URI(value.trim());
+            return "https".equalsIgnoreCase(uri.getScheme())
+                && uri.getHost() != null
+                && uri.getUserInfo() == null
+                && uri.getFragment() == null;
+        } catch (URISyntaxException exception) {
+            return false;
+        }
+    }
 }

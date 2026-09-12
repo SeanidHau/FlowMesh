@@ -37,6 +37,7 @@ IAM 的登录查询发生在用户尚未认证之前，因此登录接口先使�
 - GitHub Actions 工作流统一固定到完整提交 SHA，并在行尾保留对应版本标签作为人工可读说明；CI 契约会拒绝可变版本标签。
 - GitHub Actions 的 `actions/checkout` 统一关闭 `persist-credentials`，避免将工作流 Token 持久化到 Runner 工作区。
 - Alertmanager Webhook URL 只允许通过外部 Kubernetes Secret 注入，不能写入 Helm values、Release 参数或证据报告。
+- 外部通知 Webhook 仅允许无用户信息、无片段的 HTTPS URL；投递超时、重试退避和调度间隔必须在启动阶段通过边界校验。
 
 ## 文件访问
 
