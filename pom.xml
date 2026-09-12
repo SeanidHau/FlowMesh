@@ -60,7 +60,7 @@
     <!-- 作用：在本地、IDEA 与 CI 中统一校验构建运行时。 -->
     <maven.enforcer.version>3.6.3</maven.enforcer.version>
     <!-- 作用：统一 Spring Cloud Gateway 与 Spring Boot 3.5 的兼容版本。 -->
-    <spring-cloud.version>2025.0.3</spring-cloud.version>
+    <spring-cloud.version>2025.1.3</spring-cloud.version>
     <!-- 作用：覆盖 Spring Boot BOM 中的 Netty 补丁版本，修复当前高危/严重漏洞。 -->
     <netty.version>4.1.138.Final</netty.version>
     <!-- 作用：覆盖 Spring Boot BOM 中的 Tomcat 和 PostgreSQL JDBC 补丁版本。 -->
