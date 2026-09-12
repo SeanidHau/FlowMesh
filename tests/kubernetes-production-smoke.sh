@@ -12,6 +12,7 @@ namespace="${FLOWMESH_K8S_NAMESPACE:-flowmesh}"
 release="${FLOWMESH_HELM_RELEASE:-flowmesh}"
 expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-false}"
+prometheus_release="${FLOWMESH_PROMETHEUS_RELEASE:-kube-prometheus-stack}"
 deployment_selector="app.kubernetes.io/instance=${release}"
 postgres_ca_secret="${FLOWMESH_POSTGRES_CA_SECRET_NAME:-flowmesh-postgresql-ca}"
 runtime_secret="${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}"
@@ -21,6 +22,7 @@ retention_cronjob="${release}-flowmesh-retention"
 workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
 expected_backup_user="${FLOWMESH_BACKUP_POSTGRES_USER:-flowmesh_backup}"
 workflow_sla_image_digest="${FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:-}"
+alertmanager_config_secret="${FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME:-flowmesh-alertmanager-webhook}"
 
 if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
@@ -267,6 +269,24 @@ puts "Workflow SLA CronJob 参数校验通过。"
 if [[ "${expect_prometheus_rule}" == "true" ]]; then
   kubectl -n "${namespace}" get servicemonitor "${release}-flowmesh" >/dev/null
   kubectl -n "${namespace}" get prometheusrule "${release}-flowmesh" >/dev/null
+  alertmanager_config_json="$(kubectl -n "${namespace}" get alertmanagerconfig "${release}-flowmesh-alerts" -o json)"
+  ALERTMANAGER_CONFIG_JSON="${alertmanager_config_json}" \
+  EXPECTED_ALERTMANAGER_SECRET="${alertmanager_config_secret}" \
+  EXPECTED_PROMETHEUS_RELEASE="${prometheus_release}" ruby -e '
+require "json"
+config = JSON.parse(ENV.fetch("ALERTMANAGER_CONFIG_JSON"))
+labels = config.fetch("metadata").fetch("labels")
+raise "AlertmanagerConfig 缺少 Prometheus release selector 标签" unless labels.fetch("release") == ENV.fetch("EXPECTED_PROMETHEUS_RELEASE")
+route = config.fetch("spec").fetch("route")
+receiver_name = route.fetch("receiver")
+receiver = config.fetch("spec").fetch("receivers").find { |item| item.fetch("name") == receiver_name }
+raise "AlertmanagerConfig 缺少默认 receiver" unless receiver
+webhook = receiver.fetch("webhookConfigs").first
+url_secret = webhook.fetch("urlSecret")
+raise "AlertmanagerConfig 未引用预期的 Webhook Secret" unless url_secret.fetch("name") == ENV.fetch("EXPECTED_ALERTMANAGER_SECRET")
+raise "AlertmanagerConfig Webhook Secret 必须使用 url 键" unless url_secret.fetch("key") == "url"
+raise "AlertmanagerConfig 必须发送恢复通知" unless webhook.fetch("sendResolved") == true
+'
 fi
 
 echo "FlowMesh Kubernetes 生产 smoke test 通过：namespace=${namespace}, release=${release}, imageTag=${expected_image_tag}"

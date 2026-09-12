@@ -116,7 +116,7 @@ helm lint infra/helm/flowmesh \
 - 已实现独立 risk-service 的异步 PASS/REJECT 运行链路，以及 notification-audit-service 的通知/审计投影和可靠外部通知投递链路；目标环境仍需配置实际 Webhook、轮换签名密钥、验证签名接收和完成恢复演练。
 - risk-service 已提供默认关闭的 `FAIL` / `TIMEOUT` 受控故障注入，用于验证消息重试、DLQ 和人工处置；生产 Helm 会显式关闭该开关。
 - 高并发压测、故障注入和跨租户安全回归。仓库已提供 k6 压测脚本和显式确认的服务恢复演练脚本，但必须在目标环境执行并留存结果。
-- 提供只读 Kubernetes 生产 smoke test，验证六个 Deployment、提交 SHA 镜像、安全上下文、探针、资源限制、PDB/HPA/NetworkPolicy、Gateway Ingress 边界、运行时 Secret 必需键、PostgreSQL CA Secret 的 `ca.crt` 与实际 Pod 挂载、实际 Pod 的 PostgreSQL/Redis/RocketMQ TLS 配置和备份 CronJob；目标环境仍需实际执行并留存输出。
+- 提供只读 Kubernetes 生产 smoke test，验证六个 Deployment、提交 SHA 镜像、安全上下文、探针、资源限制、PDB/HPA/NetworkPolicy、Gateway Ingress 边界、运行时 Secret 必需键、PostgreSQL CA Secret 的 `ca.crt` 与实际 Pod 挂载、实际 Pod 的 PostgreSQL/Redis/RocketMQ TLS 配置、备份 CronJob 和 AlertmanagerConfig 的外部 Webhook Secret 引用；目标环境仍需实际执行并留存输出。
 - 提供 Kubernetes 应用故障恢复演练脚本：仅允许对白名单组件删除 Pod，验证旧 Pod 消失、Deployment `ReadyReplicas` 恢复、入口健康检查和目标 RTO；本地 Compose 故障脚本不再作为生产 Kubernetes 恢复证据。
 - Kubernetes 恢复演练工作流要求输入已部署镜像提交 SHA 和目标环境标识，并通过环境变量传递所有手工输入，避免 Shell 注入；生成的报告可直接绑定到当前生产证据包。
 - 提供受保护的 `Production recovery drill` 工作流：仅手动触发、仅从 `main` 执行、必须经过 `production` Environment 审批并输入 `YES`，执行后归档恢复报告。

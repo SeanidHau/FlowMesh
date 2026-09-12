@@ -25,6 +25,8 @@ case "${expect_prometheus_rule}" in
     ;;
 esac
 export FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}"
+export FLOWMESH_PROMETHEUS_RELEASE="${FLOWMESH_PROMETHEUS_RELEASE:-kube-prometheus-stack}"
+export FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME="${FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME:-flowmesh-alertmanager-webhook}"
 
 image_tag="${FLOWMESH_IMAGE_TAG:-}"
 if [[ ! "${image_tag}" =~ ^[0-9a-f]{40}$ ]]; then

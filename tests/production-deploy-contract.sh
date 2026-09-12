@@ -28,6 +28,7 @@ grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${script}" >/dev/null
 grep -F -- 'workflowSla.imageDigest=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_PROMETHEUS_RELEASE' "${script}" >/dev/null
 grep -F -- 'observability.alertmanagerConfig.webhookSecretName=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${script}" >/dev/null
 grep -F -- 'backup.postgres.user=' "${script}" >/dev/null

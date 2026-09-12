@@ -162,6 +162,7 @@ FLOWMESH_HELM_RELEASE=flowmesh \
 Gateway Ingress Controller 入站边界、运行时 Secret 必需键（包括 SLA 维护账号和 RocketMQ Producer/Consumer 凭据）、独立 Flyway 迁移 Secret 和备份凭据 Secret、备份 CronJob
 并发与截止时间，以及实际 Pod 注入的 PostgreSQL、Redis 和 RocketMQ TLS 配置。设置 `FLOWMESH_EXPECT_PROMETHEUS_RULE=true` 时，还会验证 `ServiceMonitor` 和
 `PrometheusRule`。该脚本只读集群，不替代数据库、RocketMQ、Redis 和对象存储的故障切换演练。
+启用 Prometheus Operator 时还会读取 `AlertmanagerConfig`，验证 release selector、默认 receiver、外部 Webhook Secret 和恢复通知配置。
 
 目标生产环境的发布后只读验收可通过 `scripts/run-production-acceptance.sh` 统一执行；脚本会把镜像签名、Kubernetes smoke、
 外部依赖预检、生命周期角色预检、运行时观测和目标环境证据包校验的结果写入不可覆盖的 Markdown 报告。

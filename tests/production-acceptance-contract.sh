@@ -21,6 +21,8 @@ grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${script}" >/dev/null
 grep -F -- '必须是 40 位小写 Git 提交 SHA' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_EXPECT_PROMETHEUS_RULE' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_PROMETHEUS_RELEASE' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY' "${script}" >/dev/null
 grep -F -- 'scripts/validate-runtime-observability.sh' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_REQUIRE_DEPENDENCY_HA' "${script}" >/dev/null

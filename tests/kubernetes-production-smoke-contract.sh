@@ -55,5 +55,8 @@ grep -F -- 'WORKFLOW_SLA_DB_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'automountServiceAccountToken' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_NOTIFICATION_DELIVERY_ENABLED' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_NOTIFICATION_WEBHOOK_URL' "${smoke_test}" >/dev/null
+grep -F -- 'alertmanagerconfig' "${smoke_test}" >/dev/null
+grep -F -- 'FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME' "${smoke_test}" >/dev/null
+grep -F -- 'EXPECTED_PROMETHEUS_RELEASE' "${smoke_test}" >/dev/null
 
 echo 'Kubernetes production smoke contract passed.'
