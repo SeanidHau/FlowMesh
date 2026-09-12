@@ -48,6 +48,7 @@
 - JWT 签名密钥。
 - Redis 密码或认证信息。
 - IAM、Supplier、Workflow、Risk、Notification Audit 的 PostgreSQL 密码。
+- IAM、Supplier、Workflow、Risk、Notification Audit 的 Flyway 迁移账号密码；迁移账号必须与运行时业务账号不同。
 - RocketMQ Producer 和 Consumer 的独立凭据。
 - RocketMQ TLS 所需的认证信息。
 - MinIO/对象存储访问密钥。
@@ -119,7 +120,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 ### 5.1 发布前
 
 1. 目标平台创建 Kubernetes namespace、运行时 Secret、维护任务 Secret 和 Ingress TLS Secret。
-2. 平台管理员创建数据库业务账号、备份账号、生命周期账号和 Workflow SLA 账号，并执行 Flyway 初始化所需的数据库准备工作。
+2. 平台管理员创建五个业务账号、五个 Flyway 迁移账号、备份账号、生命周期账号和 Workflow SLA 账号，并执行 Flyway 初始化所需的 Schema 所有权与默认权限准备工作；业务账号不得拥有 Schema DDL 权限。已有数据库先执行 `scripts/prepare-postgres-migration-roles.sh`，新数据库由 Compose 初始化脚本或平台初始化流程创建对应角色。
 3. 执行 `scripts/validate-production-dependencies.sh`，确认 PostgreSQL、Redis、RocketMQ 和对象存储满足 TLS 与连通性要求。
 4. 执行 `scripts/validate-backup-role.sh` 和 `scripts/validate-retention-role.sh`，确认维护账号满足最小权限要求。
 5. 在 GitHub `production` Environment 配置 Variables、Secrets、审批规则和自托管 Runner 标签。

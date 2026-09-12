@@ -14,20 +14,30 @@ helm lint infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
   --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
+  --set services.iam.dbMigratorPassword="$IAM_DB_MIGRATOR_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
+  --set services.supplier.dbMigratorPassword="$SUPPLIER_DB_MIGRATOR_PASSWORD" \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD" \
+  --set services.workflow.dbMigratorPassword="$WORKFLOW_DB_MIGRATOR_PASSWORD" \
   --set services.risk.dbPassword="$RISK_DB_PASSWORD" \
+  --set services.risk.dbMigratorPassword="$RISK_DB_MIGRATOR_PASSWORD" \
   --set services.notificationAudit.dbPassword="$AUDIT_DB_PASSWORD" \
+  --set services.notificationAudit.dbMigratorPassword="$AUDIT_DB_MIGRATOR_PASSWORD" \
   --set objectStorage.accessKey="$OBJECT_STORAGE_ACCESS_KEY" \
   --set objectStorage.secretKey="$OBJECT_STORAGE_SECRET_KEY"
 helm upgrade --install flowmesh infra/helm/flowmesh \
   --set global.jwtSigningKey="$JWT_SIGNING_KEY" \
   --set global.redisPassword="$REDIS_PASSWORD" \
   --set services.iam.dbPassword="$IAM_DB_PASSWORD" \
+  --set services.iam.dbMigratorPassword="$IAM_DB_MIGRATOR_PASSWORD" \
   --set services.supplier.dbPassword="$SUPPLIER_DB_PASSWORD" \
+  --set services.supplier.dbMigratorPassword="$SUPPLIER_DB_MIGRATOR_PASSWORD" \
   --set services.workflow.dbPassword="$WORKFLOW_DB_PASSWORD" \
+  --set services.workflow.dbMigratorPassword="$WORKFLOW_DB_MIGRATOR_PASSWORD" \
   --set services.risk.dbPassword="$RISK_DB_PASSWORD" \
+  --set services.risk.dbMigratorPassword="$RISK_DB_MIGRATOR_PASSWORD" \
   --set services.notificationAudit.dbPassword="$AUDIT_DB_PASSWORD" \
+  --set services.notificationAudit.dbMigratorPassword="$AUDIT_DB_MIGRATOR_PASSWORD" \
   --set objectStorage.accessKey="$OBJECT_STORAGE_ACCESS_KEY" \
   --set objectStorage.secretKey="$OBJECT_STORAGE_SECRET_KEY"
 ```

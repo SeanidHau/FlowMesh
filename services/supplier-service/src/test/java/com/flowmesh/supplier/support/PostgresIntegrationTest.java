@@ -12,8 +12,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * 集成测试基类，提供 Testcontainers 真实 PostgreSQL 连接。
  *
- * <p>容器使用 postgres 超级用户启动，init 脚本创建 NOSUPERUSER 业务账号 flowmesh_supplier
- * 及 supplier schema。数据源使用 flowmesh_supplier 连接，使 RLS FORCE 策略生效。</p>
+ * <p>容器使用 postgres 管理账号启动，init 脚本创建独立的 Flyway 迁移账号和
+ * NOSUPERUSER 业务账号。数据源使用业务账号连接，使 RLS FORCE 策略生效。</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -41,5 +41,7 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", () -> "flowmesh_supplier");
         registry.add("spring.datasource.password", () -> "change-me-supplier");
+        registry.add("spring.flyway.user", () -> "flowmesh_supplier_migrator");
+        registry.add("spring.flyway.password", () -> "change-me-supplier-migrator");
     }
 }

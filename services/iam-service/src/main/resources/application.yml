@@ -35,7 +35,11 @@ spring:
         enabled: ${REDIS_SSL_ENABLED:false}
 
   flyway:
-    # 作用：Flyway 使用 flowmesh_iam 账号在 iam schema 上执行迁移。
+    # 作用：Flyway 使用独立迁移账号执行 DDL，运行时数据源账号不持有 Schema 所有权。
+    user: ${IAM_DB_MIGRATOR_USER:flowmesh_iam_migrator}
+    password: ${IAM_DB_MIGRATOR_PASSWORD}
+    schemas: iam
+    create-schemas: true
     fail-on-missing-locations: true
     # 作用：生产启动必须校验迁移完整性，禁止清库和乱序执行，避免破坏已发布 schema。
     validate-on-migrate: true

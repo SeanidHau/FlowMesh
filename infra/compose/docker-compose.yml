@@ -6,11 +6,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       POSTGRES_DB: ${POSTGRES_DB:-flowmesh}
       IAM_DB_PASSWORD: ${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be set in .env}
+      IAM_DB_MIGRATOR_PASSWORD: ${IAM_DB_MIGRATOR_PASSWORD:?IAM_DB_MIGRATOR_PASSWORD must be set in .env}
       SUPPLIER_DB_PASSWORD: ${SUPPLIER_DB_PASSWORD:?SUPPLIER_DB_PASSWORD must be set in .env}
+      SUPPLIER_DB_MIGRATOR_PASSWORD: ${SUPPLIER_DB_MIGRATOR_PASSWORD:?SUPPLIER_DB_MIGRATOR_PASSWORD must be set in .env}
       WORKFLOW_DB_PASSWORD: ${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be set in .env}
+      WORKFLOW_DB_MIGRATOR_PASSWORD: ${WORKFLOW_DB_MIGRATOR_PASSWORD:?WORKFLOW_DB_MIGRATOR_PASSWORD must be set in .env}
       WORKFLOW_SLA_DB_PASSWORD: ${WORKFLOW_SLA_DB_PASSWORD:?WORKFLOW_SLA_DB_PASSWORD must be set in .env}
       RISK_DB_PASSWORD: ${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be set in .env}
+      RISK_DB_MIGRATOR_PASSWORD: ${RISK_DB_MIGRATOR_PASSWORD:?RISK_DB_MIGRATOR_PASSWORD must be set in .env}
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be set in .env}
+      AUDIT_DB_MIGRATOR_PASSWORD: ${AUDIT_DB_MIGRATOR_PASSWORD:?AUDIT_DB_MIGRATOR_PASSWORD must be set in .env}
       RETENTION_DB_PASSWORD: ${RETENTION_DB_PASSWORD:?RETENTION_DB_PASSWORD must be set in .env}
     ports:
       - "5432:5432"
@@ -129,6 +134,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=iam
       IAM_DB_USER: flowmesh_iam
       IAM_DB_PASSWORD: ${IAM_DB_PASSWORD:?IAM_DB_PASSWORD must be set in .env}
+      SPRING_FLYWAY_USER: flowmesh_iam_migrator
+      SPRING_FLYWAY_PASSWORD: ${IAM_DB_MIGRATOR_PASSWORD:?IAM_DB_MIGRATOR_PASSWORD must be set in .env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_USERNAME: ${REDIS_USERNAME:-}
@@ -170,6 +177,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=supplier
       SUPPLIER_DB_USER: flowmesh_supplier
       SUPPLIER_DB_PASSWORD: ${SUPPLIER_DB_PASSWORD:?SUPPLIER_DB_PASSWORD must be set in .env}
+      SPRING_FLYWAY_USER: flowmesh_supplier_migrator
+      SPRING_FLYWAY_PASSWORD: ${SUPPLIER_DB_MIGRATOR_PASSWORD:?SUPPLIER_DB_MIGRATOR_PASSWORD must be set in .env}
       JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
       ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876
@@ -215,6 +224,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=workflow
       WORKFLOW_DB_USER: flowmesh_workflow
       WORKFLOW_DB_PASSWORD: ${WORKFLOW_DB_PASSWORD:?WORKFLOW_DB_PASSWORD must be set in .env}
+      SPRING_FLYWAY_USER: flowmesh_workflow_migrator
+      SPRING_FLYWAY_PASSWORD: ${WORKFLOW_DB_MIGRATOR_PASSWORD:?WORKFLOW_DB_MIGRATOR_PASSWORD must be set in .env}
       JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
       ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876
@@ -251,6 +262,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=risk
       RISK_DB_USER: flowmesh_risk
       RISK_DB_PASSWORD: ${RISK_DB_PASSWORD:?RISK_DB_PASSWORD must be set in .env}
+      SPRING_FLYWAY_USER: flowmesh_risk_migrator
+      SPRING_FLYWAY_PASSWORD: ${RISK_DB_MIGRATOR_PASSWORD:?RISK_DB_MIGRATOR_PASSWORD must be set in .env}
       ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876
       FLOWMESH_RISK_CONSUMER_ENABLED: ${FLOWMESH_RISK_CONSUMER_ENABLED:-true}
       FLOWMESH_RISK_OUTBOX_ENABLED: ${FLOWMESH_RISK_OUTBOX_ENABLED:-true}
@@ -288,6 +301,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowmesh}?currentSchema=audit
       AUDIT_DB_USER: flowmesh_audit
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?AUDIT_DB_PASSWORD must be set in .env}
+      SPRING_FLYWAY_USER: flowmesh_audit_migrator
+      SPRING_FLYWAY_PASSWORD: ${AUDIT_DB_MIGRATOR_PASSWORD:?AUDIT_DB_MIGRATOR_PASSWORD must be set in .env}
       JWT_ISSUER: ${JWT_ISSUER:-flowmesh-local}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
       ROCKETMQ_NAMESRV_ADDR: rocketmq-namesrv:9876

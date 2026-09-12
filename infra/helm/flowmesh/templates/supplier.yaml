@@ -60,11 +60,18 @@ spec:
               value: {{ include "flowmesh.postgresqlJdbcUrl" (dict "root" . "schema" "supplier") | quote }}
             - name: SUPPLIER_DB_USER
               value: {{ .Values.services.supplier.dbUser | quote }}
+            - name: SPRING_FLYWAY_USER
+              value: {{ .Values.services.supplier.dbMigratorUser | quote }}
             - name: SUPPLIER_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "flowmesh.configSecret" . }}
                   key: SUPPLIER_DB_PASSWORD
+            - name: SPRING_FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: SUPPLIER_DB_MIGRATOR_PASSWORD
             - name: JWT_ISSUER
               value: {{ .Values.global.jwtIssuer | quote }}
             - name: JWT_SIGNING_KEY

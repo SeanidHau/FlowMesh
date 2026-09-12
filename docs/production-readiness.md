@@ -36,6 +36,7 @@
 - 所有生产 PostgreSQL 预检和维护脚本在 `verify-ca`/`verify-full` 模式下都强制要求 `FLOWMESH_PG_SSLROOTCERT` 指向存在且可读的 CA 文件，禁止无意间退回 Runner 系统信任库。
 - 生产 Helm 模式要求外部 Secret、外部镜像仓库和提交 SHA 镜像标签；未提供 `global.imageTag` 时渲染直接失败，避免部署可变或本地默认镜像。
 - 五个业务服务统一启用 Flyway `validate-on-migrate`，并显式禁止 `clean`、乱序迁移和自动 baseline；迁移校验失败时 Pod 不会继续接收流量，数据库变更必须随版本提交并经过发布验证。
+- 五个业务服务的 Flyway 均使用独立的 `flowmesh_<service>_migrator` 账号；运行时业务账号不再承担 Schema 所有权或 DDL 权限。新环境初始化脚本、测试容器和 Helm Secret 均要求对应迁移密码，迁移账号缺失时启动会失败。
 - Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
@@ -69,10 +70,15 @@ helm lint infra/helm/flowmesh \
   --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
   --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
   --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
+  --set-string services.iam.dbMigratorPassword="$HELM_TEST_IAM_MIGRATOR_PASSWORD" \
   --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
+  --set-string services.supplier.dbMigratorPassword="$HELM_TEST_SUPPLIER_MIGRATOR_PASSWORD" \
   --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+  --set-string services.workflow.dbMigratorPassword="$HELM_TEST_WORKFLOW_MIGRATOR_PASSWORD" \
   --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+  --set-string services.risk.dbMigratorPassword="$HELM_TEST_RISK_MIGRATOR_PASSWORD" \
   --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
+  --set-string services.notificationAudit.dbMigratorPassword="$HELM_TEST_AUDIT_MIGRATOR_PASSWORD" \
   --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
 ./mvnw -q -DskipTests package
 ```

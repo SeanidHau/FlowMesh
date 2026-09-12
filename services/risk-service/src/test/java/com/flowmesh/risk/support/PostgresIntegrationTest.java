@@ -38,5 +38,7 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", () -> "flowmesh_risk");
         registry.add("spring.datasource.password", () -> "change-me-risk");
+        registry.add("spring.flyway.user", () -> "flowmesh_risk_migrator");
+        registry.add("spring.flyway.password", () -> "change-me-risk-migrator");
     }
 }

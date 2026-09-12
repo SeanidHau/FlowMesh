@@ -156,10 +156,15 @@ jobs:
           HELM_TEST_JWT: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
           HELM_TEST_REDIS_PASSWORD: ci-only-redis-password
           HELM_TEST_IAM_PASSWORD: ci-only-iam-password
+          HELM_TEST_IAM_MIGRATOR_PASSWORD: ci-only-iam-migrator-password
           HELM_TEST_SUPPLIER_PASSWORD: ci-only-supplier-password
+          HELM_TEST_SUPPLIER_MIGRATOR_PASSWORD: ci-only-supplier-migrator-password
           HELM_TEST_WORKFLOW_PASSWORD: ci-only-workflow-password
+          HELM_TEST_WORKFLOW_MIGRATOR_PASSWORD: ci-only-workflow-migrator-password
           HELM_TEST_RISK_PASSWORD: ci-only-risk-password
+          HELM_TEST_RISK_MIGRATOR_PASSWORD: ci-only-risk-migrator-password
           HELM_TEST_AUDIT_PASSWORD: ci-only-audit-password
+          HELM_TEST_AUDIT_MIGRATOR_PASSWORD: ci-only-audit-migrator-password
           HELM_TEST_OBJECT_STORAGE_SECRET: ci-only-object-storage-secret
         run: |
           workflow_sla_image_digest='sha256:0000000000000000000000000000000000000000000000000000000000000000'
@@ -174,19 +179,29 @@ jobs:
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
             --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
+            --set-string services.iam.dbMigratorPassword="$HELM_TEST_IAM_MIGRATOR_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
+            --set-string services.supplier.dbMigratorPassword="$HELM_TEST_SUPPLIER_MIGRATOR_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string services.workflow.dbMigratorPassword="$HELM_TEST_WORKFLOW_MIGRATOR_PASSWORD" \
             --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+            --set-string services.risk.dbMigratorPassword="$HELM_TEST_RISK_MIGRATOR_PASSWORD" \
             --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
+            --set-string services.notificationAudit.dbMigratorPassword="$HELM_TEST_AUDIT_MIGRATOR_PASSWORD" \
             --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET"
           helm template flowmesh infra/helm/flowmesh \
             --set-string global.jwtSigningKey="$HELM_TEST_JWT" \
             --set-string global.redisPassword="$HELM_TEST_REDIS_PASSWORD" \
             --set-string services.iam.dbPassword="$HELM_TEST_IAM_PASSWORD" \
+            --set-string services.iam.dbMigratorPassword="$HELM_TEST_IAM_MIGRATOR_PASSWORD" \
             --set-string services.supplier.dbPassword="$HELM_TEST_SUPPLIER_PASSWORD" \
+            --set-string services.supplier.dbMigratorPassword="$HELM_TEST_SUPPLIER_MIGRATOR_PASSWORD" \
             --set-string services.workflow.dbPassword="$HELM_TEST_WORKFLOW_PASSWORD" \
+            --set-string services.workflow.dbMigratorPassword="$HELM_TEST_WORKFLOW_MIGRATOR_PASSWORD" \
             --set-string services.risk.dbPassword="$HELM_TEST_RISK_PASSWORD" \
+            --set-string services.risk.dbMigratorPassword="$HELM_TEST_RISK_MIGRATOR_PASSWORD" \
             --set-string services.notificationAudit.dbPassword="$HELM_TEST_AUDIT_PASSWORD" \
+            --set-string services.notificationAudit.dbMigratorPassword="$HELM_TEST_AUDIT_MIGRATOR_PASSWORD" \
             --set-string objectStorage.secretKey="$HELM_TEST_OBJECT_STORAGE_SECRET" >/dev/null
           if helm template flowmesh infra/helm/flowmesh >/dev/null 2>&1; then
             echo 'Chart must fail to render when runtime credentials are missing.' >&2

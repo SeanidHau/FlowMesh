@@ -60,11 +60,18 @@ spec:
               value: {{ include "flowmesh.postgresqlJdbcUrl" (dict "root" . "schema" "risk") | quote }}
             - name: RISK_DB_USER
               value: {{ .Values.services.risk.dbUser | quote }}
+            - name: SPRING_FLYWAY_USER
+              value: {{ .Values.services.risk.dbMigratorUser | quote }}
             - name: RISK_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "flowmesh.configSecret" . }}
                   key: RISK_DB_PASSWORD
+            - name: SPRING_FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flowmesh.configSecret" . }}
+                  key: RISK_DB_MIGRATOR_PASSWORD
             - name: ROCKETMQ_NAMESRV_ADDR
               value: {{ .Values.rocketmq.namesrvAddr | quote }}
             - name: FLOWMESH_RISK_FAULT_INJECTION_ENABLED

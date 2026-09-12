@@ -24,6 +24,9 @@ spring:
       max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
 
   flyway:
+    # 作用：Flyway 使用独立迁移账号执行 DDL，运行时数据源账号仅保留业务表权限。
+    user: ${WORKFLOW_DB_MIGRATOR_USER:flowmesh_workflow_migrator}
+    password: ${WORKFLOW_DB_MIGRATOR_PASSWORD}
     schemas: workflow
     create-schemas: true
     fail-on-missing-locations: true

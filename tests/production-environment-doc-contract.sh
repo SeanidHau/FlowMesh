@@ -14,6 +14,7 @@ required_markers=(
   'scripts/validate-production-dependencies.sh'
   'scripts/validate-backup-role.sh'
   'scripts/validate-retention-role.sh'
+  'scripts/prepare-postgres-migration-roles.sh'
   'scripts/create-production-evidence-manifest.sh'
   'scripts/validate-production-evidence.sh'
   'Production deploy'

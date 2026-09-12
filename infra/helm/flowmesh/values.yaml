@@ -215,6 +215,8 @@ services:
     port: 8081
     dbUser: flowmesh_iam
     dbPassword: ""
+    dbMigratorUser: flowmesh_iam_migrator
+    dbMigratorPassword: ""
     loginRateLimitEnabled: true
     loginRateLimitFailOpen: true
     refreshTokenCleanup:
@@ -246,6 +248,8 @@ services:
     port: 8082
     dbUser: flowmesh_supplier
     dbPassword: ""
+    dbMigratorUser: flowmesh_supplier_migrator
+    dbMigratorPassword: ""
     replicas: 1
     resources:
       requests:
@@ -269,6 +273,8 @@ services:
     port: 8083
     dbUser: flowmesh_workflow
     dbPassword: ""
+    dbMigratorUser: flowmesh_workflow_migrator
+    dbMigratorPassword: ""
     replicas: 1
     resources:
       requests:
@@ -292,6 +298,8 @@ services:
     port: 8084
     dbUser: flowmesh_risk
     dbPassword: ""
+    dbMigratorUser: flowmesh_risk_migrator
+    dbMigratorPassword: ""
     replicas: 1
     resources:
       requests:
@@ -315,6 +323,8 @@ services:
     port: 8085
     dbUser: flowmesh_audit
     dbPassword: ""
+    dbMigratorUser: flowmesh_audit_migrator
+    dbMigratorPassword: ""
     notificationDelivery:
       enabled: false
       webhookUrl: ""
