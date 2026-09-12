@@ -20,6 +20,14 @@ GitHub 生产控制面配置契约：
 
 该测试验证配置脚本默认只预览，应用模式必须经过显式二次确认，并包含 Environment 审核人、分支保护和必需状态检查配置。
 
+死信查询规模边界由 supplier 和 workflow 的单元测试覆盖：
+
+```bash
+./mvnw -pl services/supplier-service,services/workflow-service -am test
+```
+
+测试验证运维查询的 `limit` 会被服务端限制在 1 到 100 之间，避免无界数据库查询。
+
 真实 RocketMQ Broker 主链路验证：
 
 ```bash

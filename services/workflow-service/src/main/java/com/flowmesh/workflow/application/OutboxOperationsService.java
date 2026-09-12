@@ -48,16 +48,24 @@ public class OutboxOperationsService {
      * @param principal 当前操作者
      * @param eventType 事件类型，可为空
      * @param aggregateId 聚合标识，可为空
+     * @param limit 返回上限，服务端限制在 1 到 100 之间
      * @return 死信列表
      */
     @Transactional(readOnly = true)
     public List<DeadLetterEventResponse> listDeadLetters(
         AuthPrincipal principal,
         String eventType,
-        UUID aggregateId
+        UUID aggregateId,
+        int limit
     ) {
-        return outboxRepository.findDeadLettered(principal.tenantId(), eventType, aggregateId, 100)
+        return outboxRepository.findDeadLettered(
+                principal.tenantId(), eventType, aggregateId, normalizeLimit(limit)
+            )
             .stream().map(DeadLetterEventResponse::from).toList();
+    }
+
+    private int normalizeLimit(int limit) {
+        return Math.min(Math.max(limit, 1), 100);
     }
 
     /**

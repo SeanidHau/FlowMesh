@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,15 +46,17 @@ public class OutboxOperationsController {
      * @param principal 当前操作者
      * @param eventType 事件类型，可为空
      * @param aggregateId 聚合标识，可为空
+     * @param limit 返回上限，默认 50，服务端最大返回 100 条
      * @return 死信事件列表
      */
     @GetMapping("/dead-letters")
     public List<DeadLetterEventResponse> list(
         @AuthenticationPrincipal AuthPrincipal principal,
         @RequestParam(required = false) String eventType,
-        @RequestParam(required = false) UUID aggregateId
+        @RequestParam(required = false) UUID aggregateId,
+        @RequestParam(defaultValue = "50") int limit
     ) {
-        return service.listDeadLetters(principal, eventType, aggregateId);
+        return service.listDeadLetters(principal, eventType, aggregateId, limit);
     }
 
     /**

@@ -95,6 +95,14 @@ notification-audit-service 提供当前登录用户的通知查询和已读操�
 | `GET` | `/api/v1/notifications?limit=20` | 查询当前租户、当前用户的最近通知 |
 | `PUT` | `/api/v1/notifications/{notificationId}/read` | 将当前用户可见的通知标记为已读，重复调用幂等 |
 
+死信运维查询同样必须显式限制返回规模：
+
+```http
+GET /api/v1/operations/outbox/dead-letters?limit=50
+```
+
+`limit` 默认值为 50，服务端将其限制在 1 到 100 之间；结果按死信时间倒序返回。
+
 服务端同时按 JWT 中的租户和用户条件更新，不能通过修改路径参数读取或更新其他用户的通知；资源不存在或不属于当前用户统一返回 `404`。
 
 ## 并发更新
@@ -131,7 +139,8 @@ notification-audit-service 提供当前登录用户的通知查询和已读操�
 
 ## 分页与时间
 
-- 列表接口使用游标分页，优先返回 `nextCursor`。
+- 列表接口必须有明确的 `limit` 上限；需要连续遍历的接口使用稳定排序字段和游标，并优先返回 `nextCursor`。
+- 当前通知和死信运维接口提供有界的最近记录窗口，不承诺一次返回全量历史数据。
 - 所有 API 时间字段使用 RFC 3339 UTC 格式。
 - UI 再按用户或租户时区展示；首版默认 `Asia/Shanghai`。
 
