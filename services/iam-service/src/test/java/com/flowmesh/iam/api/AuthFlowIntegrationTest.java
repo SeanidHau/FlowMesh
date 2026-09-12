@@ -1,6 +1,7 @@
 package com.flowmesh.iam.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +12,8 @@ import com.flowmesh.iam.api.dto.LoginRequest;
 import com.flowmesh.iam.api.dto.LogoutRequest;
 import com.flowmesh.iam.api.dto.RefreshRequest;
 import com.flowmesh.iam.support.PostgresIntegrationTest;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,6 +37,9 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 验证种子用户可登录，返回有效令牌对。
@@ -67,8 +73,10 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
      */
     @Test
     void shouldRejectWrongPassword() throws Exception {
+        String requestTraceId = "trace-login-failure-" + UUID.randomUUID();
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Trace-Id", requestTraceId)
                 .content(objectMapper.writeValueAsString(
                     new LoginRequest("tenant-a", "applicant-a", "wrong-password")
                 )))
@@ -76,11 +84,13 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"))
                 .andReturn();
 
-        String traceId = result.getResponse().getHeader("X-Trace-Id");
+        String responseHeaderTraceId = result.getResponse().getHeader("X-Trace-Id");
         String responseTraceId = objectMapper.readTree(result.getResponse().getContentAsString())
             .get("traceId").asText();
-        assertThat(traceId).isNotBlank();
-        assertThat(responseTraceId).isEqualTo(traceId);
+        assertThat(responseHeaderTraceId).isEqualTo(requestTraceId);
+        assertThat(responseTraceId).isEqualTo(requestTraceId);
+
+        assertThat(auditCount(requestTraceId, "LOGIN", "FAILURE")).isEqualTo(1);
     }
 
     /**
@@ -116,12 +126,37 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
      */
     @Test
     void shouldRevokeTokenAfterLogout() throws Exception {
-        String refreshToken = loginAndGetRefreshToken("tenant-a", "applicant-a", "password123");
+        String loginTraceId = "trace-login-success-" + UUID.randomUUID();
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Trace-Id", loginTraceId)
+                .content(objectMapper.writeValueAsString(
+                    new LoginRequest("tenant-a", "applicant-a", "password123")
+                )))
+                .andExpect(status().isOk())
+                .andReturn();
+        String refreshToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+            .get("refreshToken").asText();
+        assertThat(auditCount(loginTraceId, "LOGIN", "SUCCESS")).isEqualTo(1);
+
+        String logoutTraceId = "trace-logout-" + UUID.randomUUID();
 
         mockMvc.perform(post("/api/v1/auth/logout")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Trace-Id", logoutTraceId)
                 .content(objectMapper.writeValueAsString(new LogoutRequest(refreshToken))))
                 .andExpect(status().isNoContent());
+
+        assertThat(auditCount(logoutTraceId, "LOGOUT", "SUCCESS")).isEqualTo(1);
+
+        assertThatThrownBy(() -> jdbcTemplate.update(
+            "UPDATE iam_audit_events SET result = 'FAILURE' WHERE trace_id = ?",
+            logoutTraceId
+        )).hasStackTraceContaining("append-only");
+        assertThatThrownBy(() -> jdbcTemplate.update(
+            "DELETE FROM iam_audit_events WHERE trace_id = ?",
+            logoutTraceId
+        )).hasStackTraceContaining("append-only");
 
         // 登出后刷新被拒
         mockMvc.perform(post("/api/v1/auth/refresh")
@@ -140,5 +175,16 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString())
             .get("refreshToken").asText();
+    }
+
+    private int auditCount(String traceId, String action, String result) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM iam_audit_events WHERE trace_id = ? AND action = ? AND result = ?",
+            Integer.class,
+            traceId,
+            action,
+            result
+        );
+        return count == null ? 0 : count;
     }
 }

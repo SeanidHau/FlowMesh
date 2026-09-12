@@ -59,6 +59,7 @@
 - SLA 升级使用 PostgreSQL 行锁和每个流程实例的 PL/pgSQL 子事务；乐观锁失败或 Outbox/任务插入异常时，任务状态、并行任务取消和流程状态会整体回滚，避免留下半完成升级。
 - 风控拒绝闭环已落地：workflow 事务写入 `WorkflowRiskRejected`，supplier 幂等更新 `REJECTED` 终态，notification-audit-service 同步生成申请人通知与审计记录。
 - 外部通知投递已落地：站内通知与投递队列同事务提交，Webhook 使用 HTTPS、HMAC 签名、幂等键、租约认领、指数退避和死信；队列通过专用 `flowmesh_audit_delivery` `BYPASSRLS` 角色的安全函数跨租户调度，业务账号不直接读取投递队列。
+- IAM 登录成功、失败和登出均写入安全审计；审计表由 PostgreSQL 触发器拒绝 UPDATE、DELETE 和 TRUNCATE，应用层不能修改历史安全证据。
 
 验证命令：
 

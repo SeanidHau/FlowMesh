@@ -44,6 +44,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | 提供只读生产证据包门禁，要求目标环境提交 Kubernetes smoke、依赖 HA、运行时观测、应用恢复、备份恢复、压测、跨租户安全回归和告警路由报告，并使用清单和 SHA-256 校验和验证完整性；实际证据仍需由目标平台执行生成。 |
 | 已完成 | 提供生产发布入口：先校验完整提交 SHA 镜像签名和生产 values，再执行 Helm 原子等待发布，最后执行只读 Kubernetes smoke；smoke 失败会自动回滚或清理首次安装资源；运行时凭据只通过预先创建的 Secret 引用。 |
 | 已完成 | Workflow SLA CronJob 的 PostgreSQL 客户端镜像已纳入供应链门禁：生产 Helm 强制要求 `sha256` digest，发布脚本、Production acceptance 和 Kubernetes smoke 均绑定同一 digest，禁止回退到版本标签。 |
+| 已完成 | IAM 登录/失败/登出安全审计已通过真实 PostgreSQL 持久化回归，审计表由数据库触发器拒绝 UPDATE、DELETE 和 TRUNCATE，保证历史安全证据只追加。 |
 | 已完成 | 提供受保护的生产发布工作流：仅手动触发，使用 `production` Environment 审批、部署并发互斥、完整提交 SHA 镜像校验和部署日志归档；工作流不接收或打印运行时凭据。 |
 | 已完成 | 提供 Kubernetes 应用故障恢复演练：白名单组件 Pod 删除、Deployment 副本恢复、健康检查和 RTO 门禁均可重复执行；实际目标集群结果仍必须归档到生产证据包。 |
 | 已完成 | Workflow SLA 已通过临时 PostgreSQL E2E 验证催办、并行审批实例锁定、任务状态收敛和 Outbox 写入；每个实例使用子事务保证乐观锁失败时整体回滚；CI 会执行该回归。 |

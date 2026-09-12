@@ -7,6 +7,7 @@
 - Access Token 有效期为 15 分钟。
 - Refresh Token 有效期为 7 天。数据库仅存储 Refresh Token 哈希，支持轮换与撤销。
 - 登出、用户禁用和密码重置必须写入审计日志。
+- IAM 安全审计记录只能追加；数据库触发器拒绝 UPDATE、DELETE 和 TRUNCATE，应用层不得提供修改历史审计的接口。
 - 高风险运维接口除验证 JWT 外，必须在服务端重新验证 `OPERATIONS` 权限。
 
 ## 租户隔离
