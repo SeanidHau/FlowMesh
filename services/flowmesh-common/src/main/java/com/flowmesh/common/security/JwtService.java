@@ -39,6 +39,7 @@ public class JwtService {
      */
     public JwtService(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
+        jwtProperties.validateTtls();
         this.signingKey = createSigningKey(jwtProperties.getSigningKey());
     }
 

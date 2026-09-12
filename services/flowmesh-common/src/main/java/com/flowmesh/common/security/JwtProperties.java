@@ -103,4 +103,18 @@ public class JwtProperties {
     public void setRefreshTokenTtl(Duration refreshTokenTtl) {
         this.refreshTokenTtl = refreshTokenTtl;
     }
+
+    /**
+     * 校验 Token 有效期，避免错误配置导致签发立即失效或永不过期的令牌。
+     *
+     * @throws IllegalStateException Access Token 或 Refresh Token 有效期不是正数
+     */
+    public void validateTtls() {
+        if (accessTokenTtl == null || accessTokenTtl.isZero() || accessTokenTtl.isNegative()) {
+            throw new IllegalStateException("flowmesh.security.jwt.access-token-ttl must be positive");
+        }
+        if (refreshTokenTtl == null || refreshTokenTtl.isZero() || refreshTokenTtl.isNegative()) {
+            throw new IllegalStateException("flowmesh.security.jwt.refresh-token-ttl must be positive");
+        }
+    }
 }

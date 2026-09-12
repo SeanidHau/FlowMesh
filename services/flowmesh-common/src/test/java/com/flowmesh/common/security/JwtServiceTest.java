@@ -75,6 +75,26 @@ class JwtServiceTest {
                 .isInstanceOf(SignatureException.class);
     }
 
+    /**
+     * 验证非正数 Token 有效期会在服务初始化时被拒绝。
+     */
+    @Test
+    void shouldRejectNonPositiveTokenTtl() {
+        JwtProperties accessTokenProperties = createProperties(TEST_SIGNING_KEY);
+        accessTokenProperties.setAccessTokenTtl(Duration.ZERO);
+
+        assertThatThrownBy(() -> new JwtService(accessTokenProperties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("access-token-ttl");
+
+        JwtProperties refreshTokenProperties = createProperties(TEST_SIGNING_KEY);
+        refreshTokenProperties.setRefreshTokenTtl(Duration.ofSeconds(-1));
+
+        assertThatThrownBy(() -> new JwtService(refreshTokenProperties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("refresh-token-ttl");
+    }
+
     private static final String TEST_SIGNING_KEY =
             "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
 
