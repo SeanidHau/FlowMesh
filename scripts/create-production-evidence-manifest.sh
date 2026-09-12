@@ -76,7 +76,8 @@ checksum_file="${evidence_directory}/${checksum_name}"
 }
 
 for file in "${required_files[@]}"; do
-  [[ -s "${evidence_directory}/${file}" ]] || {
+  [[ -f "${evidence_directory}/${file}" && ! -L "${evidence_directory}/${file}" \
+    && -s "${evidence_directory}/${file}" ]] || {
     printf '缺少或为空的生产证据报告：%s\n' "${evidence_directory}/${file}" >&2
     exit 1
   }

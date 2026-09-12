@@ -75,18 +75,18 @@ else
   exit 127
 fi
 
-[[ -f "${manifest_file}" ]] || {
+[[ -f "${manifest_file}" && ! -L "${manifest_file}" ]] || {
   printf '缺少生产证据清单：%s\n' "${manifest_file}" >&2
   exit 1
 }
-[[ -f "${checksum_file}" ]] || {
+[[ -f "${checksum_file}" && ! -L "${checksum_file}" ]] || {
   printf '缺少生产证据校验和：%s\n' "${checksum_file}" >&2
   exit 1
 }
 
 for file in "${required_files[@]}"; do
   evidence_file="${evidence_directory}/${file}"
-  [[ -s "${evidence_file}" ]] || {
+  [[ -f "${evidence_file}" && ! -L "${evidence_file}" && -s "${evidence_file}" ]] || {
     printf '缺少或为空的生产证据：%s\n' "${evidence_file}" >&2
     exit 1
   }

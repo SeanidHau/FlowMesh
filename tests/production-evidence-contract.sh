@@ -98,9 +98,25 @@ if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
 fi
 
 FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
-FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
-FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
+  FLOWMESH_IMAGE_TAG="${test_image_tag}" \
   "${script}" >/dev/null
+
+cp -- "${temporary_directory}/load-test.md" "${temporary_directory}/load-test-original.md"
+rm -f -- "${temporary_directory}/load-test.md"
+ln -s -- "${temporary_directory}/backup-restore.md" "${temporary_directory}/load-test.md"
+if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
+  FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" FLOWMESH_IMAGE_TAG="${test_image_tag}" \
+  "${script}" >/dev/null 2>&1; then
+  echo '证据报告不应允许通过符号链接读取目录外文件。' >&2
+  exit 1
+fi
+rm -f -- "${temporary_directory}/load-test.md"
+cp -- "${temporary_directory}/load-test-original.md" "${temporary_directory}/load-test.md"
+(
+  cd "${temporary_directory}"
+  shasum -a 256 "${required_files[@]}" manifest.md > checksums.sha256
+)
 
 if FLOWMESH_EVIDENCE_DIR="${temporary_directory}" \
   FLOWMESH_EVIDENCE_ENVIRONMENT="${test_environment}" \
