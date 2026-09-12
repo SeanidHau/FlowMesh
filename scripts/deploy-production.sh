@@ -215,6 +215,7 @@ FLOWMESH_K8S_NAMESPACE="${namespace}" \
 FLOWMESH_HELM_RELEASE="${release}" \
 FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}" \
 FLOWMESH_INGRESS_NAMESPACE="${ingress_namespace}" \
+FLOWMESH_POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" \
 FLOWMESH_BACKUP_POSTGRES_USER="${FLOWMESH_BACKUP_POSTGRES_USER}" \
   "${ROOT_DIR}/tests/kubernetes-production-smoke.sh"; then
   exit 0

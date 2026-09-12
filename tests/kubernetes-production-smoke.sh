@@ -13,6 +13,7 @@ release="${FLOWMESH_HELM_RELEASE:-flowmesh}"
 expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-false}"
 deployment_selector="app.kubernetes.io/instance=${release}"
+postgres_ca_secret="${FLOWMESH_POSTGRES_CA_SECRET_NAME:-flowmesh-postgresql-ca}"
 backup_cronjob="${release}-flowmesh-postgres-backup"
 retention_cronjob="${release}-flowmesh-retention"
 workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
@@ -24,6 +25,13 @@ if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ 
 fi
 
 kubectl get namespace "${namespace}" >/dev/null
+postgres_ca_secret_json="$(kubectl -n "${namespace}" get secret "${postgres_ca_secret}" -o json)"
+POSTGRES_CA_SECRET_JSON="${postgres_ca_secret_json}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
+require "json"
+secret = JSON.parse(ENV.fetch("POSTGRES_CA_SECRET_JSON"))
+keys = secret.fetch("data", {}).keys
+raise "PostgreSQL CA Secret #{ENV.fetch("POSTGRES_CA_SECRET_NAME")} 缺少 ca.crt" unless keys.include?("ca.crt")
+'
 
 mapfile -t deployments < <(
   kubectl -n "${namespace}" get deployment \
@@ -48,7 +56,7 @@ fi
 for deployment in "${expected_deployments[@]}"; do
   kubectl -n "${namespace}" rollout status "deployment/${deployment}" --timeout="${FLOWMESH_ROLLOUT_TIMEOUT:-5m}"
   deployment_json="$(kubectl -n "${namespace}" get "deployment/${deployment}" -o json)"
-  DEPLOYMENT_JSON="${deployment_json}" DEPLOYMENT_NAME="${deployment}" ruby -e '
+  DEPLOYMENT_JSON="${deployment_json}" DEPLOYMENT_NAME="${deployment}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
 require "json"
 name = ENV.fetch("DEPLOYMENT_NAME")
 spec = JSON.parse(ENV.fetch("DEPLOYMENT_JSON")).fetch("spec").fetch("template").fetch("spec")
@@ -85,6 +93,12 @@ unless name.end_with?("-gateway")
   raise "#{name} 必须使用 PostgreSQL 加密连接" unless jdbc_url.match?(/(?:\?|&)sslmode=(require|verify-ca|verify-full)(?:&|$)/)
   if jdbc_url.include?("sslmode=verify-ca") || jdbc_url.include?("sslmode=verify-full")
     raise "#{name} 使用 verify 模式时必须挂载 PostgreSQL CA" unless jdbc_url.include?("sslrootcert=/etc/flowmesh/postgresql/ca.crt")
+    ca_volume = spec.fetch("volumes").find { |volume| volume.fetch("name") == "postgresql-ca" }
+    raise "#{name} 缺少 PostgreSQL CA Secret volume" unless ca_volume
+    secret = ca_volume.fetch("secret")
+    raise "#{name} 使用了错误的 PostgreSQL CA Secret" unless secret.fetch("secretName") == ENV.fetch("POSTGRES_CA_SECRET_NAME", "flowmesh-postgresql-ca")
+    ca_mount = container.fetch("volumeMounts").find { |mount| mount.fetch("name") == "postgresql-ca" }
+    raise "#{name} 缺少 PostgreSQL CA volumeMount" unless ca_mount && ca_mount.fetch("mountPath") == "/etc/flowmesh/postgresql" && ca_mount.fetch("readOnly") == true
   end
 end
 rocketmq_services = %w[-supplier -workflow -risk -notification-audit]
@@ -151,7 +165,7 @@ raise "生命周期维护 Secret 缺少 RETENTION_DB_PASSWORD" unless keys.inclu
 '
 
 cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${backup_cronjob}" -o json)"
-CRONJOB_JSON="${cronjob_json}" EXPECTED_BACKUP_USER="${expected_backup_user}" ruby -e '
+CRONJOB_JSON="${cronjob_json}" EXPECTED_BACKUP_USER="${expected_backup_user}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
 require "json"
 cronjob = JSON.parse(ENV.fetch("CRONJOB_JSON"))
 spec = cronjob.fetch("spec")
@@ -169,12 +183,14 @@ raise "备份 CronJob 未设置 PostgreSQL SSL 模式" unless ssl_mode && ssl_mo
 if ssl_mode.fetch("value").start_with?("verify-")
   root_cert = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLROOTCERT" }
   raise "备份 CronJob 使用 verify 模式时必须注入 PostgreSQL CA" unless root_cert && root_cert.fetch("value") == "/etc/flowmesh/postgresql/ca.crt"
+  ca_volume = job_spec.fetch("template").fetch("spec").fetch("volumes").find { |volume| volume.fetch("name") == "postgresql-ca" }
+  raise "备份 CronJob 缺少 PostgreSQL CA Secret volume" unless ca_volume && ca_volume.fetch("secret").fetch("secretName") == ENV.fetch("POSTGRES_CA_SECRET_NAME", "flowmesh-postgresql-ca")
 end
 puts "备份 CronJob 参数校验通过。"
 '
 
 retention_cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${retention_cronjob}" -o json)"
-RETENTION_CRONJOB_JSON="${retention_cronjob_json}" ruby -e '
+RETENTION_CRONJOB_JSON="${retention_cronjob_json}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
 require "json"
 cronjob = JSON.parse(ENV.fetch("RETENTION_CRONJOB_JSON"))
 spec = cronjob.fetch("spec")
@@ -188,12 +204,14 @@ raise "生命周期清理必须使用 YES 确认值" unless env.fetch("FLOWMESH_
 raise "生命周期清理必须使用 PostgreSQL TLS" unless %w[require verify-ca verify-full].include?(env.fetch("FLOWMESH_PG_SSLMODE"))
 if env.fetch("FLOWMESH_PG_SSLMODE").start_with?("verify-")
   raise "生命周期清理使用 verify 模式时必须注入 PostgreSQL CA" unless env.fetch("FLOWMESH_PG_SSLROOTCERT") == "/etc/flowmesh/postgresql/ca.crt"
+  ca_volume = pod.fetch("volumes").find { |volume| volume.fetch("name") == "postgresql-ca" }
+  raise "生命周期清理缺少 PostgreSQL CA Secret volume" unless ca_volume && ca_volume.fetch("secret").fetch("secretName") == ENV.fetch("POSTGRES_CA_SECRET_NAME", "flowmesh-postgresql-ca")
 end
 puts "生命周期清理 CronJob 参数校验通过。"
 '
 
 workflow_sla_cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${workflow_sla_cronjob}" -o json)"
-WORKFLOW_SLA_CRONJOB_JSON="${workflow_sla_cronjob_json}" ruby -e '
+WORKFLOW_SLA_CRONJOB_JSON="${workflow_sla_cronjob_json}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
 require "json"
 cronjob = JSON.parse(ENV.fetch("WORKFLOW_SLA_CRONJOB_JSON"))
 spec = cronjob.fetch("spec")
@@ -209,6 +227,8 @@ raise "Workflow SLA CronJob 未设置 PostgreSQL TLS" unless ssl_mode && %w[requ
 if ssl_mode.fetch("value").start_with?("verify-")
   root_cert = env.find { |entry| entry.fetch("name") == "PGSSLROOTCERT" }
   raise "Workflow SLA CronJob 使用 verify 模式时必须注入 PostgreSQL CA" unless root_cert && root_cert.fetch("value") == "/etc/flowmesh/postgresql/ca.crt"
+  ca_volume = pod.fetch("volumes").find { |volume| volume.fetch("name") == "postgresql-ca" }
+  raise "Workflow SLA CronJob 缺少 PostgreSQL CA Secret volume" unless ca_volume && ca_volume.fetch("secret").fetch("secretName") == ENV.fetch("POSTGRES_CA_SECRET_NAME", "flowmesh-postgresql-ca")
 end
 password = env.find { |entry| entry.fetch("name") == "PGPASSWORD" }
 raise "Workflow SLA CronJob 未引用 SLA 数据库密码 Secret" unless password && password.fetch("valueFrom").fetch("secretKeyRef").fetch("key") == "WORKFLOW_SLA_DB_PASSWORD"
