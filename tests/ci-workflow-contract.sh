@@ -15,16 +15,16 @@ grep -F -- 'sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 #
 grep -F -- "cosign-release: 'v3.1.3'" "${workflow}" >/dev/null
 
 # 作用：拒绝使用可变的 GitHub Actions 标签，避免供应链依赖在未审查时被替换。
-if rg -n --glob '*.yml' --glob '*.yaml' \
+if grep -RInE --include='*.yml' --include='*.yaml' \
   '^[[:space:]]*uses:[[:space:]]+[^[:space:]]+@(v[0-9]|main|master|latest)' \
-  "${repo_root}/.github/workflows" >/dev/null; then
+  "${repo_root}/.github/workflows" >/dev/null 2>&1; then
   echo 'GitHub Actions 必须固定到完整提交 SHA。' >&2
   exit 1
 fi
 
 # 作用：确保每个只读工作流都不会把 GitHub Token 持久化到工作区 Git 配置。
-checkout_count="$(rg -c --glob '*.yml' --glob '*.yaml' '^[[:space:]]*uses:[[:space:]]+actions/checkout@[0-9a-f]{40}' "${repo_root}/.github/workflows" | awk -F: '{total += $NF} END {print total + 0}')"
-persist_count="$(rg -c --glob '*.yml' --glob '*.yaml' '^[[:space:]]*persist-credentials:[[:space:]]+false[[:space:]]*$' "${repo_root}/.github/workflows" | awk -F: '{total += $NF} END {print total + 0}')"
+checkout_count="$(grep -RInE --include='*.yml' --include='*.yaml' '^[[:space:]]*uses:[[:space:]]+actions/checkout@[0-9a-f]{40}' "${repo_root}/.github/workflows" | wc -l | tr -d ' ')"
+persist_count="$(grep -RInE --include='*.yml' --include='*.yaml' '^[[:space:]]*persist-credentials:[[:space:]]+false[[:space:]]*$' "${repo_root}/.github/workflows" | wc -l | tr -d ' ')"
 if [[ "${checkout_count}" -eq 0 || "${checkout_count}" -ne "${persist_count}" ]]; then
   echo '每个 actions/checkout 都必须显式设置 persist-credentials: false。' >&2
   exit 1
