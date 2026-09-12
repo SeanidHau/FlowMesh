@@ -4,6 +4,19 @@
 网络、高可用和 DLQ 运维入口。目标 Kubernetes、外部依赖、Secret、发布顺序和验收证据见
 [生产环境实施手册](production-environment.md)。
 
+生产工作流会先执行 GitHub 控制面只读预检，确认 `production` Environment 和 `main` 分支的审批、
+必需状态检查、管理员保护及不可强推/删除规则。该检查失败时不会继续发布、验收或恢复演练；它不会修改
+GitHub 设置，也不会读取 Secret 值。生产工作流需要通过 Environment Secret 注入具备仓库 Administration
+只读权限的 `FLOWMESH_GITHUB_CONTROLS_TOKEN`。仓库管理员可在配置 GitHub 控制后手工复核：
+
+```bash
+GH_TOKEN="$FLOWMESH_GITHUB_CONTROLS_TOKEN" \
+FLOWMESH_GITHUB_REPOSITORY='SeanidHau/FlowMesh' \
+FLOWMESH_GITHUB_BRANCH='main' \
+FLOWMESH_GITHUB_ENVIRONMENT='production' \
+./scripts/validate-github-production-controls.sh
+```
+
 ## 前置条件
 
 - 本地运行使用 Docker Compose。

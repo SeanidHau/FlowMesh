@@ -47,6 +47,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | IAM 登录/失败/登出安全审计已通过真实 PostgreSQL 持久化回归，审计表由数据库触发器拒绝 UPDATE、DELETE 和 TRUNCATE，保证历史安全证据只追加。 |
 | 已完成 | IAM 用户、用户角色关系、Refresh Token 和安全审计表已启用 `FORCE ROW LEVEL SECURITY`；Refresh Token 固化租户归属，刷新/登出按请求租户建立上下文，清理任务逐租户执行，并由集成测试验证跨租户读写隔离。 |
 | 已完成 | 提供受保护的生产发布工作流：仅手动触发，使用 `production` Environment 审批、部署并发互斥、完整提交 SHA 镜像校验和部署日志归档；工作流不接收或打印运行时凭据。 |
+| 已完成 | 提供只读 GitHub 生产控制面预检：生产工作流使用 Environment 中的专用只读控制面 Token 检查 `production` Environment 审批/受保护分支策略和 `main` 分支保护；离线契约禁止预检调用变更 API，实际仓库控制仍需管理员配置并验收。 |
 | 已完成 | 提供 Kubernetes 应用故障恢复演练：白名单组件 Pod 删除、Deployment 副本恢复、健康检查和 RTO 门禁均可重复执行；实际目标集群结果仍必须归档到生产证据包。 |
 | 已完成 | Workflow SLA 已通过临时 PostgreSQL E2E 验证催办、并行审批实例锁定、任务状态收敛和 Outbox 写入；每个实例使用子事务保证乐观锁失败时整体回滚；CI 会执行该回归。 |
 | 尚需目标平台证据 | 外部依赖 HA、托管观测后端、告警通知、备份恢复、RTO/RPO、压测和故障演练不能由本地 CI 代替；必须使用生产证据包门禁留存实际结果。 |

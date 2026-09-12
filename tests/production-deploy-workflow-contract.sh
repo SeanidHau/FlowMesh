@@ -26,6 +26,8 @@ grep -F -- 'FLOWMESH_MIGRATION_SECRET_NAME:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME: ${{ vars.FLOWMESH_POSTGRES_CA_SECRET_NAME }}' "${workflow}" >/dev/null
 grep -F -- './scripts/deploy-production.sh' "${workflow}" >/dev/null
+grep -F -- 'Validate GitHub production controls' "${workflow}" >/dev/null
+grep -F -- 'GH_TOKEN: ${{ secrets.FLOWMESH_GITHUB_CONTROLS_TOKEN }}' "${workflow}" >/dev/null
 grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
 grep -F -- "refs/heads/main" "${workflow}" >/dev/null
 

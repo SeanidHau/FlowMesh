@@ -21,7 +21,7 @@
 - 集群已安装 Ingress Controller，并且 Ingress Controller 会覆盖可信的客户端地址请求头。
 - 集群已安装 Kyverno，并应用 `infra/policies/kyverno/verify-flowmesh-images.yaml`。
 - 集群已安装 Prometheus Operator；如果不使用 Prometheus Operator，发布时将 `expect_prometheus_rule` 设置为 `false`，并由平台单独配置指标抓取和告警规则。
-- 自托管 Runner 同时具备 `bash`、`helm`、`kubectl`、`cosign`、`curl`、`openssl`、`psql`、`pg_isready`、`redis-cli` 和 `ruby`。
+- 自托管 Runner 同时具备 `bash`、`gh`、`jq`、`helm`、`kubectl`、`cosign`、`curl`、`openssl`、`psql`、`pg_isready`、`redis-cli` 和 `ruby`。
 - 自托管 Runner 标签为 `self-hosted`、`linux`、`flowmesh-production`，并且只能访问目标生产集群和依赖网络。
 
 ### 2.2 外部依赖
@@ -89,6 +89,23 @@
 
 GitHub `production` Environment 需要启用人工审批、分支保护和部署记录。下表列出工作流使用的配置名；值由目标平台管理员填写。
 
+生产发布、验收和恢复演练开始前会执行 `scripts/validate-github-production-controls.sh`。该脚本只读检查
+`production` Environment 的人工审核和受保护分支策略，以及 `main` 分支的至少一名 Pull Request 审批人、
+严格必需状态检查、管理员强制保护、禁止强制推送和禁止删除分支。它使用经典 Branch protection API，
+不执行 GitHub 配置变更，也不读取或输出 Secret 值。若平台采用 Rulesets，管理员仍需提供等价的控制面验收证据。
+
+手工预检示例：
+
+```bash
+GH_TOKEN="$FLOWMESH_GITHUB_CONTROLS_TOKEN" \
+FLOWMESH_GITHUB_REPOSITORY='SeanidHau/FlowMesh' \
+FLOWMESH_GITHUB_BRANCH='main' \
+FLOWMESH_GITHUB_ENVIRONMENT='production' \
+./scripts/validate-github-production-controls.sh
+```
+
+工作流使用的 `FLOWMESH_GITHUB_CONTROLS_TOKEN` 需要仓库 Administration 只读权限；自托管 Runner 需要预装 `gh` 和 `jq`。
+
 ### 4.1 Variables
 
 | 配置名 | 用途 |
@@ -129,6 +146,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 - `FLOWMESH_BACKUP_DB_PASSWORD`
 - `FLOWMESH_RETENTION_DB_PASSWORD`
 - `FLOWMESH_REDIS_PASSWORD`
+- `FLOWMESH_GITHUB_CONTROLS_TOKEN`：仅用于读取生产 Environment 和 `main` 分支保护的专用 GitHub App 安装 Token 或细粒度 Token；需要仓库 Administration 只读权限。
 
 Alertmanager Webhook URL 不通过 GitHub Actions Secret 或 Helm 参数传递，而是由目标 Kubernetes 集群中的
 `FLOWMESH_ALERTMANAGER_CONFIG_SECRET_NAME` Secret 提供。

@@ -31,6 +31,8 @@ grep -F -- 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'GITHUB_REF' "${workflow}" >/dev/null
 grep -F -- 'refs/heads/main' "${workflow}" >/dev/null
+grep -F -- 'Validate GitHub production controls' "${workflow}" >/dev/null
+grep -F -- 'GH_TOKEN: ${{ secrets.FLOWMESH_GITHUB_CONTROLS_TOKEN }}' "${workflow}" >/dev/null
 
 if grep -E '^[[:space:]]*(push|pull_request):' "${workflow}" >/dev/null; then
   echo '生产恢复演练工作流只能通过 workflow_dispatch 触发。' >&2

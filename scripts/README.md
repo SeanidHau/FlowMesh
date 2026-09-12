@@ -9,6 +9,7 @@
 - `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
 - `infra/backup/entrypoint.sh`：在备份容器中调用 PostgreSQL 备份和对象存储上传流程。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
+- `validate-github-production-controls.sh`：只读核验 GitHub `production` Environment、主分支保护和生产工作流所需的审批/状态检查规则。
 - `validate-production-dependencies.sh`：在目标生产网络内只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的连接安全与基础可达性。
 - `configure-object-storage-lifecycle.sh`：为专用材料桶启用版本化，并配置逻辑删除对象的非当前版本保留期。
 - `cleanup-flowmesh-retention.sh`：使用专用维护账号按白名单批量清理终态消息、死信、重放审计、Inbox 和幂等记录。
@@ -48,6 +49,23 @@ SHA-256 校验清单和 custom-format 归档均可读取。`backup-postgres.sh` 
 并校验目标环境证据包中的 Kubernetes、依赖 HA、运行时观测、恢复、备份恢复、压测、跨租户安全回归和告警路由报告，
 再将每项结果写入不可覆盖的 Markdown 报告。非生产预检只有在显式设置对应 `FLOWMESH_REQUIRE_*` 变量为 `false` 时才会跳过检查。
 该脚本只读，不执行集群写操作或故障切换；具体变量和示例见 [运行手册](../docs/runbook.md)。
+
+生产发布、验收和恢复演练工作流会先执行 GitHub 控制面预检。该预检只读取仓库的
+`production` Environment 和 `main` 分支保护配置，要求人工审核、受保护分支策略、至少一名
+Pull Request 审批人、严格必需状态检查、管理员强制执行保护，并禁止强制推送和删除分支。
+Runner 必须预装 `gh` 和 `jq`，工作流需要由生产 Environment 注入具备仓库 Administration 只读权限的
+`FLOWMESH_GITHUB_CONTROLS_TOKEN`；脚本不会读取或输出 Secret 值，
+也不支持 GitHub 配置写操作。该检查使用经典 Branch protection API；如果平台使用 Rulesets，需额外提供等价的人工验收证据。
+
+在 GitHub Actions 之外执行只读预检：
+
+```bash
+GH_TOKEN="$FLOWMESH_GITHUB_CONTROLS_TOKEN" \
+FLOWMESH_GITHUB_REPOSITORY='SeanidHau/FlowMesh' \
+FLOWMESH_GITHUB_BRANCH='main' \
+FLOWMESH_GITHUB_ENVIRONMENT='production' \
+./scripts/validate-github-production-controls.sh
+```
 
 目标平台完成各项演练后，使用 `create-production-evidence-manifest.sh` 为已有报告生成
 `manifest.md` 和 `checksums.sha256`；该工具不会创建或修改任何演练报告，且会在报告校验失败时删除本次生成的清单与校验和：

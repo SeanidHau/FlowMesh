@@ -82,6 +82,9 @@ jobs:
       - name: Validate production deployment workflow contract
         run: bash tests/production-deploy-workflow-contract.sh
 
+      - name: Validate GitHub production controls contract
+        run: bash tests/github-production-controls-contract.sh
+
       - name: Validate production evidence contract
         run: bash tests/production-evidence-contract.sh
 

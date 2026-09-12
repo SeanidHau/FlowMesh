@@ -54,10 +54,18 @@ jobs:
             exit 1
           }
 
+      - name: Validate GitHub production controls
+        env:
+          GH_TOKEN: ${{ secrets.FLOWMESH_GITHUB_CONTROLS_TOKEN }}
+          FLOWMESH_GITHUB_REPOSITORY: ${{ github.repository }}
+          FLOWMESH_GITHUB_BRANCH: main
+          FLOWMESH_GITHUB_ENVIRONMENT: production
+        run: ./scripts/validate-github-production-controls.sh
+
       - name: Check runner prerequisites
         run: |
           set -Eeuo pipefail
-          for command_name in bash helm kubectl cosign; do
+          for command_name in bash gh jq helm kubectl cosign; do
             command -v "${command_name}" >/dev/null || {
               echo "生产发布 Runner 缺少命令：${command_name}" >&2
               exit 127

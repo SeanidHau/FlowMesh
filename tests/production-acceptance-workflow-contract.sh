@@ -33,6 +33,8 @@ grep -F -- "refs/heads/main" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY: 'true'" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_DEPENDENCY_HA: 'true'" "${workflow}" >/dev/null
 grep -F -- "FLOWMESH_REQUIRE_PRODUCTION_EVIDENCE: 'true'" "${workflow}" >/dev/null
+grep -F -- 'Validate GitHub production controls' "${workflow}" >/dev/null
+grep -F -- 'GH_TOKEN: ${{ secrets.FLOWMESH_GITHUB_CONTROLS_TOKEN }}' "${workflow}" >/dev/null
 if grep -E '^[[:space:]]*(push|pull_request):' "${workflow}" >/dev/null; then
   echo '生产验收工作流只能通过 workflow_dispatch 触发。' >&2
   exit 1

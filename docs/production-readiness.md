@@ -127,6 +127,7 @@ helm lint infra/helm/flowmesh \
 - 提供仅手动触发、绑定 GitHub `production` Environment 审批的自托管 Runner 验收工作流；工作流只执行上述只读验收并上传报告，不包含部署、迁移、故障切换或 `FLOWMESH_REQUIRE_*` 绕过路径，并且只允许从 `main` 分支执行。
 - 提供独立生产发布入口：签名校验、生产配置校验、`helm upgrade --install --atomic --wait --wait-for-jobs` 和发布后 Kubernetes smoke 必须串联执行；Flyway 迁移 Job 失败会阻止应用更新，smoke 失败时自动回滚到升级前 revision，首次安装失败则卸载应用资源并保留 Helm 历史；运行时凭据只通过预先创建的 Secret 引用，不通过命令行传递。
 - 提供仅手动触发、绑定同一 `production` Environment 的生产发布工作流；工作流只允许从 `main` 分支执行，使用并发互斥防止同时发布，复用生产发布入口，并将部署日志归档供审计追踪。
+- 生产发布、验收和恢复演练工作流会先使用生产 Environment 注入的只读控制面 Token，核验 GitHub `production` Environment、主分支保护、人工审批、严格状态检查、管理员保护及不可强推/删除规则；预检失败时停止生产流程，不修改 GitHub 设置。
 - 生产验收编排脚本可选要求目标环境证据包；未提供真实目标环境的 HA、观测、恢复、备份、压测、安全回归和告警路由证据时，不得将版本标记为生产完成。
 - 生产验收编排脚本可选执行运行时 Prometheus/Alertmanager 预检，但仍不替代平台侧告警通知、日志聚合、Trace 后端和值班演练。
 - 提供只读外部依赖 preflight，检查 PostgreSQL/Redis/RocketMQ TLS 和对象存储 HTTPS；目标环境仍需执行并留存输出，且该检查不替代 HA、故障切换和恢复演练。
