@@ -84,7 +84,7 @@ helm lint infra/helm/flowmesh \
 ### 平台与网络
 
 - Gateway 的真实入口仍需由目标集群提供会覆写客户端地址请求头的 Ingress Controller 和证书 Secret；仓库已提供并验收 Gateway 入站 NetworkPolicy。
-- Helm 生产覆盖值已提供业务服务入口、Prometheus 指标抓取入口和出站白名单 NetworkPolicy；发布流程必须注入监控命名空间和外部依赖 CIDR，仍需在目标 CNI 和真实集群完成连通性演练。
+- Helm 生产覆盖值已提供业务服务入口、Prometheus 指标抓取入口和出站白名单 NetworkPolicy；发布流程必须注入监控命名空间和外部依赖 CIDR，且拒绝 `0.0.0.0/0`、`::/0` 默认路由，仍需在目标 CNI 和真实集群完成连通性演练。
 - 已提供 Kyverno 镜像签名准入策略；目标集群仍需安装 Kyverno、应用策略，并配置持续运行时漏洞扫描平台。
 - Metrics Server 依赖和真实集群中的 HPA/PDB 演练。
 
