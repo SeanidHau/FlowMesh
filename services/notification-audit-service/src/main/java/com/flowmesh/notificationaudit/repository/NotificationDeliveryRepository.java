@@ -38,6 +38,20 @@ public interface NotificationDeliveryRepository {
     );
 
     /**
+     * 在发送单条通知前续租，只有原租约仍有效且令牌匹配时才更新。
+     *
+     * @param id 投递标识
+     * @param claimToken 认领令牌
+     * @param claimedUntil 新的租约截止时间
+     * @return 受影响行数；为 0 时表示租约已失效或已被其他实例接管
+     */
+    int renewClaim(
+        @Param("id") UUID id,
+        @Param("claimToken") UUID claimToken,
+        @Param("claimedUntil") Instant claimedUntil
+    );
+
+    /**
      * 更新成功投递状态，并校验认领令牌避免旧实例覆盖新实例。
      *
      * @param id 投递标识

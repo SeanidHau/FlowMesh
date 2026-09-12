@@ -83,6 +83,10 @@ public class NotificationDeliveryPublisher {
     void publishBatch() {
         List<NotificationDelivery> deliveries = claimService.claimBatch();
         for (NotificationDelivery delivery : deliveries) {
+            if (!claimService.renew(delivery)) {
+                log.warn("notification delivery lease lost before send: deliveryId={}", delivery.getId());
+                continue;
+            }
             try {
                 webhookClient.send(delivery);
                 if (markDelivered(delivery)) {

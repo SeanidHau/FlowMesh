@@ -64,6 +64,8 @@ PostgreSQL 生命周期清理验证：
 ./tests/notification-delivery-contract.sh
 ```
 
+该测试验证通知队列使用专用安全函数完成跨租户认领、发送前续租、状态确认、重试和死信，且 Webhook 使用 HTTPS、HMAC 签名和幂等键。
+
 Gateway 请求体边界契约：
 
 ```bash

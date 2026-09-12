@@ -49,4 +49,19 @@ public class NotificationDeliveryClaimService {
             properties.getBatchSize()
         );
     }
+
+    /**
+     * 在网络发送前续租单条通知，避免批次中前序请求耗时导致当前租约失效。
+     *
+     * @param delivery 待发送通知
+     * @return 仍持有租约时为 {@code true}
+     */
+    @Transactional
+    public boolean renew(NotificationDelivery delivery) {
+        return repository.renewClaim(
+            delivery.getId(),
+            delivery.getClaimToken(),
+            Instant.now().plusSeconds(properties.getLeaseSeconds())
+        ) == 1;
+    }
 }

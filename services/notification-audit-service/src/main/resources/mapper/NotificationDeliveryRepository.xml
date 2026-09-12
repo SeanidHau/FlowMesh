@@ -36,6 +36,12 @@
     )
   </select>
 
+  <select id="renewClaim" resultType="int">
+    SELECT audit.renew_notification_delivery(
+      #{id, jdbcType=OTHER}, #{claimToken, jdbcType=OTHER}, #{claimedUntil}
+    )
+  </select>
+
   <select id="markDelivered" resultType="int">
     SELECT audit.mark_notification_delivery_delivered(
       #{id, jdbcType=OTHER}, #{claimToken, jdbcType=OTHER}, #{deliveredAt}

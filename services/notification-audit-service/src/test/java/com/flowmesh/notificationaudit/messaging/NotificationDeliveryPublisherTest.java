@@ -59,6 +59,7 @@ class NotificationDeliveryPublisherTest {
     void shouldMarkDeliveryAsDelivered() {
         NotificationDelivery delivery = delivery(0);
         when(claimService.claimBatch()).thenReturn(List.of(delivery));
+        when(claimService.renew(delivery)).thenReturn(true);
         when(repository.markDelivered(eq(delivery.getId()), eq(delivery.getClaimToken()), any(Instant.class)))
             .thenReturn(1);
 
@@ -75,6 +76,7 @@ class NotificationDeliveryPublisherTest {
     void shouldScheduleRetryAfterFailure() {
         NotificationDelivery delivery = delivery(0);
         when(claimService.claimBatch()).thenReturn(List.of(delivery));
+        when(claimService.renew(delivery)).thenReturn(true);
         doThrow(new IllegalStateException("remote unavailable")).when(webhookClient).send(delivery);
         when(repository.markFailed(
             eq(delivery.getId()), eq(delivery.getClaimToken()), eq(1), any(Instant.class), eq("PENDING"),
@@ -96,6 +98,7 @@ class NotificationDeliveryPublisherTest {
     void shouldMoveDeliveryToDeadLetterAfterMaxAttempts() {
         NotificationDelivery delivery = delivery(2);
         when(claimService.claimBatch()).thenReturn(List.of(delivery));
+        when(claimService.renew(delivery)).thenReturn(true);
         doThrow(new IllegalStateException("remote unavailable")).when(webhookClient).send(delivery);
         when(repository.markFailed(
             eq(delivery.getId()), eq(delivery.getClaimToken()), eq(3), any(Instant.class), eq("DEAD_LETTER"),
@@ -108,6 +111,22 @@ class NotificationDeliveryPublisherTest {
             eq(delivery.getId()), eq(delivery.getClaimToken()), eq(3), any(Instant.class), eq("DEAD_LETTER"),
             eq("IllegalStateException")
         );
+    }
+
+    /**
+     * 租约无法续租时必须跳过 Webhook，避免旧实例在租约失效后继续产生外部副作用。
+     */
+    @Test
+    void shouldSkipWebhookWhenLeaseCannotBeRenewed() {
+        NotificationDelivery delivery = delivery(0);
+        when(claimService.claimBatch()).thenReturn(List.of(delivery));
+        when(claimService.renew(delivery)).thenReturn(false);
+
+        publisher.publishBatch();
+
+        verify(webhookClient, org.mockito.Mockito.never()).send(delivery);
+        verify(repository, org.mockito.Mockito.never()).markDelivered(any(), any(), any());
+        verify(repository, org.mockito.Mockito.never()).markFailed(any(), any(), any(Integer.class), any(), any(), any());
     }
 
     private NotificationDelivery delivery(int attempts) {

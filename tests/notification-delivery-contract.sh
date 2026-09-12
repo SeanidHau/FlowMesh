@@ -4,7 +4,9 @@ set -Eeuo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 migration="${repo_root}/services/notification-audit-service/src/main/resources/db/migration/V3__create_notification_delivery_outbox.sql"
+renewal_migration="${repo_root}/services/notification-audit-service/src/main/resources/db/migration/V6__renew_notification_delivery_claim.sql"
 publisher="${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/messaging/NotificationDeliveryPublisher.java"
+claim_service="${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/messaging/NotificationDeliveryClaimService.java"
 webhook="${repo_root}/services/notification-audit-service/src/main/java/com/flowmesh/notificationaudit/messaging/NotificationWebhookClient.java"
 template="${repo_root}/infra/helm/flowmesh/templates/notification-audit.yaml"
 production_values="${repo_root}/infra/helm/flowmesh/values-production.yaml"
@@ -14,6 +16,11 @@ grep -F 'flowmesh_audit_delivery' "${migration}" >/dev/null
 grep -F 'SECURITY DEFINER' "${migration}" >/dev/null
 grep -F 'FOR UPDATE SKIP LOCKED' "${migration}" >/dev/null
 grep -F 'claim_token' "${migration}" >/dev/null
+grep -F 'renew_notification_delivery' "${renewal_migration}" >/dev/null
+grep -F 'SECURITY DEFINER' "${renewal_migration}" >/dev/null
+grep -F 'claimed_until > now()' "${renewal_migration}" >/dev/null
+grep -F 'renew(' "${claim_service}" >/dev/null
+grep -F 'claimService.renew(delivery)' "${publisher}" >/dev/null
 grep -F 'REVOKE ALL ON notification_deliveries FROM flowmesh_audit' "${migration}" >/dev/null
 grep -F 'SET ROLE flowmesh_audit_delivery' "${repo_root}/services/notification-audit-service/src/main/resources/db/migration/V4__grant_notification_delivery_retention.sql" >/dev/null
 grep -F 'getMaxAttempts' "${publisher}" >/dev/null

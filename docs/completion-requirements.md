@@ -18,7 +18,7 @@ MVP-3 已完成 IAM 认证、Supplier 申请、Workflow 审批投影、JWT/RBAC�
 | 已完成 | Redis 登录尝试限流已完成；本地 Redis 故障时认证链路降级放行并记录告警，生产 Helm 默认 fail-closed 并返回 `503`，不改变数据库权威性。 |
 | 已完成 | 供应商材料上传、MinIO 私有对象存储、文件安全校验和短期下载授权已接入；生产环境必须启用 ClamAV。 |
 | 已完成 | 独立 risk-service 已接入 `RiskCheckRequested` / `RiskCheckCompleted` 事件链，流程先风控后审批；当前规则为可复现模拟规则。 |
-| 已完成 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知；提供按租户/用户隔离的查询和幂等标记已读接口。 |
+| 已完成 | notification-audit-service 已消费 `SupplierActivated`，以 Inbox 幂等写入审计事件和申请人站内通知；提供按租户/用户隔离的查询和幂等标记已读接口；外部 Webhook 投递支持租约认领、发送前续租、HMAC 签名、幂等键、退避和死信。 |
 | 已完成 | Workflow 审批任务已持久化；采购初审后法务与财务并行会签，API 返回 `availableTasks` / `completedTasks`，任务行锁和乐观锁共同防止重复完成及并发覆盖。 |
 | 已完成 | RocketMQ 消费者已暴露处理耗时直方图，Prometheus 已增加消费 P95 延迟告警；观测配置脚本会校验关键告警集合。 |
 | 已完成 | risk-service 提供默认关闭的 `FAIL` / `TIMEOUT` 故障注入，用于复现 RocketMQ 重试、DLQ 和人工处置场景；生产 Helm 显式关闭该开关。 |
