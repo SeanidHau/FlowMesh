@@ -1,6 +1,6 @@
 # 作用：构建用于 Kubernetes CronJob 的 PostgreSQL 备份镜像。
 # 镜像同时提供 PostgreSQL 客户端和 AWS CLI，支持 S3 兼容对象存储。
-FROM postgres:16-bookworm
+FROM postgres:16.15-bookworm@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends awscli ca-certificates \

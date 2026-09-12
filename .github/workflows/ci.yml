@@ -52,6 +52,9 @@ jobs:
       - name: Validate image admission policy
         run: bash scripts/validate-supply-chain-policy.sh
 
+      - name: Validate immutable Dockerfile base images
+        run: bash tests/dockerfile-base-image-contract.sh
+
       - name: Validate production deployment guardrails
         run: bash scripts/validate-production-config.sh infra/helm/flowmesh/values-production.yaml
 

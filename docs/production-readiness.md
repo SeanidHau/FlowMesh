@@ -40,6 +40,7 @@
 - Helm 支持通过 `global.imagePullSecrets` 引用私有镜像仓库凭据；生产发布入口可用 `FLOWMESH_IMAGE_PULL_SECRET_NAME` 注入 Secret 名称，凭据内容不进入 Helm 参数或日志。
 - 生产覆盖值显式覆盖 PostgreSQL、Redis 和 RocketMQ NameServer 地址，阻止 Helm 合并时继承本地 Compose 服务名；发布流程仍必须替换占位地址为真实 HA 服务端点。
 - CI 在 PR 构建六个应用镜像、一个备份镜像和一个生命周期维护镜像；在 `main` 推送时发布完整提交 SHA 和 `main` 标签，并为镜像生成 SBOM/构建证明，对完整 SHA 镜像执行 Trivy 漏洞扫描和 Cosign keyless 签名。
+- 八个发布镜像的 Dockerfile 基础镜像均固定到已审核的多架构 `sha256` digest，并由 CI 契约阻止回退到可变基础镜像标签；基础镜像升级必须显式更新 digest、契约和扫描结果。
 - Workflow SLA CronJob 使用的 PostgreSQL 客户端镜像在生产模式下必须由发布流程注入完整 `sha256` digest；Helm、生产发布脚本和 Kubernetes smoke 会拒绝仅使用可变版本标签。
 - CI 已提供独立源码安全工作流：对 Java/Kotlin 和 TypeScript/JavaScript 执行 CodeQL，并在 Pull Request 中以高危级别阻断依赖审查失败；生产发布仍需结合组织级 Secret Scanning、Dependabot 告警处置和代码扫描告警基线。
 - CI 已提供应用安全边界契约：校验认证入口、Actuator 匿名范围、运维与内部对账角色约束，以及 Gateway 不暴露 `/internal/` 路径，防止安全配置回归。

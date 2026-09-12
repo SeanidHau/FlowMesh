@@ -4,6 +4,14 @@
 
 测试场景以 [测试策略](../docs/testing-strategy.md) 和 README 的演示剧本为准。
 
+Dockerfile 基础镜像不可变引用契约：
+
+```bash
+./tests/dockerfile-base-image-contract.sh
+```
+
+该测试不启动 Docker，验证六个应用、备份和生命周期维护镜像均引用已审核的多架构基础镜像 digest。
+
 真实 RocketMQ Broker 主链路验证：
 
 ```bash
