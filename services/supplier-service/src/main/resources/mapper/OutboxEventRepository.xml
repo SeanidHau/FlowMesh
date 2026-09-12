@@ -108,7 +108,7 @@
       AND dead_lettered_at IS NOT NULL
       <if test="tag != null and tag != ''">AND tag = #{tag}</if>
       <if test="aggregateId != null">AND aggregate_id = #{aggregateId, jdbcType=OTHER}</if>
-    ORDER BY dead_lettered_at DESC
+    ORDER BY dead_lettered_at DESC, id DESC
     LIMIT #{limit}
   </select>
 
