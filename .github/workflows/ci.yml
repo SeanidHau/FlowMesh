@@ -229,7 +229,7 @@ jobs:
             echo 'Consumer credentials must be injected into all consumer services.' >&2
             exit 1
           fi
-          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'sslmode=require' || true)" -ne 5 ]]; then
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -Ec 'sslmode=(require|verify-ca|verify-full)' || true)" -ne 5 ]]; then
             echo 'PostgreSQL TLS mode must be rendered for all five database services.' >&2
             exit 1
           fi
