@@ -12,6 +12,14 @@ Dockerfile 基础镜像不可变引用契约：
 
 该测试不启动 Docker，验证六个应用、备份和生命周期维护镜像均引用已审核的多架构基础镜像 digest。
 
+GitHub 生产控制面配置契约：
+
+```bash
+./tests/configure-github-production-controls-contract.sh
+```
+
+该测试验证配置脚本默认只预览，应用模式必须经过显式二次确认，并包含 Environment 审核人、分支保护和必需状态检查配置。
+
 真实 RocketMQ Broker 主链路验证：
 
 ```bash

@@ -104,6 +104,8 @@ FLOWMESH_GITHUB_ENVIRONMENT='production' \
 ./scripts/validate-github-production-controls.sh
 ```
 
+如果需要减少 GitHub 页面配置错误，管理员可以使用 `scripts/configure-github-production-controls.sh`。该脚本默认只预览；应用模式必须明确提供审核人数字 ID、完整状态检查名称，并同时使用 `--apply` 和 `FLOWMESH_GITHUB_CONTROLS_CONFIRM=YES`。应用后必须再次执行只读预检。配置脚本不会读取或输出 Token 值，也不会替代目标平台管理员对审核人和必需状态检查的选择。
+
 工作流使用的 `FLOWMESH_GITHUB_CONTROLS_TOKEN` 需要仓库 Administration 只读权限；自托管 Runner 需要预装 `gh` 和 `jq`。
 
 ### 4.1 Variables

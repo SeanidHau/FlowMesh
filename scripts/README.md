@@ -2,14 +2,13 @@
 
 本目录将保存以下可执行脚本：
 
-- `bootstrap.sh`：初始化本地开发环境。
-- `verify.sh`：执行格式、测试和基础验证。
 - `backup-postgres.sh`：导出 PostgreSQL 数据库和角色定义。
 - `restore-postgres.sh`：将 PostgreSQL custom-format 备份恢复到目标数据库。
 - `verify-postgres-backup.sh`：不连接数据库，校验备份文件完整性和可读性。
 - `infra/backup/entrypoint.sh`：在备份容器中调用 PostgreSQL 备份和对象存储上传流程。
 - `validate-production-config.sh`：检查生产 Helm 覆盖值是否启用外部依赖、NetworkPolicy 和安全扫描。
 - `validate-github-production-controls.sh`：只读核验 GitHub `production` Environment、主分支保护和生产工作流所需的审批/状态检查规则。
+- `configure-github-production-controls.sh`：默认预览、显式确认后配置 GitHub `production` Environment 和主分支保护。
 - `validate-production-dependencies.sh`：在目标生产网络内只读检查 PostgreSQL、Redis、RocketMQ NameServer 和对象存储的连接安全与基础可达性。
 - `configure-object-storage-lifecycle.sh`：为专用材料桶启用版本化，并配置逻辑删除对象的非当前版本保留期。
 - `cleanup-flowmesh-retention.sh`：使用专用维护账号按白名单批量清理终态消息、死信、重放审计、Inbox 和幂等记录。
@@ -56,6 +55,29 @@ Pull Request 审批人、严格必需状态检查、管理员强制执行保护�
 Runner 必须预装 `gh` 和 `jq`，工作流需要由生产 Environment 注入具备仓库 Administration 只读权限的
 `FLOWMESH_GITHUB_CONTROLS_TOKEN`；脚本不会读取或输出 Secret 值，
 也不支持 GitHub 配置写操作。该检查使用经典 Branch protection API；如果平台使用 Rulesets，需额外提供等价的人工验收证据。
+
+管理员可以使用配置脚本减少 GitHub 页面配置错误。脚本默认只预览，不调用 GitHub 变更 API；只有同时提供审核人 ID、完整状态检查名称、`--apply` 和二次确认才会写入配置。审核人值使用 GitHub 数字 ID，格式为 `User:123` 或 `Team:456`；状态检查名称必须与 Pull Request 页面显示的完整名称一致。
+
+```bash
+FLOWMESH_GITHUB_REPOSITORY='SeanidHau/FlowMesh' \
+FLOWMESH_GITHUB_REVIEWER_IDS='User:<审核人数字ID>' \
+FLOWMESH_GITHUB_REQUIRED_STATUS_CHECKS='CI / Repository checks,Security / CodeQL (java-kotlin)' \
+GH_TOKEN="$FLOWMESH_GITHUB_ADMIN_TOKEN" \
+./scripts/configure-github-production-controls.sh --dry-run
+```
+
+预览内容确认无误后，使用同一组变量应用配置：
+
+```bash
+FLOWMESH_GITHUB_REPOSITORY='SeanidHau/FlowMesh' \
+FLOWMESH_GITHUB_REVIEWER_IDS='User:<审核人数字ID>' \
+FLOWMESH_GITHUB_REQUIRED_STATUS_CHECKS='CI / Repository checks,Security / CodeQL (java-kotlin)' \
+GH_TOKEN="$FLOWMESH_GITHUB_ADMIN_TOKEN" \
+FLOWMESH_GITHUB_CONTROLS_CONFIRM=YES \
+./scripts/configure-github-production-controls.sh --apply
+```
+
+应用完成后，必须执行 `validate-github-production-controls.sh` 复核。配置脚本不会读取或输出 Token 值；如果仓库使用 Rulesets 而不是经典 Branch protection API，仍需按平台规则完成等价配置和验收。
 
 在 GitHub Actions 之外执行只读预检：
 

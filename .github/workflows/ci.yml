@@ -85,6 +85,10 @@ jobs:
       - name: Validate GitHub production controls contract
         run: bash tests/github-production-controls-contract.sh
 
+      # 验证 GitHub 生产控制面配置默认只读，避免把仓库设置变更误带入 CI。
+      - name: Validate GitHub production controls configuration contract
+        run: bash tests/configure-github-production-controls-contract.sh
+
       - name: Validate production evidence contract
         run: bash tests/production-evidence-contract.sh
 
