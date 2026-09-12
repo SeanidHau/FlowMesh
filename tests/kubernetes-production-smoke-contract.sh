@@ -47,6 +47,7 @@ grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME' "${smoke_test}" >/dev/null
 grep -F -- 'ca.crt' "${smoke_test}" >/dev/null
 grep -F -- 'postgresql-ca' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${smoke_test}" >/dev/null
+grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${smoke_test}" >/dev/null
 grep -F -- 'workflow_sla_cronjob' "${smoke_test}" >/dev/null
 grep -F -- 'WORKFLOW_SLA_DB_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'automountServiceAccountToken' "${smoke_test}" >/dev/null

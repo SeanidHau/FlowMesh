@@ -33,6 +33,13 @@ if [[ ! "${image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 export FLOWMESH_IMAGE_TAG="${image_tag}"
 
+workflow_sla_image_digest="${FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:-}"
+if [[ ! "${workflow_sla_image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+  echo 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST 必须是 sha256:<64 位小写十六进制>。' >&2
+  exit 64
+fi
+export FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST="${workflow_sla_image_digest}"
+
 require_runtime_observability="${FLOWMESH_REQUIRE_RUNTIME_OBSERVABILITY:-true}"
 case "${require_runtime_observability}" in
   true|false) ;;

@@ -30,6 +30,8 @@ workflowSla:
   timeZone: "Etc/UTC"
   image: postgres
   tag: "16"
+  # 生产环境必须由发布流程注入 PostgreSQL 客户端镜像的不可变 digest。
+  imageDigest: ""
   dbUser: flowmesh_workflow_sla
   dbPassword: ""
   resources:

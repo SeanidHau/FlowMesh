@@ -190,7 +190,8 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 `FLOWMESH_BACKUP_POSTGRES_USER`、
 `FLOWMESH_BACKUP_S3_URI`、`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_POSTGRES_HOST`、
 `FLOWMESH_RETENTION_SECRET_NAME`、`FLOWMESH_NOTIFICATION_WEBHOOK_URL` 和
-`FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS`。这些变量只描述目标平台地址、名称或网络范围，不包含数据库密码、JWT 密钥或对象存储密钥。
+`FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS`、`FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST`。其中 digest 必须是
+`sha256:<64 位小写十六进制>`；这些变量只描述目标平台地址、镜像摘要、名称或网络范围，不包含数据库密码、JWT 密钥或对象存储密钥。
 
 如果需要执行实际发布，使用仓库提供的生产发布入口。它会先校验八个镜像的 Cosign 签名、校验生产
 values，再执行 `helm upgrade --install --atomic --wait`，最后运行只读 Kubernetes smoke test。
@@ -199,6 +200,7 @@ values，再执行 `helm upgrade --install --atomic --wait`，最后运行只读
 
 ```bash
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST='sha256:<替换为已审核的 64 位 digest>' \
 FLOWMESH_INGRESS_HOST='api.example.com' \
 FLOWMESH_INGRESS_TLS_SECRET_NAME='flowmesh-gateway-tls' \
 FLOWMESH_POSTGRES_HOST='postgres-primary.database.svc' \
@@ -253,6 +255,7 @@ FLOWMESH_OBJECT_STORAGE_ENDPOINT='https://object-storage.example.com' \
 ```bash
 FLOWMESH_EXPECT_PROMETHEUS_RULE=true \
 FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
+FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST='sha256:<与已部署 CronJob 一致的 64 位 digest>' \
 ./tests/kubernetes-production-smoke.sh
 ```
 

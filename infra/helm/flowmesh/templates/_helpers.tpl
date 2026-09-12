@@ -121,6 +121,19 @@ imagePullSecrets:
 {{- if $registry }}{{ printf "%s/%s" $registry .Values.retention.image }}{{ else }}{{ .Values.retention.image }}{{ end }}:{{ $tag }}
 {{- end }}
 
+{{/* 作用：生成 Workflow SLA CronJob 的 PostgreSQL 客户端镜像，并在生产模式强制使用 digest。 */}}
+{{- define "flowmesh.workflowSlaImageReference" -}}
+{{- if .Values.global.production -}}
+{{- $digest := required "workflowSla.imageDigest is required in production mode" .Values.workflowSla.imageDigest -}}
+{{- if not (regexMatch "^sha256:[a-f0-9]{64}$" $digest) -}}
+{{- fail "workflowSla.imageDigest must be a sha256 digest" -}}
+{{- end -}}
+{{ printf "%s@%s" .Values.workflowSla.image $digest }}
+{{- else -}}
+{{ printf "%s:%s" .Values.workflowSla.image .Values.workflowSla.tag }}
+{{- end -}}
+{{- end }}
+
 {{/* 作用：生产使用 PostgreSQL 服务端身份校验时，强制要求 CA Secret，避免 verify 模式退化为未验证的连接。 */}}
 {{- define "flowmesh.postgresqlValidation" -}}
 {{- if and .Values.global.production (has .Values.postgresql.sslMode (list "verify-ca" "verify-full")) (not .Values.postgresql.caSecretName) }}

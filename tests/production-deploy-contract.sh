@@ -21,6 +21,8 @@ grep -F -- '--keep-history' "${script}" >/dev/null
 grep -F -- '发布后 smoke 失败' "${script}" >/dev/null
 grep -F -- 'global.existingSecret' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${script}" >/dev/null
+grep -F -- 'workflowSla.imageDigest=' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${script}" >/dev/null
 grep -F -- 'backup.postgres.user=' "${script}" >/dev/null

@@ -95,6 +95,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 | `FLOWMESH_NOTIFICATION_WEBHOOK_URL` | HTTPS 外部通知 Webhook |
 | `FLOWMESH_NETWORK_POLICY_EXTERNAL_CIDRS` | 外部依赖出口 CIDR，逗号分隔 |
 | `FLOWMESH_IMAGE_PULL_SECRET_NAME` | 可选，私有镜像仓库的 Kubernetes image pull Secret 名称 |
+| `FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST` | PostgreSQL 客户端镜像的不可变 `sha256:` digest，必须与审核的 `postgres:16.15` 多架构镜像一致 |
 
 生产验收工作流还需要以下只读检查变量：
 

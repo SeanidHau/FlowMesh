@@ -90,7 +90,9 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" ./scripts/verify-flowmesh-images.sh
 ```
 
 正式发布使用 `deploy-production.sh`，运行时凭据只放在预先创建的 Kubernetes Secret 中；脚本不会把
-JWT、数据库、Redis 或对象存储密钥作为 Helm 参数传递。完整环境变量示例见 [运行手册](../docs/runbook.md)。
+JWT、数据库、Redis 或对象存储密钥作为 Helm 参数传递。生产发布还必须提供
+`FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST`，将 Workflow SLA CronJob 的 PostgreSQL 客户端锁定到不可变 digest。
+完整环境变量示例见 [运行手册](../docs/runbook.md)。
 如果镜像仓库是私有的，可设置 `FLOWMESH_IMAGE_PULL_SECRET_NAME`，发布入口会只传递 Kubernetes Secret 名称。
 
 生命周期清理通过独立的 `flowmesh_retention` 账号执行。该账号不是超级用户，但必须具备

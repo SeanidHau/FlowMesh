@@ -30,6 +30,8 @@ workflowSla:
   image: postgres
   # 固定 PostgreSQL 客户端镜像版本，避免 CronJob 使用可变的 major-only 标签。
   tag: "16.15"
+  # 发布流程必须注入与审核记录一致的 sha256 digest，不能只依赖版本标签。
+  imageDigest: ""
   dbUser: flowmesh_workflow_sla
   dbPassword: ""
 

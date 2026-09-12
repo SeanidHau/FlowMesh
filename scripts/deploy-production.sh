@@ -11,6 +11,7 @@ release="${FLOWMESH_HELM_RELEASE:-flowmesh}"
 namespace="${FLOWMESH_K8S_NAMESPACE:-flowmesh}"
 helm_timeout="${FLOWMESH_HELM_TIMEOUT:-10m}"
 image_tag="${FLOWMESH_IMAGE_TAG:-}"
+workflow_sla_image_digest="${FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:-}"
 runtime_secret="${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}"
 ingress_namespace="${FLOWMESH_INGRESS_NAMESPACE:-ingress-nginx}"
 monitoring_namespace="${FLOWMESH_MONITORING_NAMESPACE:-monitoring}"
@@ -62,6 +63,11 @@ require_command cosign
 require_value FLOWMESH_IMAGE_TAG "${image_tag}"
 [[ "${image_tag}" =~ ^[0-9a-f]{40}$ ]] || {
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
+  exit 64
+}
+require_value FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST "${workflow_sla_image_digest}"
+[[ "${workflow_sla_image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+  echo 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST 必须是 sha256:<64 位小写十六进制>。' >&2
   exit 64
 }
 require_safe_name FLOWMESH_HELM_RELEASE "${release}"
@@ -165,6 +171,7 @@ bash "${ROOT_DIR}/scripts/validate-production-config.sh" "${values_path}"
 
 helm_overrides=(
   --set-string "global.imageTag=${image_tag}"
+  --set-string "workflowSla.imageDigest=${workflow_sla_image_digest}"
   --set-string "global.existingSecret=${runtime_secret}"
   --set-string "postgresql.host=${FLOWMESH_POSTGRES_HOST}"
   --set-string "postgresql.caSecretName=${postgres_ca_secret}"
@@ -211,6 +218,7 @@ helm upgrade --install "${release}" "${chart_path}" \
   "${helm_overrides[@]}"
 
 if FLOWMESH_IMAGE_TAG="${image_tag}" \
+FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST="${workflow_sla_image_digest}" \
 FLOWMESH_K8S_NAMESPACE="${namespace}" \
 FLOWMESH_HELM_RELEASE="${release}" \
 FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}" \

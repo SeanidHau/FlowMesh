@@ -17,6 +17,7 @@ grep -F -- 'runs-on: [self-hosted, linux, flowmesh-production]' "${workflow}" >/
 grep -F -- 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT:' "${workflow}" >/dev/null
 grep -F -- 'evidence_environment:' "${workflow}" >/dev/null

@@ -19,6 +19,7 @@ grep -F -- 'cancel-in-progress: false' "${workflow}" >/dev/null
 grep -F -- 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_PULL_SECRET_NAME:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_POSTGRES_CA_SECRET_NAME: ${{ vars.FLOWMESH_POSTGRES_CA_SECRET_NAME }}' "${workflow}" >/dev/null

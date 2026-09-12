@@ -33,12 +33,14 @@ helm upgrade --install flowmesh infra/helm/flowmesh \
 ```
 
 生产环境应使用生产覆盖值，并让 `global.existingSecret` 指向外部 Secret。生产覆盖值会启用审批 SLA CronJob，
-该任务使用 `WORKFLOW_SLA_DB_PASSWORD` 连接独立维护账号：
+该任务使用 `WORKFLOW_SLA_DB_PASSWORD` 连接独立维护账号。由于 PostgreSQL 客户端镜像属于运行时供应链，
+生产部署还必须将已审核的 `postgres:16.15` 多架构镜像 digest 设置到 `WORKFLOW_SLA_IMAGE_DIGEST`，不能只使用版本标签：
 
 ```bash
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set-string workflowSla.imageDigest="$WORKFLOW_SLA_IMAGE_DIGEST" \
   --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
@@ -61,6 +63,7 @@ Collector 的 OTLP/HTTP traces 地址：
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set-string workflowSla.imageDigest="$WORKFLOW_SLA_IMAGE_DIGEST" \
   --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
@@ -124,6 +127,7 @@ IAM 默认每小时清理保留超过 30 天的过期或撤销 Refresh Token；�
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set-string workflowSla.imageDigest="$WORKFLOW_SLA_IMAGE_DIGEST" \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
   --set backup.credentialsSecret="flowmesh-backup-credentials" \
@@ -171,6 +175,7 @@ Gateway 还只接受 `networkPolicy.ingressNamespace` 指定的 Ingress Controll
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set-string workflowSla.imageDigest="$WORKFLOW_SLA_IMAGE_DIGEST" \
   --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \
@@ -196,6 +201,7 @@ Alertmanager 路由、通知渠道和明确的值班责任：
 helm upgrade --install flowmesh infra/helm/flowmesh \
   -f infra/helm/flowmesh/values-production.yaml \
   --set-string global.imageTag="$GITHUB_SHA" \
+  --set-string workflowSla.imageDigest="$WORKFLOW_SLA_IMAGE_DIGEST" \
   --set 'networkPolicy.egress.externalCidrs[0]=10.20.0.0/16' \
   --set backup.postgres.host="postgres-primary.database.svc" \
   --set backup.s3.uri="s3://flowmesh-production-backups" \

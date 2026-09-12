@@ -162,6 +162,7 @@ jobs:
           HELM_TEST_AUDIT_PASSWORD: ci-only-audit-password
           HELM_TEST_OBJECT_STORAGE_SECRET: ci-only-object-storage-secret
         run: |
+          workflow_sla_image_digest='sha256:0000000000000000000000000000000000000000000000000000000000000000'
           backup_test_args=(
             --set backup.postgres.host=postgres.ci.internal
             --set backup.s3.uri=s3://flowmesh-ci-backups
@@ -194,6 +195,7 @@ jobs:
           helm lint infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -203,6 +205,7 @@ jobs:
           helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -212,6 +215,7 @@ jobs:
           rendered_production="$(helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -273,6 +277,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -287,6 +292,14 @@ jobs:
             echo 'Production chart must render the Workflow SLA CronJob with its dedicated Secret key.' >&2
             exit 1
           fi
+          if ! printf '%s\n' "$rendered_production" | grep -Eq 'image: "postgres@sha256:[0-9a-f]{64}"'; then
+            echo 'Production Workflow SLA CronJob must use an immutable PostgreSQL image digest.' >&2
+            exit 1
+          fi
+          if printf '%s\n' "$rendered_production" | grep -q 'image: "postgres:'; then
+            echo 'Production Workflow SLA CronJob must not use a PostgreSQL tag.' >&2
+            exit 1
+          fi
           if ! printf '%s\n' "$rendered_production" | grep -q 'name: FLOWMESH_BACKUP_S3_VERIFY_REMOTE' || \
              ! printf '%s\n' "$rendered_production" | grep -q 'value: "true"'; then
             echo 'Production backup CronJob must enable remote object verification.' >&2
@@ -295,6 +308,7 @@ jobs:
           rendered_alerts="$(helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -312,6 +326,7 @@ jobs:
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -326,6 +341,7 @@ jobs:
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -340,6 +356,7 @@ jobs:
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -352,6 +369,7 @@ jobs:
           if ! helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -364,6 +382,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set networkPolicy.ingressNamespace= \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
@@ -384,6 +403,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set 'networkPolicy.egress.externalCidrs[0]=10.0.0.0/8' \
             --set global.existingSecret=flowmesh-runtime-secrets \
             "${backup_test_args[@]}" >/dev/null 2>&1; then
@@ -393,6 +413,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -404,6 +425,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -418,6 +440,7 @@ jobs:
           helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -430,6 +453,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \
@@ -443,6 +467,7 @@ jobs:
           if helm template flowmesh infra/helm/flowmesh \
             -f infra/helm/flowmesh/values-production.yaml \
             --set-string global.imageTag="production-ci-sha" \
+            --set-string workflowSla.imageDigest="${workflow_sla_image_digest}" \
             --set ingress.host=api.ci.flowmesh.example.com \
             --set 'ingress.tls[0].secretName=flowmesh-ci-tls' \
             --set 'ingress.tls[0].hosts[0]=api.ci.flowmesh.example.com' \

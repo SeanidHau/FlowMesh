@@ -18,9 +18,14 @@ backup_cronjob="${release}-flowmesh-postgres-backup"
 retention_cronjob="${release}-flowmesh-retention"
 workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
 expected_backup_user="${FLOWMESH_BACKUP_POSTGRES_USER:-flowmesh_backup}"
+workflow_sla_image_digest="${FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:-}"
 
 if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'FLOWMESH_IMAGE_TAG 必须是 40 位小写 Git 提交 SHA。' >&2
+  exit 2
+fi
+if [[ ! "${workflow_sla_image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+  echo 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST 必须是 sha256:<64 位小写十六进制>。' >&2
   exit 2
 fi
 
@@ -211,7 +216,7 @@ puts "生命周期清理 CronJob 参数校验通过。"
 '
 
 workflow_sla_cronjob_json="$(kubectl -n "${namespace}" get "cronjob/${workflow_sla_cronjob}" -o json)"
-WORKFLOW_SLA_CRONJOB_JSON="${workflow_sla_cronjob_json}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" ruby -e '
+WORKFLOW_SLA_CRONJOB_JSON="${workflow_sla_cronjob_json}" POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" EXPECTED_WORKFLOW_SLA_IMAGE_DIGEST="${workflow_sla_image_digest}" ruby -e '
 require "json"
 cronjob = JSON.parse(ENV.fetch("WORKFLOW_SLA_CRONJOB_JSON"))
 spec = cronjob.fetch("spec")
@@ -221,6 +226,9 @@ raise "Workflow SLA CronJob 未设置 activeDeadlineSeconds" unless job_spec.fet
 pod = job_spec.fetch("template").fetch("spec")
 raise "Workflow SLA CronJob 不得自动挂载 ServiceAccount Token" unless pod.fetch("automountServiceAccountToken") == false
 container = pod.fetch("containers").first
+expected_digest = ENV.fetch("EXPECTED_WORKFLOW_SLA_IMAGE_DIGEST")
+image = container.fetch("image")
+raise "Workflow SLA CronJob 必须使用不可变 PostgreSQL 镜像 digest" unless image.end_with?("@#{expected_digest}")
 env = container.fetch("env")
 ssl_mode = env.find { |entry| entry.fetch("name") == "PGSSLMODE" }
 raise "Workflow SLA CronJob 未设置 PostgreSQL TLS" unless ssl_mode && %w[require verify-ca verify-full].include?(ssl_mode.fetch("value"))
