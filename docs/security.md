@@ -29,6 +29,7 @@ IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查�
 
 - 本地开发使用 Git 忽略的 `.env`。
 - Kubernetes 使用 Secret；CI 使用 GitHub Actions Secrets。
+- 应用运行时 Secret 与 Flyway 迁移 Secret 必须分离；迁移 Secret 只允许 Helm 迁移 Job 使用，不能被业务 Deployment 引用。
 - 仓库只能提交 `.env.example` 和 Secret 模板，不能提交真实密钥、Token、证书或密码。
 - Secret 不得写入镜像、日志、错误响应或测试快照。
 - 主分支镜像使用完整 Git SHA、Trivy 和 Cosign keyless 签名；Kubernetes 可通过 `infra/policies/kyverno/verify-flowmesh-images.yaml` 拒绝未签名镜像。

@@ -48,7 +48,6 @@
 - JWT 签名密钥。
 - Redis 密码或认证信息。
 - IAM、Supplier、Workflow、Risk、Notification Audit 的 PostgreSQL 密码。
-- IAM、Supplier、Workflow、Risk、Notification Audit 的 Flyway 迁移账号密码；这些凭据只由 Helm pre-install/pre-upgrade 迁移 Job 使用，不能注入应用 Deployment；迁移账号必须与运行时业务账号不同。
 - RocketMQ Producer 和 Consumer 的独立凭据。
 - RocketMQ TLS 所需的认证信息。
 - MinIO/对象存储访问密钥。
@@ -57,7 +56,19 @@
 
 实际键名以 `infra/helm/flowmesh/templates/` 中的 Secret 引用为准。发布前应使用 Kubernetes Secret 检查脚本和发布后的 smoke test 验证必需键存在；不要在终端打印 Secret 内容。
 
-### 3.2 维护任务 Secret
+### 3.2 Flyway 迁移 Secret
+
+`FLOWMESH_MIGRATION_SECRET_NAME` 指向的独立 Secret 至少需要包含五个迁移密码：
+
+- `IAM_DB_MIGRATOR_PASSWORD`
+- `SUPPLIER_DB_MIGRATOR_PASSWORD`
+- `WORKFLOW_DB_MIGRATOR_PASSWORD`
+- `RISK_DB_MIGRATOR_PASSWORD`
+- `AUDIT_DB_MIGRATOR_PASSWORD`
+
+该 Secret 只由 Helm pre-install/pre-upgrade 迁移 Job 引用，不能由应用 Deployment 使用。迁移账号必须与运行时业务账号不同；迁移 Job 失败时 Helm 发布必须失败。
+
+### 3.3 维护任务 Secret
 
 生产平台还需要创建以下独立 Secret：
 
@@ -77,6 +88,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 | 配置名 | 用途 |
 | --- | --- |
 | `FLOWMESH_RUNTIME_SECRET_NAME` | 应用运行时 Secret 名称 |
+| `FLOWMESH_MIGRATION_SECRET_NAME` | Flyway 迁移 Job 专用 Secret 名称 |
 | `FLOWMESH_BACKUP_SECRET_NAME` | 备份 CronJob Secret 名称 |
 | `FLOWMESH_RETENTION_SECRET_NAME` | 生命周期维护 CronJob Secret 名称 |
 | `FLOWMESH_INGRESS_NAMESPACE` | Ingress Controller 命名空间 |
@@ -119,7 +131,7 @@ GitHub `production` Environment 需要启用人工审批、分支保护和部署
 
 ### 5.1 发布前
 
-1. 目标平台创建 Kubernetes namespace、运行时 Secret、维护任务 Secret 和 Ingress TLS Secret。
+1. 目标平台创建 Kubernetes namespace、运行时 Secret、Flyway 迁移 Secret、维护任务 Secret 和 Ingress TLS Secret。
 2. 平台管理员创建五个业务账号、五个 Flyway 迁移账号、备份账号、生命周期账号和 Workflow SLA 账号，并执行 Flyway 初始化所需的 Schema 所有权与默认权限准备工作；业务账号不得拥有 Schema DDL 权限。已有数据库先执行 `scripts/prepare-postgres-migration-roles.sh`，新数据库由 Compose 初始化脚本或平台初始化流程创建对应角色。
 3. 执行 `scripts/validate-production-dependencies.sh`，确认 PostgreSQL、Redis、RocketMQ 和对象存储满足 TLS 与连通性要求。
 4. 执行 `scripts/validate-backup-role.sh` 和 `scripts/validate-retention-role.sh`，确认维护账号满足最小权限要求。

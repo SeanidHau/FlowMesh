@@ -53,6 +53,8 @@ grep -F -- 'migrations:' "${repo_root}/infra/helm/flowmesh/values-production.yam
 grep -F -- 'helm.sh/hook": pre-install,pre-upgrade' "${migration_template}" >/dev/null
 grep -F -- 'FLOWMESH_MIGRATION_MODE' "${migration_template}" >/dev/null
 grep -F -- 'FLOWMESH_MIGRATION_PASSWORD' "${migration_template}" >/dev/null
+grep -F -- 'flowmesh.migrationSecret' "${migration_template}" >/dev/null
+grep -F -- 'migrationExistingSecret' "${repo_root}/infra/helm/flowmesh/values-production.yaml" >/dev/null
 for service in iam supplier workflow risk notification-audit; do
   grep -F -- "(dict \"name\" \"${service}\"" "${migration_template}" >/dev/null || {
     echo "Helm 迁移 Job 缺少服务：${service}" >&2

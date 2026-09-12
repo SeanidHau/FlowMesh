@@ -23,6 +23,11 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- default (printf "%s-config" (include "flowmesh.fullname" .)) .Values.global.existingSecret -}}
 {{- end }}
 
+{{/* 作用：将 Flyway 迁移凭据与应用运行时 Secret 分离，避免业务 Pod 关联迁移密钥。 */}}
+{{- define "flowmesh.migrationSecret" -}}
+{{- default (printf "%s-migrations" (include "flowmesh.fullname" .)) .Values.global.migrationExistingSecret -}}
+{{- end }}
+
 {{/* 作用：为应用和维护 CronJob 统一注入可选的私有镜像仓库凭据。 */}}
 {{- define "flowmesh.imagePullSecrets" -}}
 {{- with .Values.global.imagePullSecrets }}

@@ -21,6 +21,8 @@ grep -F -- 'helm rollback' "${script}" >/dev/null
 grep -F -- '--keep-history' "${script}" >/dev/null
 grep -F -- '发布后 smoke 失败' "${script}" >/dev/null
 grep -F -- 'global.existingSecret' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_MIGRATION_SECRET_NAME' "${script}" >/dev/null
+grep -F -- 'global.migrationExistingSecret' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_IMAGE_TAG' "${script}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${script}" >/dev/null
 grep -F -- 'workflowSla.imageDigest=' "${script}" >/dev/null

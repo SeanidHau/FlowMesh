@@ -12,16 +12,11 @@ required_secret_keys=(
   JWT_SIGNING_KEY
   REDIS_PASSWORD
   IAM_DB_PASSWORD
-  IAM_DB_MIGRATOR_PASSWORD
   SUPPLIER_DB_PASSWORD
-  SUPPLIER_DB_MIGRATOR_PASSWORD
   WORKFLOW_DB_PASSWORD
-  WORKFLOW_DB_MIGRATOR_PASSWORD
   WORKFLOW_SLA_DB_PASSWORD
   RISK_DB_PASSWORD
-  RISK_DB_MIGRATOR_PASSWORD
   AUDIT_DB_PASSWORD
-  AUDIT_DB_MIGRATOR_PASSWORD
   NOTIFICATION_WEBHOOK_SIGNING_SECRET
   OBJECT_STORAGE_ACCESS_KEY
   OBJECT_STORAGE_SECRET_KEY
@@ -53,6 +48,8 @@ grep -F -- 'ca.crt' "${smoke_test}" >/dev/null
 grep -F -- 'postgresql-ca' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_POSTGRES_USER' "${smoke_test}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST' "${smoke_test}" >/dev/null
+grep -F -- 'FLOWMESH_MIGRATION_SECRET_NAME' "${smoke_test}" >/dev/null
+grep -F -- 'IAM_DB_MIGRATOR_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'workflow_sla_cronjob' "${smoke_test}" >/dev/null
 grep -F -- 'WORKFLOW_SLA_DB_PASSWORD' "${smoke_test}" >/dev/null
 grep -F -- 'automountServiceAccountToken' "${smoke_test}" >/dev/null

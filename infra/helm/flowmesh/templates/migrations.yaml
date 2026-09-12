@@ -55,7 +55,7 @@ spec:
             - name: FLOWMESH_MIGRATION_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "flowmesh.configSecret" $root }}
+                  name: {{ include "flowmesh.migrationSecret" $root }}
                   key: {{ $migration.passwordKey }}
           volumeMounts:
             - name: tmp

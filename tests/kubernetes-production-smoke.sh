@@ -14,6 +14,8 @@ expected_image_tag="${FLOWMESH_IMAGE_TAG:-}"
 expect_prometheus_rule="${FLOWMESH_EXPECT_PROMETHEUS_RULE:-false}"
 deployment_selector="app.kubernetes.io/instance=${release}"
 postgres_ca_secret="${FLOWMESH_POSTGRES_CA_SECRET_NAME:-flowmesh-postgresql-ca}"
+runtime_secret="${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}"
+migration_secret="${FLOWMESH_MIGRATION_SECRET_NAME:-flowmesh-migration-secrets}"
 backup_cronjob="${release}-flowmesh-postgres-backup"
 retention_cronjob="${release}-flowmesh-retention"
 workflow_sla_cronjob="${release}-flowmesh-workflow-sla"
@@ -26,6 +28,10 @@ if [[ -z "${expected_image_tag}" || ! "${expected_image_tag}" =~ ^[0-9a-f]{40}$ 
 fi
 if [[ ! "${workflow_sla_image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
   echo 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST 必须是 sha256:<64 位小写十六进制>。' >&2
+  exit 2
+fi
+if [[ "${runtime_secret}" == "${migration_secret}" ]]; then
+  echo '应用运行时 Secret 与 Flyway 迁移 Secret 必须分离。' >&2
   exit 2
 fi
 
@@ -149,13 +155,25 @@ end
 raise "Gateway NetworkPolicy 未允许指定的 Ingress Controller 命名空间" unless allowed
 '
 
-runtime_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}" -o json)"
+runtime_secret_json="$(kubectl -n "${namespace}" get secret "${runtime_secret}" -o json)"
 RUNTIME_SECRET_JSON="${runtime_secret_json}" ruby -e '
 require "json"
 keys = JSON.parse(ENV.fetch("RUNTIME_SECRET_JSON")).fetch("data").keys
-required = %w[JWT_SIGNING_KEY REDIS_PASSWORD IAM_DB_PASSWORD IAM_DB_MIGRATOR_PASSWORD SUPPLIER_DB_PASSWORD SUPPLIER_DB_MIGRATOR_PASSWORD WORKFLOW_DB_PASSWORD WORKFLOW_DB_MIGRATOR_PASSWORD WORKFLOW_SLA_DB_PASSWORD RISK_DB_PASSWORD RISK_DB_MIGRATOR_PASSWORD AUDIT_DB_PASSWORD AUDIT_DB_MIGRATOR_PASSWORD NOTIFICATION_WEBHOOK_SIGNING_SECRET OBJECT_STORAGE_ACCESS_KEY OBJECT_STORAGE_SECRET_KEY ROCKETMQ_PRODUCER_ACCESS_KEY ROCKETMQ_PRODUCER_SECRET_KEY ROCKETMQ_CONSUMER_ACCESS_KEY ROCKETMQ_CONSUMER_SECRET_KEY]
+required = %w[JWT_SIGNING_KEY REDIS_PASSWORD IAM_DB_PASSWORD SUPPLIER_DB_PASSWORD WORKFLOW_DB_PASSWORD WORKFLOW_SLA_DB_PASSWORD RISK_DB_PASSWORD AUDIT_DB_PASSWORD NOTIFICATION_WEBHOOK_SIGNING_SECRET OBJECT_STORAGE_ACCESS_KEY OBJECT_STORAGE_SECRET_KEY ROCKETMQ_PRODUCER_ACCESS_KEY ROCKETMQ_PRODUCER_SECRET_KEY ROCKETMQ_CONSUMER_ACCESS_KEY ROCKETMQ_CONSUMER_SECRET_KEY]
 missing = required - keys
 raise "运行时 Secret 缺少键：#{missing.join(",")}" unless missing.empty?
+forbidden = %w[IAM_DB_MIGRATOR_PASSWORD SUPPLIER_DB_MIGRATOR_PASSWORD WORKFLOW_DB_MIGRATOR_PASSWORD RISK_DB_MIGRATOR_PASSWORD AUDIT_DB_MIGRATOR_PASSWORD]
+unexpected = forbidden & keys
+raise "运行时 Secret 不得包含迁移凭据：#{unexpected.join(",")}" unless unexpected.empty?
+'
+
+migration_secret_json="$(kubectl -n "${namespace}" get secret "${migration_secret}" -o json)"
+MIGRATION_SECRET_JSON="${migration_secret_json}" ruby -e '
+require "json"
+keys = JSON.parse(ENV.fetch("MIGRATION_SECRET_JSON")).fetch("data").keys
+required = %w[IAM_DB_MIGRATOR_PASSWORD SUPPLIER_DB_MIGRATOR_PASSWORD WORKFLOW_DB_MIGRATOR_PASSWORD RISK_DB_MIGRATOR_PASSWORD AUDIT_DB_MIGRATOR_PASSWORD]
+missing = required - keys
+raise "迁移 Secret 缺少键：#{missing.join(",")}" unless missing.empty?
 '
 
 backup_secret_json="$(kubectl -n "${namespace}" get secret "${FLOWMESH_BACKUP_SECRET_NAME:-flowmesh-backup-credentials}" -o json)"

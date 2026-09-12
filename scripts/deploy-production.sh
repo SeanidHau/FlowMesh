@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 作用：执行经过校验的 FlowMesh 生产 Helm 发布，并在发布完成后执行只读 Kubernetes smoke test。
-# 该脚本不接收业务凭据参数；运行时 Secret 必须预先创建并通过 global.existingSecret 引用。
+# 该脚本不接收业务凭据参数；运行时 Secret 和 Flyway 迁移 Secret 必须预先创建并分别引用。
 
 set -Eeuo pipefail
 
@@ -13,6 +13,7 @@ helm_timeout="${FLOWMESH_HELM_TIMEOUT:-10m}"
 image_tag="${FLOWMESH_IMAGE_TAG:-}"
 workflow_sla_image_digest="${FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:-}"
 runtime_secret="${FLOWMESH_RUNTIME_SECRET_NAME:-flowmesh-runtime-secrets}"
+migration_secret="${FLOWMESH_MIGRATION_SECRET_NAME:-}"
 ingress_namespace="${FLOWMESH_INGRESS_NAMESPACE:-ingress-nginx}"
 monitoring_namespace="${FLOWMESH_MONITORING_NAMESPACE:-monitoring}"
 prometheus_release="${FLOWMESH_PROMETHEUS_RELEASE:-kube-prometheus-stack}"
@@ -73,6 +74,8 @@ require_value FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST "${workflow_sla_image_digest}"
 require_safe_name FLOWMESH_HELM_RELEASE "${release}"
 require_safe_name FLOWMESH_K8S_NAMESPACE "${namespace}"
 require_safe_name FLOWMESH_RUNTIME_SECRET_NAME "${runtime_secret}"
+require_value FLOWMESH_MIGRATION_SECRET_NAME "${migration_secret}"
+require_safe_name FLOWMESH_MIGRATION_SECRET_NAME "${migration_secret}"
 require_safe_name FLOWMESH_INGRESS_NAMESPACE "${ingress_namespace}"
 require_safe_name FLOWMESH_MONITORING_NAMESPACE "${monitoring_namespace}"
 require_safe_name FLOWMESH_PROMETHEUS_RELEASE "${prometheus_release}"
@@ -173,6 +176,7 @@ helm_overrides=(
   --set-string "global.imageTag=${image_tag}"
   --set-string "workflowSla.imageDigest=${workflow_sla_image_digest}"
   --set-string "global.existingSecret=${runtime_secret}"
+  --set-string "global.migrationExistingSecret=${migration_secret}"
   --set-string "postgresql.host=${FLOWMESH_POSTGRES_HOST}"
   --set-string "postgresql.caSecretName=${postgres_ca_secret}"
   --set-string "redis.host=${FLOWMESH_REDIS_HOST}"
@@ -225,6 +229,7 @@ FLOWMESH_HELM_RELEASE="${release}" \
 FLOWMESH_EXPECT_PROMETHEUS_RULE="${expect_prometheus_rule}" \
 FLOWMESH_INGRESS_NAMESPACE="${ingress_namespace}" \
 FLOWMESH_POSTGRES_CA_SECRET_NAME="${postgres_ca_secret}" \
+FLOWMESH_MIGRATION_SECRET_NAME="${migration_secret}" \
 FLOWMESH_BACKUP_POSTGRES_USER="${FLOWMESH_BACKUP_POSTGRES_USER}" \
   "${ROOT_DIR}/tests/kubernetes-production-smoke.sh"; then
   exit 0

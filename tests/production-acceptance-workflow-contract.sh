@@ -20,6 +20,7 @@ grep -F -- 'FLOWMESH_IMAGE_TAG:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_WORKFLOW_SLA_IMAGE_DIGEST:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_DIR:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_MIGRATION_SECRET_NAME:' "${workflow}" >/dev/null
 grep -F -- 'evidence_environment:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_DB_USER:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_BACKUP_DB_PASSWORD:' "${workflow}" >/dev/null

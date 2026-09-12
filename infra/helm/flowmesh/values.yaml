@@ -13,6 +13,8 @@ global:
   jwtSigningKey: ""
   redisPassword: ""
   existingSecret: ""
+  # 迁移 Job 使用的独立 Secret；生产必须由平台预先创建。
+  migrationExistingSecret: ""
 
 postgresql:
   host: postgres

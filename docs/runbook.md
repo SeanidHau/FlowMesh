@@ -176,7 +176,8 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 `FLOWMESH_HA_REDIS_HOSTS`、`FLOWMESH_HA_EXPECTED_REDIS_REPLICAS`、
 `FLOWMESH_PROMETHEUS_URL` 和 `FLOWMESH_ALERTMANAGER_URL`。如果目标集群或私有 CA 使用非默认名称，
 再配置 `FLOWMESH_INGRESS_NAMESPACE`、`FLOWMESH_RUNTIME_SECRET_NAME`、
-`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_SECRET_NAME`、`FLOWMESH_POSTGRES_CA_SECRET_NAME` 和 `FLOWMESH_ROCKETMQ_CA_FILE`。
+`FLOWMESH_MIGRATION_SECRET_NAME`、`FLOWMESH_BACKUP_SECRET_NAME`、`FLOWMESH_RETENTION_SECRET_NAME`、
+`FLOWMESH_POSTGRES_CA_SECRET_NAME` 和 `FLOWMESH_ROCKETMQ_CA_FILE`。
 至少需要配置以下 Secrets：`FLOWMESH_PG_PASSWORD`、`FLOWMESH_RETENTION_DB_PASSWORD` 和
 `FLOWMESH_REDIS_PASSWORD`。所有地址、密码和证书路径均由 Environment 注入，不要写入工作流文件或仓库。
 
@@ -184,6 +185,7 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 它复用 `scripts/deploy-production.sh`，会先校验镜像签名和生产配置，再执行原子 Helm 发布及发布后 smoke；同一时间只允许一个生产发布，部署日志会归档 30 天。
 除上面验收工作流使用的变量外，发布工作流至少需要配置以下 Environment Variables：
 `FLOWMESH_RUNTIME_SECRET_NAME`、`FLOWMESH_INGRESS_NAMESPACE`、`FLOWMESH_MONITORING_NAMESPACE`、
+`FLOWMESH_MIGRATION_SECRET_NAME`、
 `FLOWMESH_PROMETHEUS_RELEASE`、`FLOWMESH_INGRESS_HOST`、`FLOWMESH_INGRESS_TLS_SECRET_NAME`、
 `FLOWMESH_POSTGRES_HOST`、`FLOWMESH_REDIS_HOST`、`FLOWMESH_ROCKETMQ_NAMESRV_ADDR`、
 `FLOWMESH_OBJECT_STORAGE_ENDPOINT`、`FLOWMESH_CLAMAV_HOST`、`FLOWMESH_BACKUP_POSTGRES_HOST`、
@@ -195,7 +197,7 @@ FLOWMESH_IMAGE_TAG="$GITHUB_SHA" \
 
 如果需要执行实际发布，使用仓库提供的生产发布入口。它会先校验八个镜像的 Cosign 签名、校验生产
 values，再执行 `helm upgrade --install --atomic --wait --wait-for-jobs`，最后运行只读 Kubernetes smoke test。
-发布入口只引用预先创建的运行时 Secret，不接收数据库密码、JWT 密钥或对象存储密钥参数：
+发布入口只引用预先创建的运行时 Secret 和 Flyway 迁移 Secret，不接收数据库密码、JWT 密钥或对象存储密钥参数：
 以下地址均为文档占位值，执行前必须替换为目标环境真实地址；发布脚本会拒绝 `example.com`、本机和已知占位地址。
 
 发布过程中的五个 Flyway 迁移 Job 使用当前提交对应的业务镜像和专用迁移账号，按服务 Schema 执行

@@ -244,7 +244,10 @@ Q: 生产镜像如何保证来源可追溯且没有明显漏洞？
 A: 主分支 CI 为六个应用服务、一个备份镜像和一个生命周期维护镜像发布完整 Git 提交 SHA 标签，先用 Trivy 扫描不可变标签，再使用 GitHub OIDC 生成 Cosign keyless 签名。Helm 发布前通过 `verify-flowmesh-images.sh` 校验八个镜像的提交标签和签名，Kyverno 策略还会在集群准入阶段拒绝未签名镜像；目标集群仍需配置持续漏洞扫描。
 
 Q: 配置 `global.existingSecret` 后，Chart 会自动创建这个 Secret 吗？
-A: 不会。设置 `existingSecret` 表示 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它。这样可以避免 Helm release manifest 包含生产凭据；部署前必须验证 Secret 存在且包含 `JWT_SIGNING_KEY`、五个业务数据库密码和对象存储密钥等必需键。
+A: 不会。设置 `existingSecret` 表示应用运行时 Secret 由集群管理员或其他部署流程预先创建，Chart 只引用它；Flyway 迁移 Job 另外使用 `global.migrationExistingSecret` 指定的迁移 Secret。这样可以避免 Helm release manifest 包含生产凭据，也避免业务运行时 Secret 承载 DDL 凭据；部署前必须分别验证两个 Secret 存在且包含各自必需键。
+
+Q: 为什么要把 Flyway 迁移 Secret 和应用运行时 Secret 分开？
+A: 运行时业务账号只需要访问业务表，迁移账号拥有 Schema DDL 权限。如果两类密码放在同一个 Secret，即使应用容器只引用业务密码，也会扩大 Secret 的管理和轮换边界。当前 Helm 使用 `global.existingSecret` 保存 JWT、业务数据库和消息凭据，使用 `global.migrationExistingSecret` 保存五个迁移密码；迁移 Job 才能读取后者，业务 Deployment 不会引用它。
 
 Q: 项目如何处理 Outbox、DLQ、Inbox 和幂等记录的长期增长？
 A: 生产环境通过独立的 `flowmesh_retention` 非超级用户 CronJob 执行固定白名单清理：已发布 Outbox 保留 90 天，DLQ 保留 30 天，重放审计、Inbox 和请求幂等记录保留 90 天。任务使用 `FOR UPDATE SKIP LOCKED` 和批量上限，强制 RLS 表由专用 `BYPASSRLS` 维护角色处理；待发送 Outbox、业务申请、审批快照和审计事件不在清理范围内，并通过契约测试和 PostgreSQL E2E 验证。
@@ -287,4 +290,4 @@ A: 最能体现的是对分布式系统一致性边界的理解：不把消息�
 Q: 如果只有 3 分钟，你会选择哪个技术点展开？
 A: 优先展开“Supplier 创建申请 + Outbox + Workflow 消费”的链路：先讲本地事务为什么同时写业务表和 Outbox，再讲 `FOR UPDATE SKIP LOCKED` 如何认领、发送成功后的状态确认、宕机后的重复窗口，以及消费者如何用幂等吸收重复消息。最后主动说明这是至少一次投递和最终一致性，而不是恰好一次。
 
-<!-- 共 61 组问答。 -->
+<!-- 共 62 组问答。 -->

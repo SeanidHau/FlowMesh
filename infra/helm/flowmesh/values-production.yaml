@@ -12,6 +12,7 @@ global:
   # 生产部署必须通过 --set-string global.imageTag=<Git commit SHA> 注入不可变镜像标签。
   imageTag: ""
   existingSecret: flowmesh-runtime-secrets
+  migrationExistingSecret: flowmesh-migration-secrets
 
 # 以下地址是生产平台占位值，发布流程必须通过 --set/额外 values 覆写为真实 HA 服务地址；
 # 显式声明它们是为了阻止 Helm 继承本地 Compose 的 postgres/redis/rocketmq-namesrv 服务名。

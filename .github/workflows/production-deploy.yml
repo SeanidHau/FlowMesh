@@ -72,6 +72,7 @@ jobs:
           FLOWMESH_HELM_RELEASE: ${{ inputs.release }}
           FLOWMESH_EXPECT_PROMETHEUS_RULE: ${{ inputs.expect_prometheus_rule }}
           FLOWMESH_RUNTIME_SECRET_NAME: ${{ vars.FLOWMESH_RUNTIME_SECRET_NAME }}
+          FLOWMESH_MIGRATION_SECRET_NAME: ${{ vars.FLOWMESH_MIGRATION_SECRET_NAME }}
           # 私有镜像仓库凭据只传 Secret 名称，凭据内容由目标集群预先管理。
           FLOWMESH_IMAGE_PULL_SECRET_NAME: ${{ vars.FLOWMESH_IMAGE_PULL_SECRET_NAME }}
           FLOWMESH_INGRESS_NAMESPACE: ${{ vars.FLOWMESH_INGRESS_NAMESPACE }}
