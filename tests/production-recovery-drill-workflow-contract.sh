@@ -18,6 +18,14 @@ grep -F -- 'concurrency:' "${workflow}" >/dev/null
 grep -F -- 'cancel-in-progress: false' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_K8S_CHAOS_CONFIRM:' "${workflow}" >/dev/null
 grep -F -- 'FLOWMESH_DRILL_EXPECTED_RTO_SECONDS:' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_IMAGE_TAG: ${{ inputs.image_tag }}' "${workflow}" >/dev/null
+grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT: ${{ inputs.evidence_environment }}' "${workflow}" >/dev/null
+grep -F -- '"${FLOWMESH_DRILL_COMPONENT}"' "${workflow}" >/dev/null
+grep -F -- '"${FLOWMESH_DRILL_HEALTH_URL}"' "${workflow}" >/dev/null
+if grep -F -- './tests/fault-drills/verify-kubernetes-service-recovery.sh "${{ inputs.' "${workflow}" >/dev/null; then
+  echo '生产恢复演练工作流不得将手工输入直接插入 shell 命令。' >&2
+  exit 1
+fi
 grep -F -- 'verify-kubernetes-service-recovery.sh' "${workflow}" >/dev/null
 grep -F -- 'actions/upload-artifact@v4' "${workflow}" >/dev/null
 grep -F -- 'if: always()' "${workflow}" >/dev/null

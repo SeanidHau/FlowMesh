@@ -33,6 +33,14 @@ on:
         required: true
         default: '60'
         type: string
+      image_tag:
+        description: '已部署镜像对应的 40 位 Git 提交 SHA'
+        required: true
+        type: string
+      evidence_environment:
+        description: '目标环境标识，必须与生产证据包一致'
+        required: true
+        type: string
       confirm:
         description: '必须精确输入 YES，确认删除一个生产 Pod'
         required: true
@@ -79,13 +87,18 @@ jobs:
           FLOWMESH_K8S_CHAOS_CONFIRM: ${{ inputs.confirm }}
           FLOWMESH_HELM_RELEASE: ${{ inputs.release }}
           FLOWMESH_DRILL_EXPECTED_RTO_SECONDS: ${{ inputs.expected_rto_seconds }}
+          FLOWMESH_DRILL_COMPONENT: ${{ inputs.component }}
+          FLOWMESH_DRILL_NAMESPACE: ${{ inputs.namespace }}
+          FLOWMESH_DRILL_HEALTH_URL: ${{ inputs.health_url }}
+          FLOWMESH_IMAGE_TAG: ${{ inputs.image_tag }}
+          FLOWMESH_EVIDENCE_ENVIRONMENT: ${{ inputs.evidence_environment }}
           FLOWMESH_K8S_DRILL_REPORT: ${{ runner.temp }}/flowmesh-kubernetes-recovery-drill.md
         run: |
           set -Eeuo pipefail
           ./tests/fault-drills/verify-kubernetes-service-recovery.sh \
-            "${{ inputs.component }}" \
-            "${{ inputs.namespace }}" \
-            "${{ inputs.health_url }}"
+            "${FLOWMESH_DRILL_COMPONENT}" \
+            "${FLOWMESH_DRILL_NAMESPACE}" \
+            "${FLOWMESH_DRILL_HEALTH_URL}"
 
       - name: Upload recovery drill report
         if: always()

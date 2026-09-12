@@ -292,6 +292,8 @@ FLOWMESH_DRILL_REPORT=./artifacts/risk-service-recovery-$(date +%Y%m%d%H%M%S).md
 FLOWMESH_K8S_CHAOS_CONFIRM=YES \
 FLOWMESH_HELM_RELEASE=flowmesh \
 FLOWMESH_DRILL_EXPECTED_RTO_SECONDS=60 \
+FLOWMESH_IMAGE_TAG=<已部署的 40 位提交 SHA> \
+FLOWMESH_EVIDENCE_ENVIRONMENT=production-cluster-a \
 FLOWMESH_K8S_DRILL_REPORT=./artifacts/flowmesh-gateway-k8s-recovery-$(date +%Y%m%d%H%M%S).md \
 ./tests/fault-drills/verify-kubernetes-service-recovery.sh \
   gateway flowmesh https://api.example.com/actuator/health

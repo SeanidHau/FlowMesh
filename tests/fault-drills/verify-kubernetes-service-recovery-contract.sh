@@ -38,6 +38,11 @@ FLOWMESH_K8S_CHAOS_CONFIRM=YES FLOWMESH_DRILL_EXPECTED_RTO_SECONDS=30s \
   assert_rejected '必须是非负整数' gateway flowmesh http://localhost:8080/actuator/health
 FLOWMESH_K8S_CHAOS_CONFIRM=YES FLOWMESH_K8S_DRILL_TIMEOUT_SECONDS=0 \
   assert_rejected '必须是正整数' gateway flowmesh http://localhost:8080/actuator/health
+FLOWMESH_K8S_CHAOS_CONFIRM=YES FLOWMESH_K8S_DRILL_REPORT="${temporary_directory}/new-report.md" \
+  assert_rejected '必须提供 40 位小写 FLOWMESH_IMAGE_TAG' gateway flowmesh http://localhost:8080/actuator/health
+FLOWMESH_K8S_CHAOS_CONFIRM=YES FLOWMESH_IMAGE_TAG=0123456789012345678901234567890123456789 \
+  FLOWMESH_EVIDENCE_ENVIRONMENT=production-cluster-a \
+  assert_rejected '健康检查 URL 必须是' gateway flowmesh file:///etc/passwd
 
 existing_report="${temporary_directory}/existing.md"
 touch "${existing_report}"
@@ -60,5 +65,7 @@ set -e
 grep -F -- 'kubectl delete pod' "${script}" >/dev/null
 grep -F -- 'readyReplicas' "${script}" >/dev/null
 grep -F -- 'app.kubernetes.io/component' "${script}" >/dev/null
+grep -F -- 'FLOWMESH_EVIDENCE_ENVIRONMENT' "${script}" >/dev/null
+grep -F -- '证据摘要' "${script}" >/dev/null
 
 echo 'Kubernetes service recovery contract passed.'

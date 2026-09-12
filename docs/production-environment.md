@@ -164,7 +164,7 @@ FLOWMESH_IMAGE_TAG=<与发布相同的 40 位提交 SHA> \
 ./scripts/create-production-evidence-manifest.sh
 ```
 
-确认清单生成成功后，从 `main` 分支手动触发 `Production acceptance` 工作流，并填写同一个 `evidence_environment`。该工作流会强制开启运行时观测、外部依赖 HA 和生产证据包门禁；任一报告缺失、环境或镜像绑定不一致、失败、校验和不一致或包含敏感信息，验收都会失败。
+确认清单生成成功后，从 `main` 分支手动触发 `Production acceptance` 工作流，并填写同一个 `evidence_environment`。执行 `Production recovery drill` 时还必须填写实际已部署的 `image_tag` 和同一个 `evidence_environment`；工作流通过环境变量传递手工输入，避免将输入直接拼入 Shell。该验收工作流会强制开启运行时观测、外部依赖 HA 和生产证据包门禁；任一报告缺失、环境或镜像绑定不一致、失败、校验和不一致或包含敏感信息，验收都会失败。
 
 ## 6. 回滚与停止条件
 

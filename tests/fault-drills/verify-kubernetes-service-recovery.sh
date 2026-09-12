@@ -48,6 +48,25 @@ if [[ -n "${report_path}" && -e "${report_path}" ]]; then
   echo "拒绝覆盖已有演练报告：${report_path}" >&2
   exit 64
 fi
+if [[ -n "${report_path}" ]]; then
+  image_tag="${FLOWMESH_IMAGE_TAG:-}"
+  evidence_environment="${FLOWMESH_EVIDENCE_ENVIRONMENT:-}"
+  if [[ ! "${image_tag}" =~ ^[0-9a-f]{40}$ ]]; then
+    echo '生成生产恢复报告时必须提供 40 位小写 FLOWMESH_IMAGE_TAG。' >&2
+    exit 64
+  fi
+  if [[ -z "${evidence_environment}" || "${evidence_environment}" == *$'\n'* \
+    || "${evidence_environment}" == *$'\r'* || "${evidence_environment}" == *'`'* ]]; then
+    echo '生成生产恢复报告时必须提供不含换行或 Markdown 控制字符的 FLOWMESH_EVIDENCE_ENVIRONMENT。' >&2
+    exit 64
+  fi
+fi
+if [[ "${health_url}" != http://* && "${health_url}" != https://* ]] \
+  || [[ "${health_url}" == *$'\n'* || "${health_url}" == *$'\r'* || "${health_url}" == *'`'* \
+    || "${health_url}" == *[[:space:]]* ]]; then
+  echo '健康检查 URL 必须是无空白、无 Markdown 控制字符的 HTTP(S) URL。' >&2
+  exit 64
+fi
 
 for command_name in kubectl curl date; do
   command -v "${command_name}" >/dev/null || {
@@ -142,6 +161,9 @@ if [[ -n "${report_path}" ]]; then
     {
       echo '# Kubernetes 故障恢复演练报告'
       echo
+      echo "- 证据摘要：应用 Pod 删除后 Deployment 自愈、ReadyReplicas 和健康检查恢复结果。"
+      echo "- 环境标识：\`${evidence_environment}\`"
+      echo "- 镜像提交：\`${image_tag}\`"
       echo "- 组件：\`${component}\`"
       echo "- Deployment：\`${deployment}\`"
       echo "- 被删除 Pod：\`${old_pod}\`"
