@@ -19,9 +19,9 @@ postgresql:
   host: postgresql.internal.example.com
   port: 5432
   database: flowmesh
-  sslMode: require
-  # sslMode 改为 verify-ca/verify-full 时，发布流程必须同时注入 CA Secret 名称和键。
-  caSecretName: ""
+  # 生产默认验证数据库服务端身份；目标数据库证书 SAN 必须包含 FLOWMESH_POSTGRES_HOST。
+  sslMode: verify-full
+  caSecretName: flowmesh-postgresql-ca
   caSecretKey: ca.crt
 
 workflowSla:
@@ -77,8 +77,8 @@ backup:
     database: flowmesh
     # 生产发布流程必须覆写为专用只读备份账号。
     user: flowmesh_backup
-    sslMode: require
-    caSecretName: ""
+    sslMode: verify-full
+    caSecretName: flowmesh-postgresql-ca
     caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   s3:
@@ -116,8 +116,8 @@ retention:
     host: ""
     port: 5432
     database: flowmesh
-    sslMode: require
-    caSecretName: ""
+    sslMode: verify-full
+    caSecretName: flowmesh-postgresql-ca
     caSecretKey: ca.crt
     connectTimeoutSeconds: 5
   confirmation: "YES"

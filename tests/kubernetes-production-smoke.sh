@@ -83,6 +83,9 @@ end
 unless name.end_with?("-gateway")
   jdbc_url = env["SPRING_DATASOURCE_URL"].to_s
   raise "#{name} 必须使用 PostgreSQL 加密连接" unless jdbc_url.match?(/(?:\?|&)sslmode=(require|verify-ca|verify-full)(?:&|$)/)
+  if jdbc_url.include?("sslmode=verify-ca") || jdbc_url.include?("sslmode=verify-full")
+    raise "#{name} 使用 verify 模式时必须挂载 PostgreSQL CA" unless jdbc_url.include?("sslrootcert=/etc/flowmesh/postgresql/ca.crt")
+  end
 end
 rocketmq_services = %w[-supplier -workflow -risk -notification-audit]
 if rocketmq_services.any? { |suffix| name.end_with?(suffix) }
@@ -163,6 +166,10 @@ raise "备份 CronJob 必须使用专用数据库账号" if expected_backup_user
 raise "备份 CronJob 未使用预期的专用数据库账号" unless backup_user && backup_user.fetch("value") == expected_backup_user
 ssl_mode = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLMODE" }
 raise "备份 CronJob 未设置 PostgreSQL SSL 模式" unless ssl_mode && ssl_mode.fetch("value") != "disable"
+if ssl_mode.fetch("value").start_with?("verify-")
+  root_cert = container.fetch("env").find { |entry| entry.fetch("name") == "FLOWMESH_PG_SSLROOTCERT" }
+  raise "备份 CronJob 使用 verify 模式时必须注入 PostgreSQL CA" unless root_cert && root_cert.fetch("value") == "/etc/flowmesh/postgresql/ca.crt"
+end
 puts "备份 CronJob 参数校验通过。"
 '
 
@@ -178,7 +185,10 @@ raise "生命周期清理 CronJob 不得自动挂载 ServiceAccount Token" unles
 container = pod.fetch("containers").first
 env = container.fetch("env").to_h { |entry| [entry.fetch("name"), entry.fetch("value", nil)] }
 raise "生命周期清理必须使用 YES 确认值" unless env.fetch("FLOWMESH_RETENTION_CONFIRM") == "YES"
-raise "生命周期清理必须使用 PostgreSQL TLS" unless env.fetch("FLOWMESH_PG_SSLMODE") == "require"
+raise "生命周期清理必须使用 PostgreSQL TLS" unless %w[require verify-ca verify-full].include?(env.fetch("FLOWMESH_PG_SSLMODE"))
+if env.fetch("FLOWMESH_PG_SSLMODE").start_with?("verify-")
+  raise "生命周期清理使用 verify 模式时必须注入 PostgreSQL CA" unless env.fetch("FLOWMESH_PG_SSLROOTCERT") == "/etc/flowmesh/postgresql/ca.crt"
+end
 puts "生命周期清理 CronJob 参数校验通过。"
 '
 
@@ -195,7 +205,11 @@ raise "Workflow SLA CronJob 不得自动挂载 ServiceAccount Token" unless pod.
 container = pod.fetch("containers").first
 env = container.fetch("env")
 ssl_mode = env.find { |entry| entry.fetch("name") == "PGSSLMODE" }
-raise "Workflow SLA CronJob 未设置 PostgreSQL TLS" unless ssl_mode && ssl_mode.fetch("value") == "require"
+raise "Workflow SLA CronJob 未设置 PostgreSQL TLS" unless ssl_mode && %w[require verify-ca verify-full].include?(ssl_mode.fetch("value"))
+if ssl_mode.fetch("value").start_with?("verify-")
+  root_cert = env.find { |entry| entry.fetch("name") == "PGSSLROOTCERT" }
+  raise "Workflow SLA CronJob 使用 verify 模式时必须注入 PostgreSQL CA" unless root_cert && root_cert.fetch("value") == "/etc/flowmesh/postgresql/ca.crt"
+end
 password = env.find { |entry| entry.fetch("name") == "PGPASSWORD" }
 raise "Workflow SLA CronJob 未引用 SLA 数据库密码 Secret" unless password && password.fetch("valueFrom").fetch("secretKeyRef").fetch("key") == "WORKFLOW_SLA_DB_PASSWORD"
 puts "Workflow SLA CronJob 参数校验通过。"

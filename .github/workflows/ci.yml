@@ -249,16 +249,20 @@ jobs:
             exit 1
           fi
           pg_sslmode_count="$(printf '%s\n' "$rendered_production" | grep -c 'name: FLOWMESH_PG_SSLMODE' || true)"
-          pg_sslmode_require_count="$(printf '%s\n' "$rendered_production" | awk '
+          pg_sslmode_secure_count="$(printf '%s\n' "$rendered_production" | awk '
             /name: FLOWMESH_PG_SSLMODE/ {
-              if (getline next_line > 0 && next_line ~ /value: "require"/) {
+              if (getline next_line > 0 && next_line ~ /value: "(require|verify-ca|verify-full)"/) {
                 count++
               }
             }
             END { print count + 0 }
           ')"
-          if [[ "$pg_sslmode_count" -ne 2 || "$pg_sslmode_require_count" -ne 2 ]]; then
+          if [[ "$pg_sslmode_count" -ne 2 || "$pg_sslmode_secure_count" -ne 2 ]]; then
             echo 'PostgreSQL backup and retention CronJobs must use encrypted connections.' >&2
+            exit 1
+          fi
+          if [[ "$(printf '%s\n' "$rendered_production" | grep -c 'sslrootcert=/etc/flowmesh/postgresql/ca.crt' || true)" -ne 5 ]]; then
+            echo 'All PostgreSQL application JDBC URLs must use the production CA file.' >&2
             exit 1
           fi
           if ! printf '%s\n' "$rendered_production" | grep -q 'app.kubernetes.io/component: workflow-sla' || \

@@ -71,7 +71,7 @@ Q: 如果面试官质疑项目规模不够，你如何回答？
 A: 应准确表述为“生产化基线”而不是完整的企业级托管平台。项目已经把服务边界、租户隔离、幂等、乐观锁、可靠消息、材料安全、风控、通知审计、站内通知已读、通用 HTTPS Webhook 和部署校验做成可运行闭环；但外部基础设施 HA、托管观测后端、真实通知接收端验收和 Camunda 仍是明确的后续边界。
 
 Q: 生产环境如何保护 PostgreSQL、Redis 和 RocketMQ 的连接？
-A: Helm 生产覆盖值将 PostgreSQL 连接设置为 `sslmode=require`，Redis 设置为 TLS，RocketMQ Producer 和 Consumer 分别使用外部 Secret 中的独立 Access Key/Secret Key，并默认开启 TLS。自建 RocketMQ 可以把访问通道覆盖为 `LOCAL`，但不能因此关闭 TLS；如果 PostgreSQL 平台提供受控 CA，还应升级到 `verify-full`。Kubernetes smoke test 会检查四组 RocketMQ 凭据键，避免发布后因为 Secret 不完整才暴露问题。
+A: Helm 生产覆盖值将 PostgreSQL 连接设置为 `sslmode=verify-full` 并挂载外部 CA Secret，Redis 设置为 TLS，RocketMQ Producer 和 Consumer 分别使用外部 Secret 中的独立 Access Key/Secret Key，并默认开启 TLS。自建 RocketMQ 可以把访问通道覆盖为 `LOCAL`，但不能因此关闭 TLS。Kubernetes smoke test 会检查 CA 文件路径和四组 RocketMQ 凭据键，避免发布后因为 Secret 不完整才暴露问题。
 
 Q: 为什么选择 RocketMQ，而不是 RabbitMQ？
 A: 本项目选择 RocketMQ，是因为项目需要面向领域事件的异步解耦、消费重试、延迟重试和后续死信处理能力。RocketMQ 的 Topic、Tag、消费重试和消息存储模型比较适合这种事件驱动链路。

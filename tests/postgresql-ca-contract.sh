@@ -18,8 +18,22 @@ assert_contains() {
 
 assert_contains "${chart_dir}/values.yaml" 'caSecretName: ""'
 assert_contains "${chart_dir}/values.yaml" 'caSecretKey: ca.crt'
-assert_contains "${chart_dir}/values-production.yaml" 'sslMode: require'
-assert_contains "${chart_dir}/values-production.yaml" 'caSecretName: ""'
+assert_contains "${chart_dir}/values-production.yaml" 'sslMode: verify-full'
+assert_contains "${chart_dir}/values-production.yaml" 'caSecretName: flowmesh-postgresql-ca'
+
+ruby - "${chart_dir}/values-production.yaml" <<'RUBY'
+require "yaml"
+
+values = YAML.load_file(ARGV.fetch(0))
+config = values.fetch("postgresql")
+raise "postgresql 必须使用 verify-full" unless config.fetch("sslMode") == "verify-full"
+raise "postgresql 必须配置 CA Secret" unless config.fetch("caSecretName") == "flowmesh-postgresql-ca"
+%w[backup retention].each do |section|
+  config = values.fetch(section).fetch("postgres")
+  raise "#{section} 必须使用 verify-full" unless config.fetch("sslMode") == "verify-full"
+  raise "#{section} 必须配置 CA Secret" unless config.fetch("caSecretName") == "flowmesh-postgresql-ca"
+end
+RUBY
 assert_contains "${helpers}" 'sslrootcert=/etc/flowmesh/postgresql/ca.crt'
 assert_contains "${helpers}" 'postgresql.caSecretName is required'
 assert_contains "${helpers}" 'mode: 0444'

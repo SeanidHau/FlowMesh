@@ -87,12 +87,16 @@ raise "生产 RocketMQ Consumer 必须启用 TLS" unless rocketmq.dig("consumer"
 postgresql = values.fetch("postgresql")
 raise "生产 PostgreSQL 不得使用明文连接" if postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 必须配置 sslMode" if postgresql.fetch("sslMode", "").to_s.empty?
+raise "生产 PostgreSQL 默认必须使用 verify-full" unless postgresql.fetch("sslMode") == "verify-full"
+raise "生产 PostgreSQL 必须配置 CA Secret" if postgresql.fetch("caSecretName", "").to_s.empty?
 raise "生产 Redis 必须启用 TLS" unless values.fetch("redis").fetch("sslEnabled") == true
 backup_postgresql = backup.fetch("postgres")
 backup_user = backup_postgresql.fetch("user", "").to_s
 raise "生产 PostgreSQL 备份必须使用专用数据库账号" if backup_user.empty? || %w[postgres flowmesh].include?(backup_user)
 raise "生产 PostgreSQL 备份不得使用明文连接" if backup_postgresql.fetch("sslMode") == "disable"
 raise "生产 PostgreSQL 备份必须配置 sslMode" if backup_postgresql.fetch("sslMode", "").to_s.empty?
+raise "生产 PostgreSQL 备份默认必须使用 verify-full" unless backup_postgresql.fetch("sslMode") == "verify-full"
+raise "生产 PostgreSQL 备份必须配置 CA Secret" if backup_postgresql.fetch("caSecretName", "").to_s.empty?
 raise "生产 PostgreSQL 备份必须启用远端对象校验" unless backup.dig("s3", "verifyRemote") == true
 retention = values.fetch("retention")
 raise "生产数据生命周期清理必须启用" unless retention.fetch("enabled") == true
@@ -100,6 +104,8 @@ raise "生产生命周期清理必须配置凭据 Secret" if retention.fetch("cr
 raise "生产生命周期清理必须使用 YES 确认值" unless retention.fetch("confirmation") == "YES"
 raise "生产生命周期清理不得使用明文连接" if retention.dig("postgres", "sslMode") == "disable"
 raise "生产生命周期清理必须配置 sslMode" if retention.dig("postgres", "sslMode").to_s.empty?
+raise "生产生命周期清理默认必须使用 verify-full" unless retention.dig("postgres", "sslMode") == "verify-full"
+raise "生产生命周期清理必须配置 CA Secret" if retention.dig("postgres", "caSecretName").to_s.empty?
 notification_delivery = values.dig("services", "notificationAudit", "notificationDelivery") || {}
 raise "生产外部通知投递必须启用" unless notification_delivery.fetch("enabled") == true
 raise "生产外部通知 Webhook 必须使用 HTTPS" unless notification_delivery.fetch("webhookUrl", "").to_s.start_with?("https://")
