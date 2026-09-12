@@ -55,5 +55,40 @@ class IamSchemaMigrationIntegrationTest extends PostgresIntegrationTest {
                 "iam_refresh_tokens"
         );
         assertThat(versionColumns).containsExactlyInAnyOrder("iam_users", "iam_refresh_tokens");
+
+        Integer refreshTenantColumns = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = 'iam'
+                  AND table_name = 'iam_refresh_tokens'
+                  AND column_name = 'tenant_id'
+                """,
+                Integer.class
+        );
+        assertThat(refreshTenantColumns).isEqualTo(1);
+    }
+
+    /**
+     * 验证 IAM 的租户数据表均启用并强制执行 PostgreSQL RLS。
+     */
+    @Test
+    void shouldForceRowLevelSecurityForTenantScopedTables() {
+        List<String> protectedTables = jdbcTemplate.queryForList(
+                """
+                SELECT c.relname
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'iam'
+                  AND c.relname IN ('iam_users', 'iam_user_roles', 'iam_refresh_tokens', 'iam_audit_events')
+                  AND c.relrowsecurity = true
+                  AND c.relforcerowsecurity = true
+                """,
+                String.class
+        );
+
+        assertThat(protectedTables).containsExactlyInAnyOrder(
+                "iam_users", "iam_user_roles", "iam_refresh_tokens", "iam_audit_events"
+        );
     }
 }

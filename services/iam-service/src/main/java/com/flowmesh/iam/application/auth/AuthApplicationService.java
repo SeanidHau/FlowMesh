@@ -13,6 +13,7 @@ import com.flowmesh.iam.repository.IamUserRepository;
 import com.flowmesh.iam.repository.AuditEventRepository;
 import com.flowmesh.iam.repository.RefreshTokenRepository;
 import com.flowmesh.iam.repository.UserRoleRepository;
+import com.flowmesh.iam.rls.TenantRlsInitializer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,6 +48,7 @@ public class AuthApplicationService {
     private final JwtProperties jwtProperties;
     private final AuditEventRepository auditEventRepository;
     private final SecurityAuditWriter securityAuditWriter;
+    private final TenantRlsInitializer tenantRlsInitializer;
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
@@ -67,7 +69,8 @@ public class AuthApplicationService {
         JwtService jwtService,
         JwtProperties jwtProperties,
         AuditEventRepository auditEventRepository,
-        SecurityAuditWriter securityAuditWriter
+        SecurityAuditWriter securityAuditWriter,
+        TenantRlsInitializer tenantRlsInitializer
     ) {
         this.iamUserRepository = iamUserRepository;
         this.userRoleRepository = userRoleRepository;
@@ -77,6 +80,7 @@ public class AuthApplicationService {
         this.jwtProperties = jwtProperties;
         this.auditEventRepository = auditEventRepository;
         this.securityAuditWriter = securityAuditWriter;
+        this.tenantRlsInitializer = tenantRlsInitializer;
     }
 
     /**
@@ -90,6 +94,7 @@ public class AuthApplicationService {
      */
     @Transactional
     public TokenResult login(String tenantId, String username, String password, String traceId) {
+        tenantRlsInitializer.initialize(tenantId);
         String normalized = IamUser.normalizeUsername(username);
         IamUser user = iamUserRepository
             .findByTenant_IdAndUsername(tenantId, normalized)
@@ -133,7 +138,8 @@ public class AuthApplicationService {
      * @throws InvalidCredentialsException 令牌无效、过期或已撤销
      */
     @Transactional
-    public TokenResult refresh(String rawToken) {
+    public TokenResult refresh(String tenantId, String rawToken) {
+        tenantRlsInitializer.initialize(tenantId);
         String tokenHash = sha256Hex(rawToken);
         RefreshToken oldToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
             .orElseThrow(InvalidCredentialsException::new);
@@ -166,7 +172,8 @@ public class AuthApplicationService {
      * @param rawToken 原始刷新令牌
      */
     @Transactional
-    public void logout(String rawToken, String traceId) {
+    public void logout(String tenantId, String rawToken, String traceId) {
+        tenantRlsInitializer.initialize(tenantId);
         String tokenHash = sha256Hex(rawToken);
         refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
             if (token.getRevokedAt() == null) {

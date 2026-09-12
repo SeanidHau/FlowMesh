@@ -21,4 +21,10 @@
     FROM tenants
     WHERE id = #{id}
   </select>
+
+  <select id="findAllIds" resultType="string">
+    SELECT id
+    FROM tenants
+    ORDER BY id
+  </select>
 </mapper>

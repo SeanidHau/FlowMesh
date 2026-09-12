@@ -5,8 +5,22 @@
 - REST API 使用 JSON，并以 `/api/v1` 作为路径前缀。
 - 路径使用复数资源名，例如 `/api/v1/supplier-applications`。
 - 认证使用 `Authorization: Bearer <access-token>`。
-- 客户端不得通过 Header、请求体或路径指定有效 `tenantId`。服务端从已验证 JWT 解析租户上下文。
+- 业务 API 客户端不得通过 Header、请求体或路径指定有效 `tenantId`。服务端从已验证 JWT 解析租户上下文。
 - `traceId` 由网关生成或透传，并返回到响应 Header。
+
+认证接口是认证前置场景的例外：`login` 使用请求体中的 `tenantId` 选择认证查询范围；`refresh` 和
+`logout` 也要求请求体提供 `tenantId`，用于在解析不透明 Refresh Token 前建立 PostgreSQL RLS 上下文。
+服务端会校验令牌所属用户的实际租户，成功登录或刷新后只在签名 JWT 中返回可信租户声明。
+
+## 认证接口
+
+| 方法 | 路径 | 请求体 | 说明 |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/auth/login` | `tenantId`、`username`、`password` | 按租户和用户名登录 |
+| `POST` | `/api/v1/auth/refresh` | `tenantId`、`refreshToken` | 按租户建立 RLS 上下文后轮换令牌 |
+| `POST` | `/api/v1/auth/logout` | `tenantId`、`refreshToken` | 按租户建立 RLS 上下文后撤销当前令牌 |
+
+`tenantId` 最大长度为 64 个字符；`refreshToken` 只以哈希形式保存，不能写入日志、审计记录或错误响应。
 
 ## 创建与幂等
 

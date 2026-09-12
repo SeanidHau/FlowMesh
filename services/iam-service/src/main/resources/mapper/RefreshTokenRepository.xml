@@ -33,7 +33,7 @@
   </resultMap>
 
   <sql id="refreshTokenSelect">
-    SELECT r.id AS token_id, r.user_id, r.token_hash, r.expires_at, r.revoked_at,
+    SELECT r.id AS token_id, r.user_id, r.tenant_id, r.token_hash, r.expires_at, r.revoked_at,
            r.replaced_by_token_id, r.version AS token_version, r.created_at AS token_created_at,
            u.username, u.password_hash, u.display_name, u.status AS user_status,
            u.last_login_at, u.version AS user_version,
@@ -47,8 +47,8 @@
 
   <insert id="insert" parameterType="com.flowmesh.iam.domain.token.RefreshToken">
     INSERT INTO iam_refresh_tokens
-      (id, user_id, token_hash, expires_at, revoked_at, replaced_by_token_id, version, created_at)
-    VALUES (#{id, jdbcType=OTHER}, #{user.id, jdbcType=OTHER}, #{tokenHash}, #{expiresAt}, #{revokedAt},
+      (id, user_id, tenant_id, token_hash, expires_at, revoked_at, replaced_by_token_id, version, created_at)
+    VALUES (#{id, jdbcType=OTHER}, #{user.id, jdbcType=OTHER}, #{user.tenant.id}, #{tokenHash}, #{expiresAt}, #{revokedAt},
             #{replacedByToken.id, jdbcType=OTHER}, #{version}, #{createdAt})
   </insert>
 

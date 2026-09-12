@@ -14,6 +14,7 @@ import com.flowmesh.iam.repository.RefreshTokenRepository;
 import com.flowmesh.iam.repository.TenantRepository;
 import com.flowmesh.iam.repository.UserRoleRepository;
 import com.flowmesh.iam.support.PostgresIntegrationTest;
+import com.flowmesh.iam.rls.TenantRlsInitializer;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,10 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
+    /** IAM PostgreSQL RLS 租户上下文。 */
+    @Autowired
+    private TenantRlsInitializer tenantRlsInitializer;
+
     /**
      * 验证用户创建时会归一化用户名，并可按租户和用户名查询。
      */
@@ -55,6 +60,7 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         Tenant tenant = tenantRepository.saveAndFlush(
                 new Tenant(tenantId, "测试租户", TenantStatus.ACTIVE)
         );
+        tenantRlsInitializer.initialize(tenantId);
 
         IamUser user = iamUserRepository.saveAndFlush(
                 new IamUser(tenant, "  Admin.User  ", "password-hash", "管理员")
@@ -79,6 +85,7 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         Tenant tenant = tenantRepository.saveAndFlush(
                 new Tenant(tenantId, "测试租户", TenantStatus.ACTIVE)
         );
+        tenantRlsInitializer.initialize(tenantId);
         IamUser user = iamUserRepository.saveAndFlush(
                 new IamUser(tenant, "reviewer", "password-hash", "审批人")
         );
@@ -107,6 +114,7 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         Tenant tenant = tenantRepository.saveAndFlush(
                 new Tenant("tenant-" + UUID.randomUUID(), "测试租户", TenantStatus.ACTIVE)
         );
+        tenantRlsInitializer.initialize(tenant.getId());
         IamUser user = iamUserRepository.saveAndFlush(
                 new IamUser(tenant, "operator", "password-hash", "运营人员")
         );
@@ -137,6 +145,7 @@ class IamUserPersistenceIntegrationTest extends PostgresIntegrationTest {
         Tenant tenant = tenantRepository.saveAndFlush(
                 new Tenant("tenant-" + UUID.randomUUID(), "测试租户", TenantStatus.ACTIVE)
         );
+        tenantRlsInitializer.initialize(tenant.getId());
         IamUser user = iamUserRepository.saveAndFlush(
                 new IamUser(tenant, "cleanup-user", "password-hash", "清理测试用户")
         );

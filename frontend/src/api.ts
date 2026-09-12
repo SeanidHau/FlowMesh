@@ -63,7 +63,10 @@ export class FlowMeshApi {
 
     await this.request('iam', '/api/v1/auth/logout', {
         method: 'POST',
-        body: { refreshToken: this.session.refreshToken },
+        body: {
+          tenantId: this.session.tenantId,
+          refreshToken: this.session.refreshToken,
+        },
     });
     this.session = null;
   }

@@ -189,13 +189,11 @@ A: `SET LOCAL` 只在当前数据库事务内生效，事务结束后自动恢�
 Q: 如果忘记初始化 `app.tenant_id`，会发生什么？
 A: RLS policy 应在租户上下文缺失时拒绝访问或返回空结果，而不是默认放开查询。应用层需要在事务入口初始化上下文，并使用集成测试验证租户 A 无法读取租户 B 的数据；数据库角色也必须是不能绕过 RLS 的业务账号。
 
-Q: 为什么 IAM 的 RLS 处理和业务服务不同？
-A: 登录发生在用户尚未认证之前，服务必须先根据登录请求中的租户和用户名查找用户，因此 IAM 登录查询无法完全依赖已建立的 JWT 租户上下文。当前实现将 IAM Schema 作为认证前置场景的特殊处理，并通过独立账号、登录参数校验、JWT 签名租户声明和安全审计进行补偿。
+Q: IAM 在登录前还没有 JWT，如何执行 RLS？
+A: 登录接口先使用请求中的 `tenantId` 设置事务级 `app.tenant_id`，再按租户和用户名查询用户；刷新和登出接口也要求请求提供 `tenantId`，因为不透明 Refresh Token 在查询前无法解析出所属用户。Refresh Token 表固化 `tenant_id`，用户、角色关系、Refresh Token 和审计表均使用非超级用户与 `FORCE ROW LEVEL SECURITY`，因此 IAM 不再以 Schema 作为 RLS 例外。
 
-Supplier 和 Workflow 的业务数据则在 JWT 已认证后访问，使用非超级用户和强制 RLS 做租户隔离。未来如果增加 IAM 管理接口，需要重新评估 IAM Schema 的管理边界。
-
-Q: IAM 登录依赖请求中的 tenantId，会不会造成租户伪造？
-A: 登录前的 tenantId 只能作为查找范围，不能被直接当成已认证身份。系统仍需验证用户名、密码、用户状态和租户状态，成功后由服务端把租户写入签名 JWT；后续业务服务只信任经过签名校验的 JWT 租户声明，不信任客户端自带的租户 Header。
+Q: IAM 登录或刷新依赖请求中的 tenantId，会不会造成租户伪造？
+A: 登录前的 `tenantId` 只能作为 RLS 查询范围，服务仍需验证用户名、密码、用户状态和租户状态；刷新/登出时，RLS 会限制令牌哈希只能匹配该租户的记录。成功后由服务端把实际租户写入签名 JWT，后续业务服务只信任经过签名校验的 JWT 租户声明，不信任客户端自带的租户 Header。
 
 Q: JWT 和 Refresh Token 如何配合？
 A: 登录成功后 IAM 签发短生命周期 Access Token 和持久化 Refresh Token。Access Token 用于跨服务认证，包含用户、租户和角色等声明；Refresh Token 用于换取新的令牌对。

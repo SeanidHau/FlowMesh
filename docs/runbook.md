@@ -114,7 +114,8 @@ RocketMQ Outbox 积压。如果延迟升高，继续检查各服务 CPU、连接
 IAM 默认每小时清理已过期或已撤销超过 30 天的 Refresh Token，每次最多处理 1000 条；清理指标为
 `flowmesh_iam_refresh_token_cleanup_total`。生产环境可通过 Helm 的
 `services.iam.refreshTokenCleanup.retention`、`batchSize` 和 `intervalMs` 调整保留窗口与执行频率，
-但不应关闭清理任务。若清理持续积压，应先检查 PostgreSQL 锁等待和连接池，再适当降低批量大小或安排维护窗口。
+但不应关闭清理任务。任务会按租户分别开启独立事务，并使用事务级 RLS 上下文。若清理持续积压，
+应先检查 PostgreSQL 锁等待、租户数量和连接池，再适当降低批量大小或安排维护窗口。
 
 ## Kubernetes 发布后验收
 

@@ -12,6 +12,7 @@ import com.flowmesh.iam.api.dto.LoginRequest;
 import com.flowmesh.iam.api.dto.LogoutRequest;
 import com.flowmesh.iam.api.dto.RefreshRequest;
 import com.flowmesh.iam.support.PostgresIntegrationTest;
+import com.flowmesh.iam.rls.TenantRlsInitializer;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * 验证登录、刷新令牌轮换和登出核心行为。
@@ -40,6 +43,12 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private TenantRlsInitializer tenantRlsInitializer;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     /**
      * 验证种子用户可登录，返回有效令牌对。
@@ -104,7 +113,7 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
 
         MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new RefreshRequest(oldRefresh))))
+                .content(objectMapper.writeValueAsString(new RefreshRequest("tenant-a", oldRefresh))))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -115,7 +124,22 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         // 旧令牌复用被拒
         mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new RefreshRequest(oldRefresh))))
+                .content(objectMapper.writeValueAsString(new RefreshRequest("tenant-a", oldRefresh))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * 验证错误租户不能使用另一个租户的 Refresh Token。
+     *
+     * @throws Exception 当请求执行失败时抛出
+     */
+    @Test
+    void shouldRejectRefreshTokenFromAnotherTenant() throws Exception {
+        String refreshToken = loginAndGetRefreshToken("tenant-a", "applicant-a", "password123");
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new RefreshRequest("tenant-b", refreshToken))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -144,24 +168,24 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/logout")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-Trace-Id", logoutTraceId)
-                .content(objectMapper.writeValueAsString(new LogoutRequest(refreshToken))))
+                .content(objectMapper.writeValueAsString(new LogoutRequest("tenant-a", refreshToken))))
                 .andExpect(status().isNoContent());
 
         assertThat(auditCount(logoutTraceId, "LOGOUT", "SUCCESS")).isEqualTo(1);
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
+        assertAuditMutationRejected(
             "UPDATE iam_audit_events SET result = 'FAILURE' WHERE trace_id = ?",
             logoutTraceId
-        )).hasStackTraceContaining("append-only");
-        assertThatThrownBy(() -> jdbcTemplate.update(
+        );
+        assertAuditMutationRejected(
             "DELETE FROM iam_audit_events WHERE trace_id = ?",
             logoutTraceId
-        )).hasStackTraceContaining("append-only");
+        );
 
         // 登出后刷新被拒
         mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new RefreshRequest(refreshToken))))
+                .content(objectMapper.writeValueAsString(new RefreshRequest("tenant-a", refreshToken))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -178,13 +202,29 @@ class AuthFlowIntegrationTest extends PostgresIntegrationTest {
     }
 
     private int auditCount(String traceId, String action, String result) {
-        Integer count = jdbcTemplate.queryForObject(
-            "SELECT count(*) FROM iam_audit_events WHERE trace_id = ? AND action = ? AND result = ?",
-            Integer.class,
-            traceId,
-            action,
-            result
-        );
+        Integer count = new TransactionTemplate(transactionManager).execute(status -> {
+            tenantRlsInitializer.initialize("tenant-a");
+            return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM iam_audit_events WHERE trace_id = ? AND action = ? AND result = ?",
+                Integer.class,
+                traceId,
+                action,
+                result
+            );
+        });
         return count == null ? 0 : count;
+    }
+
+    /**
+     * 在正确租户上下文中验证审计表拒绝修改。
+     *
+     * @param sql 待执行的修改 SQL
+     * @param traceId 审计记录链路标识
+     */
+    private void assertAuditMutationRejected(String sql, String traceId) {
+        assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            tenantRlsInitializer.initialize("tenant-a");
+            jdbcTemplate.update(sql, traceId);
+        })).hasStackTraceContaining("append-only");
     }
 }

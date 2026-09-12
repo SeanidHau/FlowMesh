@@ -20,10 +20,10 @@
 - PostgreSQL 备份使用独立的可登录非超级用户账号；该账号必须具备 `BYPASSRLS` 以归档完整租户数据，对业务表只允许 `SELECT`，不得拥有建库、建角色、复制或业务表写权限。发布前使用 `scripts/validate-backup-role.sh` 只读核验。
 - 任何越权 API、消息或文件访问必须拒绝，并保留审计记录。
 
-IAM 的登录查询发生在用户尚未认证之前，因此当前实现将 IAM Schema 作为 RLS 例外。补偿控制包括：
-IAM 使用独立业务账号、登录按请求中的 `tenantId` 和用户名查询、下游业务 Schema 强制启用 RLS，
-并通过 JWT 签名租户声明和认证审计记录保留安全边界。后续增加 IAM 管理接口时，必须重新评估并补充
-认证前租户上下文策略。
+IAM 的登录查询发生在用户尚未认证之前，因此登录接口先使用请求中的 `tenantId` 设置事务级 RLS
+上下文，再按租户和用户名查询。Refresh Token 表持久化 `tenant_id`，刷新和登出接口同样要求请求提供
+租户标识，以便在解析不透明令牌前建立 RLS 上下文。IAM 的用户、角色关系、Refresh Token 和安全审计表
+均启用 `FORCE ROW LEVEL SECURITY`；生产运行账号不能绕过 RLS。
 
 ## Secret 管理
 

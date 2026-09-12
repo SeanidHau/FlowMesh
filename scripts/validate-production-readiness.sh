@@ -40,6 +40,9 @@ bash "${root_dir}/tests/production-observability-contract.sh"
 echo '校验 Redis ACL 配置……'
 bash "${root_dir}/tests/redis-acl-contract.sh"
 
+echo '校验 IAM RLS 配置……'
+bash "${root_dir}/tests/iam-rls-contract.sh"
+
 while IFS= read -r contract; do
   echo "执行生产契约：${contract#"${root_dir}/"}"
   bash "${contract}"

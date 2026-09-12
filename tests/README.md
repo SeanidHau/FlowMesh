@@ -98,6 +98,15 @@ Redis ACL 配置契约：
 
 该测试验证 Gateway、IAM、Compose 和 Helm 均支持 Redis ACL 用户名；单密码 Redis 保持用户名为空的兼容行为。
 
+IAM RLS 配置契约：
+
+```bash
+./tests/iam-rls-contract.sh
+```
+
+该测试验证 IAM 用户、角色关系、Refresh Token 和审计表均启用 `FORCE ROW LEVEL SECURITY`，Refresh Token
+保存租户归属，认证接口和逐租户清理任务均建立事务级租户上下文。
+
 PostgreSQL CA 配置契约：
 
 ```bash

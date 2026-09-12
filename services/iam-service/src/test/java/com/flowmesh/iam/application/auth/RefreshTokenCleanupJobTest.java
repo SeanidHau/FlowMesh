@@ -6,10 +6,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.flowmesh.iam.repository.RefreshTokenRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -23,11 +23,14 @@ class RefreshTokenCleanupJobTest {
      */
     @Test
     void shouldDeleteOneBatchAndRecordMetric() {
-        RefreshTokenRepository repository = org.mockito.Mockito.mock(RefreshTokenRepository.class);
+        var tenantRepository = org.mockito.Mockito.mock(com.flowmesh.iam.repository.TenantRepository.class);
+        var tenantCleanupService = org.mockito.Mockito.mock(RefreshTokenTenantCleanupService.class);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-        when(repository.deleteExpiredOrRevokedBefore(any(Instant.class), eq(50))).thenReturn(3);
+        when(tenantRepository.findAllIds()).thenReturn(List.of("tenant-a"));
+        when(tenantCleanupService.cleanupTenant(eq("tenant-a"), any(Instant.class), eq(50)))
+            .thenReturn(3);
         RefreshTokenCleanupJob job = new RefreshTokenCleanupJob(
-            repository, Duration.ofDays(30), 50, meterRegistry
+            tenantRepository, tenantCleanupService, Duration.ofDays(30), 50, meterRegistry
         );
 
         Instant before = Instant.now().minus(Duration.ofDays(30));
@@ -35,7 +38,7 @@ class RefreshTokenCleanupJobTest {
         Instant after = Instant.now().minus(Duration.ofDays(30));
 
         ArgumentCaptor<Instant> cutoff = ArgumentCaptor.forClass(Instant.class);
-        verify(repository).deleteExpiredOrRevokedBefore(cutoff.capture(), eq(50));
+        verify(tenantCleanupService).cleanupTenant(eq("tenant-a"), cutoff.capture(), eq(50));
         assertThat(cutoff.getValue()).isBetween(before, after);
         assertThat(meterRegistry.get("flowmesh.iam.refresh_token.cleanup").counter().count())
             .isEqualTo(3);

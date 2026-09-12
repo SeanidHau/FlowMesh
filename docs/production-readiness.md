@@ -21,6 +21,7 @@
 - supplier readiness 会在生产配置下检查 MinIO 材料桶和 ClamAV 扫描端口；依赖不可用时不接收新的材料请求。
 - Redis 登录限流支持可配置的故障策略；本地默认降级放行，生产 Helm 默认 fail-closed，Redis 不可用时返回 `503`。
 - IAM 会在所有副本中以带批量上限和保留窗口的任务清理过期/长期撤销的 Refresh Token，SQL 使用 `FOR UPDATE SKIP LOCKED` 避免多副本重复争抢，并暴露删除计数指标。
+- IAM 用户、用户角色关系、Refresh Token 和安全审计表均启用 `FORCE ROW LEVEL SECURITY`；登录、刷新和登出先设置事务级租户上下文，跨租户 Refresh Token 清理按租户使用独立事务执行，并通过 PostgreSQL 集成测试验证跨租户读写边界。
 - 提供独立的 PostgreSQL 生命周期维护镜像和 Helm CronJob，使用非超级用户 `flowmesh_retention` 清理已发布 Outbox、DLQ、重放审计、Inbox 和请求幂等记录；SQL 使用固定表白名单、批量上限和 `FOR UPDATE SKIP LOCKED`，并通过 PostgreSQL E2E 验证强制 RLS 表的清理边界。
 - 提供只读的 `flowmesh_retention` 角色权限预检，核验 `NOSUPERUSER`、`NOINHERIT`、`BYPASSRLS`、Schema 使用权限、清理白名单和行锁键列级 `UPDATE` 权限；契约测试和生命周期 PostgreSQL E2E 均会执行该预检。
 - 所有服务日志统一输出 `traceId`，消息消费者会恢复事件信封中的 `traceId` 并在处理结束后清理线程上下文；supplier 对账调用 workflow 时会继续透传当前 `X-Trace-Id`，避免跨服务 HTTP 链路断裂。

@@ -1,6 +1,7 @@
 package com.flowmesh.iam.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * 登录请求。
@@ -10,8 +11,8 @@ import jakarta.validation.constraints.NotBlank;
  * @param password 密码明文
  */
 public record LoginRequest(
-    @NotBlank String tenantId,
-    @NotBlank String username,
+    @NotBlank @Size(max = 64) String tenantId,
+    @NotBlank @Size(max = 64) String username,
     @NotBlank String password
 ) {
 }

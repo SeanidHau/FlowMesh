@@ -74,7 +74,7 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     public TokenResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        var result = authApplicationService.refresh(request.refreshToken());
+        var result = authApplicationService.refresh(request.tenantId(), request.refreshToken());
         return new TokenResponse(result.accessToken(), result.refreshToken());
     }
 
@@ -91,7 +91,7 @@ public class AuthController {
         HttpServletRequest httpRequest
     ) {
         authApplicationService.logout(
-            request.refreshToken(), TraceIdFilter.currentTraceId(httpRequest)
+            request.tenantId(), request.refreshToken(), TraceIdFilter.currentTraceId(httpRequest)
         );
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
